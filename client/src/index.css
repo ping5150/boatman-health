@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* ============================================
+   船夫健康 Design System Tokens
+   Based on DESIGN.md "The Private Steward"
+   ============================================ */
+
+@theme {
+  /* ---- Primary Hierarchy (Deep Nautical Blues) ---- */
+  --color-primary: #001e40;
+  --color-primary-container: #003366;
+  --color-primary-fixed: #d5e3ff;
+  --color-primary-fixed-dim: #a7c8ff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #799dd6;
+  --color-on-primary-fixed: #001b3c;
+  --color-on-primary-fixed-variant: #1f477b;
+  --color-inverse-primary: #a7c8ff;
+
+  /* ---- Secondary Accents (Calm Light Blue) ---- */
+  --color-secondary: #075fab;
+  --color-secondary-container: #70aeff;
+  --color-secondary-fixed: #d4e3ff;
+  --color-secondary-fixed-dim: #a4c9ff;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #004077;
+  --color-on-secondary-fixed: #001c39;
+  --color-on-secondary-fixed-variant: #004884;
+
+  /* ---- Tertiary ---- */
+  --color-tertiary: #0a2033;
+  --color-tertiary-container: #21354a;
+  --color-tertiary-fixed: #d0e4ff;
+  --color-tertiary-fixed-dim: #b4c8e2;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #8a9eb6;
+  --color-on-tertiary-fixed: #071d30;
+  --color-on-tertiary-fixed-variant: #35485e;
+
+  /* ---- Error ---- */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  /* ---- Surface Hierarchy (Layered Depth) ---- */
+  --color-surface: #f7f9fc;
+  --color-surface-dim: #d8dadd;
+  --color-surface-bright: #f7f9fc;
+  --color-surface-container: #eceef1;
+  --color-surface-container-low: #f2f4f7;
+  --color-surface-container-high: #e6e8eb;
+  --color-surface-container-highest: #e0e3e6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-variant: #e0e3e6;
+  --color-surface-tint: #3a5f94;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #43474f;
+  --color-on-background: #191c1e;
+  --color-background: #f7f9fc;
+  --color-inverse-surface: #2d3133;
+  --color-inverse-on-surface: #eff1f4;
+
+  /* ---- Outline ---- */
+  --color-outline: #737780;
+  --color-outline-variant: #c3c6d1;
+
+  /* ---- Font Families ---- */
+  --font-headline: 'Manrope', sans-serif;
+  --font-body: 'Work Sans', sans-serif;
+  --font-label: 'Work Sans', sans-serif;
+
+  /* ---- Ambient Shadows (Tinted Primary Blue) ---- */
+  --shadow-ambient: 0 8px 24px rgba(0, 30, 64, 0.06);
+  --shadow-elevated: 0 12px 40px rgba(0, 30, 64, 0.1);
+  --shadow-cta: 0 8px 32px rgba(7, 95, 171, 0.2);
+
+  /* ---- Border Radius ---- */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+/* ============================================
+   Global Base Styles
+   ============================================ */
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Material Symbols Outlined icon defaults */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Disable 100% black per DESIGN.md - always use on-surface */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headline);
+    color: var(--color-primary);
+  }
+
+  /* Scrollbar for mobile-like feel */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* ============================================
+   Custom Utility Classes
+   ============================================ */
+
+@layer utilities {
+  /* Glassmorphism - The Glass Rule (DESIGN.md) */
+  .glass {
+    background-color: rgba(247, 249, 252, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-dark {
+    background-color: rgba(0, 30, 64, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Ghost Border (DESIGN.md: 15% opacity outline_variant) */
+  .ghost-border {
+    border: 1px solid rgba(195, 198, 209, 0.15);
+  }
+
+  .ghost-border-focus {
+    border: 1px solid rgba(7, 95, 171, 0.6);
+  }
+
+  /* Asymmetric Clip Path for Hero sections */
+  .asymmetric-clip {
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
+  }
+
+  /* Safe area for bottom navigation */
+  .pb-safe {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
