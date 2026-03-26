@@ -12,7 +12,7 @@
  *     └── assets/          (管理后台静态资源)
  */
 import { execSync } from 'child_process';
-import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -66,17 +66,6 @@ if (isWindows) {
   execSync(`cp -r "${clientDist}/." "${distDir}/"`, { stdio: 'pipe' });
   execSync(`cp -r "${adminDist}" "${distDir}/admin"`, { stdio: 'pipe' });
 }
-
-// 3. 生成统一的 _redirects 文件（覆盖 client 的）
-const redirects = [
-  '# 管理后台 SPA 路由回退（必须在前面，优先匹配）',
-  '/admin/*  /admin/index.html  200',
-  '',
-  '# 用户端 SPA 路由回退',
-  '/*  /index.html  200',
-].join('\n');
-
-writeFileSync(resolve(distDir, '_redirects'), redirects + '\n');
 
 console.log('✅ 构建产物合并完成！');
 console.log('   用户端  → dist/');

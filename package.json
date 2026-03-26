@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "船夫健康 - 用户端 + 管理后台",
   "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "dev:admin": "cd admin && npm run dev",
     "build:client": "cd client && npm install && npm run build",
     "build:admin": "cd admin && npm install && npm run build",
     "build": "npm run build:client && npm run build:admin && node scripts/merge-dist.mjs"

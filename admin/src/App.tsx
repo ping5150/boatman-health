@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import AuthGuard from './components/AuthGuard';
@@ -13,7 +13,7 @@ import SyncManagementPage from './pages/SyncManagement';
 const App = () => {
   return (
     <ConfigProvider locale={zhCN}>
-      <BrowserRouter basename="/admin">
+      <HashRouter>
         <Routes>
           {/* 公开路由 */}
           <Route path="/login" element={<LoginPage />} />
@@ -37,7 +37,7 @@ const App = () => {
           {/* 未匹配路由重定向 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </ConfigProvider>
   );
 };

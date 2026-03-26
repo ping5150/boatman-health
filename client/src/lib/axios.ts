@@ -28,8 +28,8 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       // 避免在登录页循环跳转
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.hash !== '#/login') {
+        window.location.href = '/#/login';
       }
     }
     return Promise.reject(error);

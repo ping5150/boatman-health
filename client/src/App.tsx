@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import SubPageLayout from '@/layouts/SubPageLayout';
 import Home from '@/pages/Home';
@@ -20,7 +20,7 @@ import ArchiveSuccess from '@/pages/ArchiveSuccess';
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* 登录页 - 无布局 */}
         <Route path="/login" element={<Login />} />
@@ -48,7 +48,7 @@ const App = () => {
           <Route path="/archive-success" element={<ArchiveSuccess />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
