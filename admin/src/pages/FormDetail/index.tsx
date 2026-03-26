@@ -115,7 +115,7 @@ const FormDetailPage: React.FC = () => {
         </Descriptions>
       </Card>
 
-      {!isForm1 && detail.formData && (
+      {!isForm1 && (detail.formData as Record<string, unknown>) && (
         <Card title="完整表单数据（JSON）">
           <pre
             style={{

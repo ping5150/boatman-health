@@ -1,0 +1,11 @@
+{
+  "name": "chuanfu-health",
+  "private": true,
+  "version": "1.0.0",
+  "description": "船夫健康 - 用户端 + 管理后台",
+  "scripts": {
+    "build:client": "cd client && npm install && npm run build",
+    "build:admin": "cd admin && npm install && npm run build",
+    "build": "npm run build:client && npm run build:admin && node scripts/merge-dist.mjs"
+  }
+}

@@ -13,7 +13,7 @@ import SyncManagementPage from './pages/SyncManagement';
 const App = () => {
   return (
     <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
+      <BrowserRouter basename="/admin">
         <Routes>
           {/* 公开路由 */}
           <Route path="/login" element={<LoginPage />} />
