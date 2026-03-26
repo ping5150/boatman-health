@@ -1,0 +1,18 @@
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
+
+export interface JwtPayload {
+  userId: number;
+  phone: string;
+  role: 'user' | 'admin';
+}
+
+export const signToken = (payload: JwtPayload): string => {
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: 7 * 24 * 60 * 60, // 7 天（秒）
+  });
+};
+
+export const verifyToken = (token: string): JwtPayload => {
+  return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+};
