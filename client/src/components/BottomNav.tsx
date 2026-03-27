@@ -1,66 +1,42 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import Icon from './Icon';
-
-interface NavItem {
-  label: string;
-  icon: string;
-  path: string;
-  matchPaths: string[];
-}
-
-const navItems: NavItem[] = [
-  {
-    label: '首页',
-    icon: 'home_health',
-    path: '/',
-    matchPaths: ['/'],
-  },
-  {
-    label: '服务',
-    icon: 'medical_services',
-    path: '/services',
-    matchPaths: ['/services', '/paradigm', '/service-journey', '/about', '/cases', '/consultation', '/health-form', '/booking-success'],
-  },
-  {
-    label: '账户',
-    icon: 'account_circle',
-    path: '/account',
-    matchPaths: ['/account', '/account/profile', '/account/health-archive', '/account/logout', '/account/contact', '/archive-success'],
-  },
-];
+import { Link, useLocation } from 'react-router-dom';
 
 const BottomNav = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
-  const isActive = (item: NavItem): boolean => {
-    return item.matchPaths.some((p) => {
-      if (p === '/') {
-        return location.pathname === '/';
-      }
-      return location.pathname.startsWith(p);
-    });
+  const navItems = [
+    { name: '首页', icon: 'home_health', href: '/' },
+    { name: '服务', icon: 'medical_services', href: '/services' },
+    { name: '我的', icon: 'account_circle', href: '/account' },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 glass z-50 rounded-t-3xl shadow-ambient">
-      {navItems.map((item) => {
-        const active = isActive(item);
-        return (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className={`flex flex-col items-center justify-center px-5 py-2 rounded-xl transition-all duration-300 ease-out active:scale-90 ${
-              active
-                ? 'bg-secondary text-on-secondary'
-                : 'text-outline hover:text-secondary'
-            }`}
+    <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 sm:px-4 pb-4 sm:pb-4 pt-3 bg-surface/90 backdrop-blur-xl z-50 rounded-t-2xl sm:rounded-t-3xl border-t border-outline-variant/20 shadow-[0_-8px_24px_rgba(0,30,64,0.06)]">
+      {navItems.map((item) => (
+        <Link
+          key={item.name}
+          to={item.href}
+          className={`flex flex-col items-center justify-center px-3 sm:px-5 py-2 min-h-[60px] min-w-[60px] sm:min-h-auto sm:min-w-0 transition-all active:scale-90 duration-300 ease-out ${
+            isActive(item.href)
+              ? 'bg-secondary text-on-secondary rounded-xl'
+              : 'text-on-surface-variant hover:text-secondary'
+          }`}
+        >
+          <span
+            className="material-symbols-outlined text-xl sm:text-base"
+            style={isActive(item.href) ? { fontVariationSettings: 'FILL 1' } : {}}
           >
-            <Icon name={item.icon} filled={active} size={24} />
-            <span className="font-headline text-[10px] font-semibold tracking-wide mt-1">{item.label}</span>
-          </button>
-        );
-      })}
+            {item.icon}
+          </span>
+          <span className="font-headline text-[9px] sm:text-[10px] font-semibold tracking-wide mt-1">{item.name}</span>
+        </Link>
+      ))}
     </nav>
   );
 };

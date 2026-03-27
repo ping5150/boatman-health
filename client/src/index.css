@@ -1,46 +1,53 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ============================================
    船夫健康 Design System Tokens
    Based on DESIGN.md "The Private Steward"
    ============================================ */
 
-@theme {
+@theme inline {
+  --font-headline: ['Manrope', sans-serif];
+  --font-body: ['Work Sans', sans-serif];
+  --font-label: ['Work Sans', sans-serif];
+
   /* ---- Primary Hierarchy (Deep Nautical Blues) ---- */
   --color-primary: #001e40;
-  --color-primary-container: #003366;
-  --color-primary-fixed: #d5e3ff;
-  --color-primary-fixed-dim: #a7c8ff;
   --color-on-primary: #ffffff;
+  --color-primary-container: #003366;
   --color-on-primary-container: #799dd6;
+  --color-primary-fixed: #d5e3ff;
   --color-on-primary-fixed: #001b3c;
+  --color-primary-fixed-dim: #a7c8ff;
   --color-on-primary-fixed-variant: #1f477b;
   --color-inverse-primary: #a7c8ff;
 
   /* ---- Secondary Accents (Calm Light Blue) ---- */
   --color-secondary: #075fab;
-  --color-secondary-container: #70aeff;
-  --color-secondary-fixed: #d4e3ff;
-  --color-secondary-fixed-dim: #a4c9ff;
   --color-on-secondary: #ffffff;
+  --color-secondary-container: #70aeff;
   --color-on-secondary-container: #004077;
+  --color-secondary-fixed: #d4e3ff;
   --color-on-secondary-fixed: #001c39;
+  --color-secondary-fixed-dim: #a4c9ff;
   --color-on-secondary-fixed-variant: #004884;
 
   /* ---- Tertiary ---- */
   --color-tertiary: #0a2033;
-  --color-tertiary-container: #21354a;
-  --color-tertiary-fixed: #d0e4ff;
-  --color-tertiary-fixed-dim: #b4c8e2;
   --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #21354a;
   --color-on-tertiary-container: #8a9eb6;
+  --color-tertiary-fixed: #d0e4ff;
   --color-on-tertiary-fixed: #071d30;
+  --color-tertiary-fixed-dim: #b4c8e2;
   --color-on-tertiary-fixed-variant: #35485e;
 
   /* ---- Error ---- */
   --color-error: #ba1a1a;
-  --color-error-container: #ffdad6;
   --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
   /* ---- Surface Hierarchy (Layered Depth) ---- */
@@ -65,10 +72,8 @@
   --color-outline: #737780;
   --color-outline-variant: #c3c6d1;
 
-  /* ---- Font Families ---- */
-  --font-headline: 'Manrope', sans-serif;
-  --font-body: 'Work Sans', sans-serif;
-  --font-label: 'Work Sans', sans-serif;
+  /* ---- Shadow ---- */
+  --color-shadow: #001e40;
 
   /* ---- Ambient Shadows (Tinted Primary Blue) ---- */
   --shadow-ambient: 0 8px 24px rgba(0, 30, 64, 0.06);
@@ -81,8 +86,63 @@
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-4xl: 2.5rem;
   --radius-full: 9999px;
+}
+
+:root {
+  --radius: 0.625rem;
+}
+
+.dark {
+  --color-background: #191c1e;
+  --color-on-background: #f2f4f7;
+  --color-surface: #191c1e;
+  --color-on-surface: #f2f4f7;
+  --color-surface-variant: #43474f;
+  --color-on-surface-variant: #c3c6d1;
+  --color-outline: #8d9199;
+  --color-outline-variant: #43474f;
+  --color-surface-container: #1e2124;
+  --color-surface-container-low: #1e2124;
+  --color-surface-container-lowest: #141618;
+  --color-surface-container-high: #2b2f32;
+  --color-surface-container-highest: #363a3d;
+  --color-inverse-surface: #eff1f4;
+  --color-inverse-on-surface: #2d3133;
+  --color-inverse-primary: #001e40;
+  --color-primary: #a7c8ff;
+  --color-on-primary: #001b3c;
+  --color-primary-container: #003366;
+  --color-on-primary-container: #d5e3ff;
+  --color-secondary: #a4c9ff;
+  --color-on-secondary: #001c39;
+  --color-secondary-container: #004884;
+  --color-on-secondary-container: #d4e3ff;
+  --color-tertiary: #b4c8e2;
+  --color-on-tertiary: #071d30;
+  --color-tertiary-container: #35485e;
+  --color-on-tertiary-container: #d0e4ff;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-surface-dim: #191c1e;
+  --color-surface-bright: #404447;
+  --color-surface-tint: #3a5f94;
+  --color-primary-fixed: #d5e3ff;
+  --color-on-primary-fixed: #001b3c;
+  --color-primary-fixed-dim: #a7c8ff;
+  --color-on-primary-fixed-variant: #1f477b;
+  --color-secondary-fixed: #d4e3ff;
+  --color-on-secondary-fixed: #001c39;
+  --color-secondary-fixed-dim: #a4c9ff;
+  --color-on-secondary-fixed-variant: #004884;
+  --color-tertiary-fixed: #d0e4ff;
+  --color-on-tertiary-fixed: #071d30;
+  --color-tertiary-fixed-dim: #b4c8e2;
+  --color-on-tertiary-fixed-variant: #35485e;
 }
 
 /* ============================================
@@ -90,6 +150,10 @@
    ============================================ */
 
 @layer base {
+  * {
+    @apply border-outline/50;
+  }
+
   body {
     font-family: var(--font-body);
     background-color: var(--color-surface);
@@ -98,9 +162,29 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* 禁止移动端横向滚动 */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* 优化触摸滚动 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 确保图片响应式 */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
   /* Material Symbols Outlined icon defaults */
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    line-height: 1;
   }
 
   /* Disable 100% black per DESIGN.md - always use on-surface */
@@ -114,6 +198,20 @@
     width: 0;
     height: 0;
   }
+}
+
+/* 输入框和按钮的移动端优化 */
+input, textarea, select {
+  font-size: 16px !important; /* 防止 iOS 自动缩放 */
+}
+
+button, a {
+  touch-action: manipulation; /* 优化触摸响应 */
+}
+
+/* 移动端文本选择优化 */
+::selection {
+  background-color: rgba(112, 174, 255, 0.3);
 }
 
 /* ============================================
@@ -152,4 +250,57 @@
   .pb-safe {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* Editorial shadow */
+.editorial-shadow {
+  box-shadow: 0 8px 24px rgba(0, 30, 64, 0.06);
+}
+
+/* Glass effect */
+.glass-effect {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Input shadow */
+.input-shadow {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* About 页面用到的 azure-steward 色系（映射到 primary） */
+.text-azure-steward {
+  color: var(--color-primary);
+}
+
+.bg-azure-steward {
+  background-color: var(--color-primary);
+}
+
+.bg-azure-steward\/5 {
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.bg-azure-steward\/10 {
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.border-azure-steward {
+  border-color: var(--color-primary);
+}
+
+.border-azure-steward\/10 {
+  border-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.border-azure-steward\/20 {
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.hover\:bg-azure-steward\/5:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.hover\:text-azure-steward:hover {
+  color: var(--color-primary);
 }

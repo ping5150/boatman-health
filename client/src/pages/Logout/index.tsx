@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/Icon';
-import { logout } from '@/lib/auth';
+import { useUser } from '@/contexts/UserContext';
 
 const Logout = () => {
   const navigate = useNavigate();
+  const { logout } = useUser();
 
   const handleLogout = () => {
     logout();
