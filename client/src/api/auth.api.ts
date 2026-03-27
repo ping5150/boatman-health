@@ -1,9 +1,4 @@
-// =============================================
-// Mock 模式 - 不依赖后端即可跑通全流程
-// 切换回真实接口：将下方注释打开，删除 mock 实现
-// =============================================
-
-// import api from '@/lib/axios';
+import api from '@/lib/axios';
 
 interface SendCodeRequest {
   phone: string;
@@ -40,39 +35,30 @@ interface LoginResponse {
   };
 }
 
-// 模拟网络延迟
-const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Mock: 保存注册信息，用于登录时回显
-let mockUserName = '张先生';
-
-// 发送验证码 (Mock)
-export const sendCode = async (_data: SendCodeRequest): Promise<SendCodeResponse> => {
-  await delay(300);
-  return { success: true, message: '验证码已发送（Mock 模式，任意 6 位数字即可登录）' };
+// 发送验证码
+export const sendCode = async (data: SendCodeRequest): Promise<SendCodeResponse> => {
+  const res = await api.post('/auth/send-code', { phone: data.phone });
+  return { success: true, message: res.data.message || '验证码已发送' };
 };
 
-// 注册 (Mock)
+// 注册
 export const register = async (data: RegisterRequest): Promise<RegisterResponse> => {
-  await delay(200);
-  mockUserName = data.name;
+  await api.post('/auth/register', { phone: data.phone, password: data.name });
   return { success: true, message: '注册成功' };
 };
 
-// 登录 (Mock) - 任意 6 位验证码即可
+// 登录
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  await delay(400);
-  if (data.code.length < 6) {
-    throw { response: { data: { message: '验证码错误' } } };
-  }
+  const res = await api.post('/auth/login', { phone: data.phone, code: data.code });
+  const result = res.data.data;
   return {
     success: true,
-    token: 'mock-jwt-token-' + Date.now(),
+    token: result.token,
     user: {
-      id: 'mock-user-001',
-      phone: data.phone,
-      name: mockUserName,
-      role: 'user',
+      id: String(result.userId),
+      phone: result.phone,
+      name: result.name || '用户',
+      role: result.role,
     },
   };
 };

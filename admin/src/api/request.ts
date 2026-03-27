@@ -2,8 +2,13 @@ import axios from 'axios';
 import { message } from 'antd';
 import { tokenUtil } from '../utils/token';
 
+// 生产环境直接请求服务器，开发环境通过 vite proxy 代理
+const baseURL = import.meta.env.PROD
+  ? 'http://43.139.240.74:3000'
+  : '';
+
 const request = axios.create({
-  baseURL: '',
+  baseURL,
   timeout: 15000,
 });
 

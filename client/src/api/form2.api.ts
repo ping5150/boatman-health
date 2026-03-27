@@ -1,9 +1,4 @@
-// =============================================
-// Mock 模式 - 不依赖后端即可跑通全流程
-// 切换回真实接口：将下方注释打开，删除 mock 实现
-// =============================================
-
-// import api from '@/lib/axios';
+import api from '@/lib/axios';
 
 interface Form2SubmitRequest {
   // 基本信息
@@ -50,18 +45,80 @@ interface Form2SubmitResponse {
   };
 }
 
-const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+// 提交健康档案
+export const submitForm2 = async (data: Form2SubmitRequest): Promise<Form2SubmitResponse> => {
+  // 将扁平数据结构转换为后端要求的嵌套结构
+  const payload = {
+    basicInfo: {
+      name: data.fullName,
+      customerId: data.idNumber || `CUS-${Date.now()}`,
+      phone: data.phone,
+      emergencyContact: {
+        name: data.fullName,
+        phone: data.phone,
+      },
+    },
+    healthBackground: {
+      currentDiseases: data.chronicDiseases
+        ? [{ diagnosis: data.chronicDiseases, diagnosedAt: '' }]
+        : [],
+      medications: data.currentMedications
+        ? [{ name: data.currentMedications, dosage: '' }]
+        : [],
+      surgeryHistory: {
+        hasSurgery: !!data.pastSurgeries,
+        details: data.pastSurgeries || undefined,
+      },
+      allergyHistory: {
+        hasAllergy: !!data.allergies,
+        details: data.allergies || undefined,
+      },
+      vascularAssessment: {
+        result: '合格' as const,
+      },
+      familyHistory: {
+        selected: data.familyHistory ? [data.familyHistory] : [],
+      },
+      medicalQuestions: data.primaryConcern || '',
+    },
+    lifestyle: {
+      diet: {
+        dietPatterns: data.dietaryPreferences ? [data.dietaryPreferences] : [],
+        beverages: [],
+        postMealFeelings: [],
+        foodRestrictions: '',
+      },
+      exercise: {
+        types: data.exerciseFrequency ? [data.exerciseFrequency] : [],
+        frequencyPerWeek: 0,
+        durationMinutes: 0,
+      },
+      sleep: {
+        avgHours: data.sleepQuality || '',
+        fallAsleep: '',
+        morningFeeling: '',
+      },
+      stress: {
+        stressScore: 5,
+      },
+      anxiety: {
+        frequency: '',
+      },
+      brainFog: {
+        symptoms: [],
+      },
+    },
+  };
 
-// 提交健康档案 (Mock)
-export const submitForm2 = async (_data: Form2SubmitRequest): Promise<Form2SubmitResponse> => {
-  await delay(1000);
+  const res = await api.post('/form2', payload);
+  const result = res.data.data;
   return {
     success: true,
-    message: '健康档案提交成功',
+    message: res.data.message || '健康档案提交成功',
     data: {
-      id: 'FORM2-' + Date.now(),
-      version: 'v1',
-      submittedAt: new Date().toISOString(),
+      id: String(result.id),
+      version: `v${result.versionNumber || 1}`,
+      submittedAt: result.submittedAt,
     },
   };
 };
