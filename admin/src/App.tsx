@@ -5,11 +5,12 @@ import AuthGuard from './components/AuthGuard';
 import AdminLayout from './components/Layout';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
-import Form1ListPage from './pages/Form1List';
-import Form2ListPage from './pages/Form2List';
+import BookingListPage from './pages/BookingList';
+import ArchiveListPage from './pages/ArchiveList';
 import FormDetailPage from './pages/FormDetail';
 import SyncManagementPage from './pages/SyncManagement';
 import UserListPage from './pages/UserList';
+import UserDetailPage from './pages/UserDetail';
 
 const App = () => {
   return (
@@ -29,10 +30,11 @@ const App = () => {
           >
             <Route path="/" element={<DashboardPage />} />
             <Route path="/users" element={<UserListPage />} />
-            <Route path="/form1" element={<Form1ListPage />} />
-            <Route path="/form2" element={<Form2ListPage />} />
-            <Route path="/form1/:id" element={<FormDetailPage />} />
-            <Route path="/form2/:id" element={<FormDetailPage />} />
+            <Route path="/users/:id" element={<UserDetailPage />} />
+            <Route path="/booking" element={<BookingListPage />} />
+            <Route path="/booking/:id" element={<FormDetailPage />} />
+            <Route path="/archive" element={<ArchiveListPage />} />
+            <Route path="/archive/:id" element={<FormDetailPage />} />
             <Route path="/sync" element={<SyncManagementPage />} />
           </Route>
 

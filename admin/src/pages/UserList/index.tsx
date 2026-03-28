@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Card, Input, Tag, Space, Typography } from 'antd';
-import { UserOutlined, SearchOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { Table, Card, Input, Tag, Space, Typography, Button } from 'antd';
+import { UserOutlined, SearchOutlined, FormOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { userApi } from '../../api/user.api';
 
 const { Title } = Typography;
 
@@ -13,10 +13,20 @@ interface UserItem {
   phone: string;
   role: string;
   createdAt: string;
-  formCount: number;
+  updatedAt: string;
 }
 
+// 模拟数据
+const mockData: UserItem[] = [
+  { id: 1, username: '张三', phone: '13800138001', role: 'user', createdAt: '2026-03-01T10:00:00', updatedAt: '2026-03-15T14:30:00' },
+  { id: 2, username: '李四', phone: '13800138002', role: 'user', createdAt: '2026-03-02T14:30:00', updatedAt: '2026-03-10T09:00:00' },
+  { id: 3, username: '管理员', phone: '13800138000', role: 'admin', createdAt: '2026-01-01T09:00:00', updatedAt: '2026-01-01T09:00:00' },
+  { id: 4, username: '王五', phone: '13800138003', role: 'user', createdAt: '2026-03-05T16:45:00', updatedAt: '2026-03-20T11:00:00' },
+  { id: 5, username: '赵六', phone: '13800138004', role: 'user', createdAt: '2026-03-10T11:20:00', updatedAt: '2026-03-18T16:00:00' },
+];
+
 const UserListPage: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<UserItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -24,18 +34,20 @@ const UserListPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(() => {
     setLoading(true);
-    try {
-      const res = await userApi.getList({ page, limit: pageSize, search: search || undefined });
-      setData(res.data?.list || []);
-      setTotal(res.data?.total || 0);
-    } catch {
-      // 错误已在拦截器中处理
-    } finally {
+    setTimeout(() => {
+      let filtered = mockData;
+      if (search) {
+        filtered = mockData.filter(item =>
+          item.username.includes(search) || item.phone.includes(search)
+        );
+      }
+      setData(filtered);
+      setTotal(filtered.length);
       setLoading(false);
-    }
-  }, [page, pageSize, search]);
+    }, 300);
+  }, [search]);
 
   useEffect(() => {
     fetchData();
@@ -43,13 +55,13 @@ const UserListPage: React.FC = () => {
 
   const columns: ColumnsType<UserItem> = [
     {
-      title: 'ID',
+      title: '用户ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80,
+      width: 100,
     },
     {
-      title: '用户名',
+      title: '姓名',
       dataIndex: 'username',
       key: 'username',
       render: (text: string) => (
@@ -63,7 +75,6 @@ const UserListPage: React.FC = () => {
       title: '手机号',
       dataIndex: 'phone',
       key: 'phone',
-      render: (text: string) => text.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
     },
     {
       title: '角色',
@@ -77,20 +88,32 @@ const UserListPage: React.FC = () => {
       ),
     },
     {
-      title: '表单提交数',
-      dataIndex: 'formCount',
-      key: 'formCount',
-      width: 120,
-      render: (count: number) => (
-        <Tag color={count > 0 ? 'green' : 'default'}>{count}</Tag>
-      ),
-    },
-    {
       title: '注册时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 180,
+      width: 170,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      width: 170,
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 120,
+      render: (_: unknown, record: UserItem) => (
+        <Button
+          type="link"
+          icon={<FormOutlined />}
+          onClick={() => navigate(`/users/${record.id}`)}
+        >
+          查看/修改
+        </Button>
+      ),
     },
   ];
 

@@ -35,14 +35,14 @@ const AdminLayout: React.FC = () => {
       label: '用户管理',
     },
     {
-      key: '/form1',
+      key: '/booking',
       icon: <FileTextOutlined />,
-      label: '咨询表单',
+      label: '预约管理',
     },
     {
-      key: '/form2',
+      key: '/archive',
       icon: <MedicineBoxOutlined />,
-      label: '健康评估表单',
+      label: '档案管理',
     },
     {
       key: '/sync',
@@ -57,11 +57,11 @@ const AdminLayout: React.FC = () => {
     if (path.startsWith('/users')) {
       return '/users';
     }
-    if (path.startsWith('/form1')) {
-      return '/form1';
+    if (path.startsWith('/booking')) {
+      return '/booking';
     }
-    if (path.startsWith('/form2')) {
-      return '/form2';
+    if (path.startsWith('/archive')) {
+      return '/archive';
     }
     if (path.startsWith('/sync')) {
       return '/sync';

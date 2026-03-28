@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { PhoneOutlined, SafetyOutlined } from '@ant-design/icons';
-import { authApi } from '../../api/auth.api';
 import { useAuth } from '../../hooks/useAuth';
 
 const { Title } = Typography;
@@ -15,57 +14,49 @@ const LoginPage: React.FC = () => {
   const [countdown, setCountdown] = useState(0);
   const [form] = Form.useForm();
 
-  // 发送验证码
+  // 发送验证码（模拟）
   const handleSendCode = async () => {
-    try {
-      const phone = form.getFieldValue('phone');
-      if (!phone || !/^\d{11}$/.test(phone)) {
-        message.warning('请输入正确的手机号');
-        return;
-      }
-
-      await authApi.sendCode(phone);
-      message.success('验证码已发送（开发模式：123456）');
-      setCodeSent(true);
-
-      // 倒计时 60 秒
-      setCountdown(60);
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch {
-      // 错误已在拦截器中处理
+    const phone = form.getFieldValue('phone');
+    if (!phone || !/^\d{11}$/.test(phone)) {
+      message.warning('请输入正确的手机号');
+      return;
     }
+
+    message.success('验证码已发送（开发模式：123456）');
+    setCodeSent(true);
+
+    // 倒计时 60 秒
+    setCountdown(60);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
-  // 登录
+  // 登录（模拟）
   const handleLogin = async (values: { phone: string; code: string }) => {
     try {
       setLoading(true);
-      const res = await authApi.login(values.phone, values.code);
-      const data = res.data!;
 
-      if (data.role !== 'admin') {
-        message.error('该账号无管理员权限');
+      // 模拟登录验证
+      if (values.code !== '123456') {
+        message.error('验证码错误');
         return;
       }
 
-      login(data.token, {
-        userId: data.userId,
-        phone: data.phone,
-        role: data.role,
+      login('mock-token-12345', {
+        userId: 1,
+        phone: values.phone,
+        role: 'admin',
       });
 
       message.success('登录成功');
       navigate('/', { replace: true });
-    } catch {
-      // 错误已在拦截器中处理
     } finally {
       setLoading(false);
     }
