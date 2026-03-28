@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Spin, Tag, Divider, Form, Input, Select, DatePicker, Space, message, Row, Col } from 'antd';
-import { ArrowLeftOutlined, UserOutlined, PhoneOutlined, CalendarOutlined, ContactsOutlined, SaveOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, UserOutlined, PhoneOutlined, ContactsOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 interface UserProfile {
@@ -124,14 +124,6 @@ const UserDetailPage: React.FC = () => {
       message.success('保存成功');
       setIsEditing(false);
     });
-  };
-
-  // 计算年龄
-  const calculateAge = (birthDate: string) => {
-    if (!birthDate) return '-';
-    const birth = dayjs(birthDate);
-    const age = dayjs().diff(birth, 'year');
-    return `${age}岁`;
   };
 
   if (loading) {

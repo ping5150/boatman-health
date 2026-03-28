@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Spin, Progress, Table, Button, Tag } from 'antd';
+import { Card, Col, Row, Spin, Progress, Table, Button, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
   UserOutlined,
@@ -9,7 +9,6 @@ import {
   FallOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
 
 interface StatCard {
   total: number;
