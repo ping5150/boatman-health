@@ -273,21 +273,6 @@ export const formService = {
     };
   },
 
-    logger.info('FORM', `Form2 submitted: userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, id=${submission.id}`);
-
-    // 异步触发飞书同步（不阻塞响应）
-    feishuService.syncForm2(submission).catch((err) => {
-      logger.error('FEISHU', `Async sync form2 failed: id=${submission.id}`, err);
-    });
-
-    return {
-      id: submission.id,
-      orderNo: submission.orderNo,
-      submittedAt: submission.submittedAt.toISOString(),
-      versionNumber: submission.versionNumber,
-    };
-  },
-
   /**
    * 获取用户档案列表
    */

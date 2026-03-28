@@ -55,7 +55,7 @@ export const form1Controller = {
   async getDetail(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const id = parseInt(req.params.id, 10);
+      const id = parseInt(req.params.id as string, 10);
       const result = await formService.getForm1Detail(userId, id);
       sendSuccess(res, result, '获取成功');
     } catch (err: unknown) {
@@ -74,7 +74,7 @@ export const form1Controller = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const id = parseInt(req.params.id, 10);
+      const id = parseInt(req.params.id as string, 10);
       const { name, phone, consultationType, preferredDate, preferredTime, brief } = req.body;
 
       const result = await formService.updateForm1(userId, id, {
