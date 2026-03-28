@@ -149,12 +149,12 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-surface to-surface-container-low">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-surface to-surface-container-low relative">
       <TopBar showBack={step !== 'phone'} showAccount={false} onBack={handleBack} transparent />
 
       <main className="min-h-screen flex flex-col items-center justify-center px-6 py-8 -mt-16">
         {/* Logo and Title */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-20">
           <div className="flex items-center justify-center mb-3">
             <img src="/logo.png" alt="船夫健康Logo" className="h-16 w-auto drop-shadow-sm" />
           </div>
@@ -301,8 +301,8 @@ const Login = () => {
           )}
         </div>
 
-        {/* Privacy Policy */}
-        <p className="text-center text-xs text-on-surface-variant/50 mt-6 max-w-sm">
+        {/* Privacy Policy - Fixed at bottom */}
+        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-on-surface-variant/50 px-6">
           登录即表示同意
           <a href="#" className="text-secondary/80 hover:text-secondary transition-colors">服务条款</a>
           <span className="mx-1">和</span>

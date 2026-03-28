@@ -19,7 +19,7 @@ const ArchiveSuccess = () => {
       </section>
 
       {/* Summary */}
-      <section className="mb-12">
+      {/* <section className="mb-12">
         <div className="bg-surface-container-low p-1 rounded-[2rem]">
           <div className="bg-surface-container-lowest p-8 rounded-[1.8rem] shadow-sm">
             <div className="flex items-center justify-between mb-8">
@@ -51,7 +51,7 @@ const ArchiveSuccess = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-4">

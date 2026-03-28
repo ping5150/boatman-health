@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { formService } from '../services/form.service';
-import { sendCreated, sendError } from '../utils/response';
+import { sendSuccess, sendCreated, sendError } from '../utils/response';
 
 export const form1Controller = {
   /**
@@ -9,17 +9,84 @@ export const form1Controller = {
   async submit(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const { name, phone, consultationType, preferredTime, brief } = req.body;
+      const { name, phone, consultationType, preferredDate, preferredTime, brief } = req.body;
 
       const result = await formService.submitForm1(userId, {
         name,
         phone,
         consultationType,
+        preferredDate,
         preferredTime,
         brief,
       });
 
       sendCreated(res, result, '表单提交成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 获取用户预约列表
+   */
+  async getList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const result = await formService.getForm1List(userId);
+      sendSuccess(res, result, '获取成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 获取单个预约详情
+   */
+  async getDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const id = parseInt(req.params.id, 10);
+      const result = await formService.getForm1Detail(userId, id);
+      sendSuccess(res, result, '获取成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 更新预约（新增记录）
+   */
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const id = parseInt(req.params.id, 10);
+      const { name, phone, consultationType, preferredDate, preferredTime, brief } = req.body;
+
+      const result = await formService.updateForm1(userId, id, {
+        name,
+        phone,
+        consultationType,
+        preferredDate,
+        preferredTime,
+        brief,
+      });
+
+      sendCreated(res, result, '更新成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
         const error = err as { code: number; message: string };

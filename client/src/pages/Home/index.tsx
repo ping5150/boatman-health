@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/contexts/UserContext';
+import homeImage01 from '@/images/hoem-01.jpg';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -28,25 +29,20 @@ const Home = () => {
     <div className="min-h-screen bg-surface">
       {/* 透明 TopBar */}
       <header
-        className={`fixed top-0 w-full z-50 flex justify-between items-center px-4 sm:px-6 py-3 transition-all duration-300 ${
-          scrolled ? 'bg-surface/90 backdrop-blur-xl shadow-sm' : 'bg-transparent'
-        }`}
+        className={`fixed top-0 w-full z-50 flex justify-between items-center px-4 sm:px-6 py-3 transition-all duration-300 bg-surface/90 backdrop-blur-xl shadow-sm
+        `}
       >
         <div className="flex items-center gap-2 sm:gap-3">
           <img src="/logo.png" alt="船夫健康Logo" className="h-[26px] sm:h-8 w-auto" />
           <span
-            className={`text-lg sm:text-xl font-black tracking-tighter font-headline transition-colors ${
-              scrolled ? 'text-primary' : 'text-white'
-            }`}
+            className={`text-lg sm:text-xl font-black tracking-tighter font-headline transition-colors text-primary`}
           >
             船夫健康
           </span>
         </div>
         <Link
           to="/account"
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-            scrolled ? 'bg-primary/10 text-primary' : 'bg-white/20 text-white'
-          }`}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-primary/10 text-primary`}
         >
           <span className="material-symbols-outlined">person</span>
         </Link>
@@ -57,7 +53,7 @@ const Home = () => {
         <section className="relative min-h-[500px] md:min-h-[700px] flex items-center overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 text-on-primary">
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-3xl">
-              <h1 className="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 text-white">
+              <h1 className="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 text-white pt-12">
                 医疗级专业护航 <br />
                 <span className="text-secondary">+</span> 首脑级健康体验
               </h1>
@@ -92,7 +88,7 @@ const Home = () => {
                 <img
                   alt="Professional healthcare consultation with medical experts"
                   className="w-full aspect-square object-cover"
-                  src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=600&fit=crop"
+                  src={homeImage01}
                 />
                 <div className="absolute inset-0 bg-primary/20"></div>
               </div>
@@ -146,7 +142,7 @@ const Home = () => {
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="max-w-3xl mb-12 sm:mb-16">
-              <h2 className="font-headline text-3xl sm:text-4xl font-bold mt-4 mb-6">健康管理新范式</h2>
+              <h2 className="font-headline text-3xl sm:text-4xl font-bold mt-4 mb-6 text-white">健康管理新范式</h2>
               <p className="text-on-primary-container text-base sm:text-lg opacity-80">
                 摒弃碎片化的就医模式，我们通过"全生命周期管家制"构建预防、诊疗、康复的闭环生态。
               </p>
@@ -182,7 +178,7 @@ const Home = () => {
                   <span className="material-symbols-outlined text-secondary-container text-4xl mb-6">
                     {item.icon}
                   </span>
-                  <h3 className="text-lg sm:text-xl font-bold mb-3">{item.title}</h3>
+                  <h3 className="text-white text-lg sm:text-xl font-bold mb-3">{item.title}</h3>
                   <p className="text-xs sm:text-sm text-on-primary-container leading-relaxed">
                     {item.desc}
                   </p>

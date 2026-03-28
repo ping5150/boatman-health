@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
 
 const AccountProfile = () => {
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     name: '王德华',
     phone: '+86 138 8888 8888',
+    gender: '男',
+    birthDate: '1985-06-15',
     emergencyName: '李美玲',
     emergencyRelation: '配偶',
     emergencyPhone: '+86 139 9999 9999',
@@ -30,11 +34,11 @@ const AccountProfile = () => {
     <>
       <TopBar showBack showAccount={false} />
 
-      <main className="pt-24 pb-32 sm:pb-40 px-4 sm:px-6 max-w-lg mx-auto">
+      <main className="pt-8 pb-16 sm:pb-40 px-4 sm:px-6 max-w-lg mx-auto">
         <section className="mb-8">
           <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-6 text-white mb-6">
             <p className="text-xs font-semibold tracking-widest uppercase mb-2 opacity-80">会员档案</p>
-            <h2 className="font-headline text-2xl font-bold">基本信息</h2>
+            <h2 className="font-headline text-2xl font-bold text-white">基本信息</h2>
           </div>
         </section>
 
@@ -57,6 +61,42 @@ const AccountProfile = () => {
                 <div className="relative">
                   <input type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} className="w-full bg-surface-container-low border-none rounded-xl p-4 pr-10 text-on-surface font-body" />
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">phone</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-primary/60 uppercase tracking-wider">性别</label>
+                <div className="flex gap-3">
+                  {['男', '女'].map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => handleChange('gender', g)}
+                      className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                        formData.gender === g
+                          ? 'bg-primary text-white'
+                          : 'bg-surface-container-low text-on-surface-variant'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-primary/60 uppercase tracking-wider">出生日期</label>
+                <div 
+                  className="relative cursor-pointer bg-surface-container-low rounded-xl p-4 pr-10"
+                  onClick={() => dateInputRef.current?.showPicker()}
+                >
+                  <input 
+                    ref={dateInputRef}
+                    type="date" 
+                    value={formData.birthDate} 
+                    onChange={(e) => handleChange('birthDate', e.target.value)} 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  />
+                  <span className="text-on-surface font-body">{formData.birthDate || '选择日期'}</span>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">calendar_month</span>
                 </div>
               </div>
             </div>

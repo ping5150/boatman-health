@@ -23,9 +23,11 @@ model User {
 model Form1Submission {
   id               Int      @id @default(autoincrement())
   userId           Int      @map("user_id")
+  orderNo          String   @unique @map("order_no")
   name             String
   phone            String
   consultationType String   @map("consultation_type")
+  preferredDate    String   @map("preferred_date")
   preferredTime    String   @map("preferred_time")
   brief            String
   submittedAt      DateTime @default(now()) @map("submitted_at")
@@ -37,6 +39,7 @@ model Form1Submission {
   @@index([userId])
   @@index([feishuSyncStatus])
   @@index([submittedAt])
+  @@index([orderNo])
   @@map("form1_submissions")
 }
 

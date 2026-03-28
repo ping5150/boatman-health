@@ -63,19 +63,23 @@ const createRecord = async (
  */
 const mapForm1ToFeishu = (submission: {
   userId: number;
+  orderNo: string;
   name: string;
   phone: string;
   consultationType: string;
+  preferredDate: string;
   preferredTime: string;
   brief: string;
   submittedAt: Date;
   versionNumber: number;
 }): Record<string, unknown> => ({
   '用户ID': String(submission.userId),
+  '订单编号': submission.orderNo,
   '姓名': submission.name,
   '联系电话': submission.phone,
-  '咨询需求': submission.consultationType,
-  '首选联系时间': submission.preferredTime,
+  '咨询类型': submission.consultationType,
+  '预约日期': submission.preferredDate,
+  '预约时间': submission.preferredTime,
   '简要说明': submission.brief,
   '提交时间': submission.submittedAt.getTime(),
   '版本号': submission.versionNumber,
@@ -118,9 +122,11 @@ export const feishuService = {
   async syncForm1(submission: {
     id: number;
     userId: number;
+    orderNo: string;
     name: string;
     phone: string;
     consultationType: string;
+    preferredDate: string;
     preferredTime: string;
     brief: string;
     submittedAt: Date;

@@ -1,12 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
-import TopBar from '@/components/TopBar';
-import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/contexts/UserContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getBookingList, BookingData } from '@/api/form1.api';
 
 const Account = () => {
   const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
+  const [bookings, setBookings] = useState<BookingData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -14,11 +15,36 @@ const Account = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  return (
-    <>
-      <TopBar showAccount={false} />
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const data = await getBookingList();
+        setBookings(data);
+      } catch (error) {
+        console.error('获取预约列表失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      <main className="pt-24 pb-32 px-6 max-w-lg mx-auto space-y-8">
+    if (isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated]);
+
+  // 格式化预约时间
+  const formatPreferredTime = (date: string, time: string) => {
+    if (!date) return '待定';
+    const dateStr = new Date(date).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    return time ? `${dateStr} ${time}` : dateStr;
+  };
+
+  return (
+    <main className="pb-16 px-6 max-w-lg mx-auto space-y-8 pt-4">
         {/* User Profile Hero Section */}
         <section className="relative group">
           <div className="p-8 rounded-[2rem] bg-gradient-to-br from-primary to-primary-container text-white overflow-hidden shadow-[0_20px_40px_rgba(0,30,64,0.15)]">
@@ -29,7 +55,7 @@ const Account = () => {
                   <span className="material-symbols-outlined text-4xl text-white" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>person</span>
                 </div>
                 <div>
-                  <h2 className="font-headline font-extrabold text-3xl tracking-tight">{user?.username || '用户'}</h2>
+                  <h2 className="font-headline font-extrabold text-3xl tracking-tight text-white">{user?.username || '用户'}</h2>
                   <p className="text-white/80 text-sm mt-1">{user?.phone || '未绑定手机号'}</p>
                 </div>
               </div>
@@ -57,7 +83,7 @@ const Account = () => {
               <button className="px-4 py-2 text-xs font-bold text-secondary bg-secondary/5 rounded-full hover:bg-secondary/10 transition-colors">查看/修改</button>
             </Link>
 
-            <Link to="/account/health-archive" className="p-6 rounded-[1.5rem] bg-surface-container-low flex justify-between items-center group transition-all duration-300 hover:bg-surface-container">
+            <Link to="/health-form" className="p-6 rounded-[1.5rem] bg-surface-container-low flex justify-between items-center group transition-all duration-300 hover:bg-surface-container">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary">analytics</span>
@@ -76,40 +102,46 @@ const Account = () => {
         <section className="space-y-4">
           <h3 className="font-headline font-bold text-lg text-primary px-2">我的预约</h3>
           <div className="space-y-3">
-            <div className="p-5 rounded-[1.5rem] bg-surface-container-lowest shadow-sm border border-outline-variant/10">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
-                    <span className="material-symbols-outlined text-secondary text-xl">stethoscope</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-primary">全科医生深度问诊</p>
-                    <p className="text-[10px] text-on-surface-variant mt-1">预约时间：2024年10月24日 14:00</p>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full uppercase">管家处理中</span>
+            {loading ? (
+              <div className="p-5 rounded-[1.5rem] bg-surface-container-lowest text-center">
+                <p className="text-on-surface-variant text-sm">加载中...</p>
               </div>
-              <div className="flex gap-2">
-                <div className="flex-1 h-1 bg-primary/10 rounded-full overflow-hidden">
-                  <div className="w-2/3 h-full bg-secondary"></div>
-                </div>
+            ) : bookings.length === 0 ? (
+              <div className="p-5 rounded-[1.5rem] bg-surface-container-lowest text-center">
+                <p className="text-on-surface-variant text-sm">暂无预约记录</p>
+                <Link to="/consultation" className="inline-block mt-2 text-secondary text-sm font-bold">
+                  立即预约咨询
+                </Link>
               </div>
-            </div>
-
-            <div className="p-5 rounded-[1.5rem] bg-surface-container-lowest shadow-sm border border-outline-variant/10">
-              <div className="flex justify-between items-start">
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
-                    <span className="material-symbols-outlined text-secondary text-xl">medical_information</span>
+            ) : (
+              bookings.map((booking) => (
+                <Link
+                  key={booking.id}
+                  to={`/booking/${booking.id}`}
+                  className="block p-5 rounded-[1.5rem] bg-surface-container-lowest shadow-sm border border-outline-variant/10 hover:border-secondary/30 transition-all"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-secondary text-xl">stethoscope</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-primary">{booking.consultationType}预约咨询</p>
+                        <p className="text-[10px] text-on-surface-variant mt-1">
+                          预约时间：{formatPreferredTime(booking.preferredDate, booking.preferredTime)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full uppercase">管家处理中</span>
                   </div>
-                  <div>
-                    <p className="font-bold text-sm text-primary">海外专家远程会诊</p>
-                    <p className="text-[10px] text-on-surface-variant mt-1">预约时间：待定</p>
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-1 bg-primary/10 rounded-full overflow-hidden">
+                      <div className="w-2/3 h-full bg-secondary"></div>
+                    </div>
                   </div>
-                </div>
-                <span className="px-3 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-full uppercase">已提交</span>
-              </div>
-            </div>
+                </Link>
+              ))
+            )}
           </div>
         </section>
 
@@ -134,9 +166,6 @@ const Account = () => {
           </div>
         </section>
       </main>
-
-      <BottomNav />
-    </>
   );
 };
 

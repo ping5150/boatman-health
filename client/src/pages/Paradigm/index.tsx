@@ -71,7 +71,7 @@ const Paradigm = () => {
 
         <section className="mt-16 sm:mt-24 bg-gradient-to-br from-primary to-primary-container rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 text-on-primary">
           <div className="max-w-2xl mx-auto text-center">
-            <h3 className="font-headline text-2xl sm:text-3xl font-bold mb-4">开启您的专属健康管理之旅</h3>
+            <h3 className="font-headline text-2xl sm:text-3xl font-bold mb-4 text-white">开启您的专属健康管理之旅</h3>
             <p className="text-on-primary-container text-base sm:text-lg mb-8">立即预约咨询，让我们的专业团队为您制定个性化的健康守护方案</p>
             <Link to="/consultation" className="inline-flex items-center gap-2 px-8 sm:px-12 py-4 bg-white text-primary rounded-full font-bold text-base sm:text-lg hover:opacity-90 transition-all active:scale-95 shadow-lg touch-manipulation min-h-[52px]">
               立即预约咨询

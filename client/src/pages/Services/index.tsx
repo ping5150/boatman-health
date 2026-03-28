@@ -55,7 +55,7 @@ const Services = () => {
         {/* CTA Section */}
         <section className="mt-12 sm:mt-16">
           <div className="bg-gradient-to-br from-primary to-primary-container rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 text-on-primary">
-            <h3 className="font-headline text-2xl sm:text-3xl font-bold mb-4 text-center">开启您的专属健康航程</h3>
+            <h3 className="font-headline text-2xl sm:text-3xl font-bold mb-4 text-center text-white">开启您的专属健康航程</h3>
             <p className="text-on-primary-container text-base sm:text-lg text-center mb-8 max-w-2xl mx-auto">现在预约，由健康管家为您讲解更多服务细节</p>
             <div className="flex justify-center">
               <Link to="/consultation" className="px-8 sm:px-12 py-4 bg-white text-primary rounded-full font-bold text-base sm:text-lg hover:opacity-90 transition-all active:scale-95 shadow-lg touch-manipulation min-h-[52px] flex items-center justify-center">立即预约咨询</Link>

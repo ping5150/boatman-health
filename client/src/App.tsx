@@ -10,6 +10,7 @@ import Cases from '@/pages/Cases';
 import Consultation from '@/pages/Consultation';
 import HealthForm from '@/pages/HealthForm';
 import BookingSuccess from '@/pages/BookingSuccess';
+import BookingDetail from '@/pages/BookingDetail';
 import Account from '@/pages/Account';
 import AccountProfile from '@/pages/AccountProfile';
 import HealthArchiveEdit from '@/pages/HealthArchiveEdit';
@@ -49,6 +50,7 @@ const App = () => {
           <Route path="/account/contact" element={<Contact />} />
           <Route path="/account/logout" element={<Logout />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
+          <Route path="/booking/:id" element={<BookingDetail />} />
           <Route path="/archive-success" element={<ArchiveSuccess />} />
         </Route>
       </Routes>
