@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/contexts/UserContext';
 import homeImage01 from '@/images/hoem-01.jpg';
@@ -7,7 +7,6 @@ import homeImage01 from '@/images/hoem-01.jpg';
 const Home = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useUser();
-  const [scrolled, setScrolled] = useState(false);
 
   // 检查登录状态，未登录跳转到登录页
   useEffect(() => {
@@ -16,14 +15,7 @@ const Home = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // 监听滚动，改变 TopBar 背景
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+
 
   return (
     <div className="min-h-screen bg-surface">

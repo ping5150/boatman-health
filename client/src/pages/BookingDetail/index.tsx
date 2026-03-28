@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
-import { getBookingDetail, updateBooking, BookingData } from '@/api/form1.api';
+import { getBookingDetail, updateBooking, BookingData, ConsultationType } from '@/api/form1.api';
 
 const BookingDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,7 +12,14 @@ const BookingDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    phone: string;
+    consultationType: ConsultationType | '';
+    preferredDate: string;
+    preferredTime: string;
+    brief: string;
+  }>({
     name: '',
     phone: '',
     consultationType: '',
@@ -55,7 +62,7 @@ const BookingDetail = () => {
       const result = await updateBooking(parseInt(id, 10), {
         name: editForm.name,
         phone: editForm.phone,
-        consultationType: editForm.consultationType,
+        consultationType: editForm.consultationType || undefined,
         preferredDate: editForm.preferredDate,
         preferredTime: editForm.preferredTime,
         brief: editForm.brief,
@@ -100,7 +107,7 @@ const BookingDetail = () => {
     return time ? `${dateStr} ${time}` : dateStr;
   };
 
-  const consultationTypes = [
+  const consultationTypes: { value: ConsultationType; label: string }[] = [
     { value: '重疾咨询', label: '重疾咨询' },
     { value: '慢病管理', label: '慢病管理' },
     { value: '健康资产规划', label: '健康资产规划' },

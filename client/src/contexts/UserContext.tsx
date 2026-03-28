@@ -26,10 +26,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const savedUser = getStoredUser();
     const token = getToken();
     if (savedUser && token) {
-      // 兼容旧数据格式（lib/auth.ts 用 name，UserContext 用 username）
       const userData: User = {
         id: savedUser.id,
-        username: (savedUser as any).username || savedUser.name || '用户',
+        username: savedUser.username,
         phone: savedUser.phone,
         avatar: (savedUser as any).avatar,
       };
@@ -41,11 +40,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const login = (userData: User, token?: string) => {
     setUser(userData);
     setIsAuthenticated(true);
-    // 兼容两种存储格式
     storeUser({
       id: userData.id,
       phone: userData.phone,
-      name: userData.username,
+      username: userData.username,
       role: 'user',
     });
     if (token) {

@@ -1,7 +1,7 @@
 interface User {
   id: string;
   phone: string;
-  name: string;
+  username: string;
   role: string;
 }
 

@@ -13,8 +13,6 @@ const Login = () => {
 
   // 当前步骤
   const [step, setStep] = useState<Step>('phone');
-  // 是否为老用户
-  const [isExistingUser, setIsExistingUser] = useState(false);
   // 已有用户名（老用户）
   const [existingUsername, setExistingUsername] = useState<string>('');
 
@@ -46,12 +44,10 @@ const Login = () => {
       const res = await checkUser({ phone: formData.phone });
       if (res.data.exists) {
         // 老用户 -> 显示密码登录
-        setIsExistingUser(true);
         setExistingUsername(res.data.username || '用户');
         setStep('login');
       } else {
         // 新用户 -> 显示注册表单
-        setIsExistingUser(false);
         setStep('register');
       }
     } catch {
