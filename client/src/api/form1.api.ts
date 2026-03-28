@@ -1,28 +1,51 @@
 import api from '@/lib/axios';
 
-export interface BookingData {
+// ==================== 类型定义 ====================
+
+/** 咨询类型 */
+export type ConsultationType = '重疾咨询' | '慢病管理' | '健康资产规划' | '其他';
+
+/** 同步状态 */
+export type SyncStatus = 'success' | 'pending' | 'failed';
+
+/** 预约列表项 */
+export interface BookingListItem {
   id: number;
   orderNo: string;
   name: string;
   phone: string;
-  consultationType: string;
+  consultationType: ConsultationType;
   preferredDate: string;
   preferredTime: string;
   brief: string;
   submittedAt: string;
+  updatedAt: string;
+  submittedBy: string;
   versionNumber: number;
+  feishuSyncStatus: SyncStatus;
 }
 
-interface Form1SubmitRequest {
+/** 预约详情 */
+export interface BookingDetail extends BookingListItem {
+  userId: number;
+  feishuRecordId: string | null;
+}
+
+/** 预约提交请求 */
+export interface BookingSubmitRequest {
   name: string;
   phone: string;
-  consultationType: string;
+  consultationType: ConsultationType;
   preferredDate: string;
   preferredTime: string;
   brief: string;
 }
 
-interface Form1SubmitResponse {
+/** 预约更新请求 */
+export type BookingUpdateRequest = Partial<BookingSubmitRequest>;
+
+/** 预约提交响应 */
+interface BookingSubmitResponse {
   success: boolean;
   message: string;
   data: {
@@ -30,14 +53,18 @@ interface Form1SubmitResponse {
     orderNo: string;
     submittedAt: string;
     versionNumber: number;
-    consultationType: string;
+    consultationType: ConsultationType;
     preferredDate: string;
     preferredTime: string;
   };
 }
 
-// 提交咨询表单
-export const submitForm1 = async (data: Form1SubmitRequest): Promise<Form1SubmitResponse> => {
+// ==================== API 方法 ====================
+
+/**
+ * 提交咨询表单
+ */
+export const submitForm1 = async (data: BookingSubmitRequest): Promise<BookingSubmitResponse> => {
   const res = await api.post('/form1', data);
   const result = res.data.data;
   return {
@@ -55,20 +82,26 @@ export const submitForm1 = async (data: Form1SubmitRequest): Promise<Form1Submit
   };
 };
 
-// 获取用户预约列表
-export const getBookingList = async (): Promise<BookingData[]> => {
+/**
+ * 获取用户预约列表
+ */
+export const getBookingList = async (): Promise<BookingListItem[]> => {
   const res = await api.get('/form1');
   return res.data.data || [];
 };
 
-// 获取单个预约详情
-export const getBookingDetail = async (id: number): Promise<BookingData> => {
+/**
+ * 获取单个预约详情
+ */
+export const getBookingDetail = async (id: number): Promise<BookingDetail> => {
   const res = await api.get(`/form1/${id}`);
   return res.data.data;
 };
 
-// 更新预约（新增记录）
-export const updateBooking = async (id: number, data: Partial<Form1SubmitRequest>): Promise<Form1SubmitResponse> => {
+/**
+ * 更新预约（新增记录）
+ */
+export const updateBooking = async (id: number, data: BookingUpdateRequest): Promise<BookingSubmitResponse> => {
   const res = await api.put(`/form1/${id}`, data);
   const result = res.data.data;
   return {
@@ -85,3 +118,6 @@ export const updateBooking = async (id: number, data: Partial<Form1SubmitRequest
     },
   };
 };
+
+// 兼容旧导出
+export type BookingData = BookingListItem;

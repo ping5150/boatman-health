@@ -1,7 +1,7 @@
 import axios from 'axios';
 import prisma from '../config/database';
 import { feishuConfig } from '../config/feishu';
-import { Form2Data } from '../models/common.types';
+import { HealthFormData } from '../models/common.types';
 import { logger } from '../utils/logger';
 
 /**
@@ -91,24 +91,32 @@ const mapForm1ToFeishu = (submission: {
  */
 const mapForm2ToFeishu = (submission: {
   userId: number;
+  name: string;
+  phone: string;
   formData: string;
   submittedAt: Date;
   versionNumber: number;
 }): Record<string, unknown> => {
-  const formData: Form2Data = JSON.parse(submission.formData);
+  const formData: HealthFormData = JSON.parse(submission.formData);
   return {
     '用户ID': String(submission.userId),
-    '姓名': formData.basicInfo.name,
-    '联系电话': formData.basicInfo.phone,
-    '客户号': formData.basicInfo.customerId,
-    '紧急联系人': formData.basicInfo.emergencyContact.name,
-    '紧急联系电话': formData.basicInfo.emergencyContact.phone,
-    '主要疾病': formData.healthBackground.currentDiseases
-      .map((d) => d.diagnosis)
-      .join('，'),
-    '过敏史': formData.healthBackground.allergyHistory.details ?? '无',
-    '血管评估结果': formData.healthBackground.vascularAssessment.result,
-    '压力自评': formData.lifestyle.stress.stressScore,
+    '姓名': formData.name || submission.name,
+    '联系电话': formData.phone || submission.phone,
+    '紧急联系人': formData.emergencyContact || '',
+    '主要疾病': formData.diseases?.map((d) => d.name).join('，') || '',
+    '目前用药': formData.medications?.map((m) => m.name).join('，') || '',
+    '过敏史': formData.allergy?.detail || '无',
+    '手术史': formData.surgery?.detail || '无',
+    '血管评估': formData.vascular?.qualified === 'yes' ? '合格' : '不合格',
+    '家族史': formData.familyHistory?.join('，') || '',
+    '饮食模式': formData.dietModes?.join('，') || '',
+    '运动类型': formData.exerciseTypes?.join('，') || '',
+    '睡眠时长': formData.sleepDuration || '',
+    '睡眠质量': formData.sleepQuality || '',
+    '压力自评': formData.stressLevel || 5,
+    '焦虑频率': formData.anxietyFrequency || '',
+    '脑雾症状': formData.brainFog?.join('，') || '',
+    '健康关注点': formData.healthConcerns || '',
     '提交时间': submission.submittedAt.getTime(),
     '版本号': submission.versionNumber,
     '完整数据': JSON.stringify(formData),
@@ -171,6 +179,8 @@ export const feishuService = {
   async syncForm2(submission: {
     id: number;
     userId: number;
+    name: string;
+    phone: string;
     formData: string;
     submittedAt: Date;
     versionNumber: number;
@@ -205,6 +215,17 @@ export const feishuService = {
 
       logger.error('FEISHU', `Sync failed: table=form2, recordId=${submission.id}`, err);
       throw err;
+    }
+  },
+
+  /**
+   * 统一重试同步方法
+   */
+  async retrySync(table: 'form1' | 'form2', recordId: number) {
+    if (table === 'form1') {
+      return this.retrySyncForm1(recordId);
+    } else {
+      return this.retrySyncForm2(recordId);
     }
   },
 

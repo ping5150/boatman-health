@@ -1,124 +1,140 @@
 import api from '@/lib/axios';
 
-interface Form2SubmitRequest {
-  // 基本信息
-  fullName: string;
-  gender: string;
-  birthDate: string;
-  idNumber: string;
-  phone: string;
-  email: string;
-  address: string;
+// ==================== 类型定义 ====================
 
-  // 健康信息
-  bloodType: string;
-  height: string;
-  weight: string;
-  allergies: string;
-  currentMedications: string;
-  pastSurgeries: string;
-  chronicDiseases: string;
-  familyHistory: string;
-
-  // 生活方式
-  smokingStatus: string;
-  drinkingStatus: string;
-  exerciseFrequency: string;
-  dietaryPreferences: string;
-  sleepQuality: string;
-
-  // 咨询需求
-  primaryConcern: string;
-  expectedService: string;
-  preferredHospital: string;
-  budgetRange: string;
-  additionalNotes: string;
+/** 上传文件 */
+export interface UploadedFile {
+  name: string;
+  size: number;
+  url: string;
+  type: 'pdf' | 'image' | 'doc' | 'other';
 }
 
+/** 健康档案表单数据（前端扁平结构） */
+export interface HealthFormData {
+  // 基本信息
+  name: string;
+  phone: string;
+  emergencyContact: string;
+  // 健康背景
+  diseases: Array<{ name: string; date: string }>;
+  medications: Array<{ name: string; dosage: string }>;
+  surgery: { has: string; detail: string };
+  allergy: { has: string; detail: string };
+  vascular: { qualified: string; reason: string };
+  familyHistory: string[];
+  familyHistoryOther: string;
+  familyHistoryNote: string;
+  // 饮食模式
+  dietModes: string[];
+  drinks: string[];
+  drinksOther: string;
+  mealFeeling: string[];
+  mealFeelingOther: string;
+  dietRestriction: string;
+  // 运动
+  exerciseTypes: string[];
+  exerciseFrequency: string;
+  exerciseDuration: string;
+  // 睡眠
+  sleepDuration: string;
+  sleepQuality: string;
+  wakeUpFeeling: string[];
+  // 压力情绪
+  stressLevel: number;
+  anxietyFrequency: string;
+  brainFog: string[];
+  brainFogOther: string;
+  // 其他
+  healthConcerns: string;
+  uploadedFiles?: UploadedFile[];
+}
+
+/** 档案列表项 */
+export interface ArchiveListItem {
+  id: number;
+  orderNo: string;
+  name: string;
+  phone: string;
+  submittedAt: string;
+  updatedAt: string;
+  submittedBy: string;
+  versionNumber: number;
+  feishuSyncStatus: 'success' | 'pending' | 'failed';
+}
+
+/** 档案详情 */
+export interface ArchiveDetail extends ArchiveListItem {
+  userId: number;
+  feishuRecordId: string | null;
+  formData: HealthFormData;
+}
+
+/** 提交响应 */
 interface Form2SubmitResponse {
   success: boolean;
   message: string;
   data: {
-    id: string;
-    version: string;
+    id: number;
+    orderNo: string;
     submittedAt: string;
+    versionNumber: number;
   };
 }
 
-// 提交健康档案
-export const submitForm2 = async (data: Form2SubmitRequest): Promise<Form2SubmitResponse> => {
-  // 将扁平数据结构转换为后端要求的嵌套结构
-  const payload = {
-    basicInfo: {
-      name: data.fullName,
-      customerId: data.idNumber || `CUS-${Date.now()}`,
-      phone: data.phone,
-      emergencyContact: {
-        name: data.fullName,
-        phone: data.phone,
-      },
-    },
-    healthBackground: {
-      currentDiseases: data.chronicDiseases
-        ? [{ diagnosis: data.chronicDiseases, diagnosedAt: '' }]
-        : [],
-      medications: data.currentMedications
-        ? [{ name: data.currentMedications, dosage: '' }]
-        : [],
-      surgeryHistory: {
-        hasSurgery: !!data.pastSurgeries,
-        details: data.pastSurgeries || undefined,
-      },
-      allergyHistory: {
-        hasAllergy: !!data.allergies,
-        details: data.allergies || undefined,
-      },
-      vascularAssessment: {
-        result: '合格' as const,
-      },
-      familyHistory: {
-        selected: data.familyHistory ? [data.familyHistory] : [],
-      },
-      medicalQuestions: data.primaryConcern || '',
-    },
-    lifestyle: {
-      diet: {
-        dietPatterns: data.dietaryPreferences ? [data.dietaryPreferences] : [],
-        beverages: [],
-        postMealFeelings: [],
-        foodRestrictions: '',
-      },
-      exercise: {
-        types: data.exerciseFrequency ? [data.exerciseFrequency] : [],
-        frequencyPerWeek: 0,
-        durationMinutes: 0,
-      },
-      sleep: {
-        avgHours: data.sleepQuality || '',
-        fallAsleep: '',
-        morningFeeling: '',
-      },
-      stress: {
-        stressScore: 5,
-      },
-      anxiety: {
-        frequency: '',
-      },
-      brainFog: {
-        symptoms: [],
-      },
-    },
-  };
+// ==================== API 方法 ====================
 
-  const res = await api.post('/form2', payload);
+/**
+ * 提交健康档案
+ */
+export const submitForm2 = async (data: HealthFormData): Promise<Form2SubmitResponse> => {
+  const res = await api.post('/form2', data);
   const result = res.data.data;
   return {
     success: true,
     message: res.data.message || '健康档案提交成功',
     data: {
-      id: String(result.id),
-      version: `v${result.versionNumber || 1}`,
+      id: result.id,
+      orderNo: result.orderNo,
       submittedAt: result.submittedAt,
+      versionNumber: result.versionNumber,
+    },
+  };
+};
+
+/**
+ * 获取用户档案列表
+ */
+export const getArchiveList = async (): Promise<ArchiveListItem[]> => {
+  const res = await api.get('/form2');
+  return res.data.data || [];
+};
+
+/**
+ * 获取档案详情
+ */
+export const getArchiveDetail = async (id: number): Promise<ArchiveDetail> => {
+  const res = await api.get(`/form2/${id}`);
+  return res.data.data;
+};
+
+/**
+ * 更新档案
+ */
+export const updateArchive = async (
+  id: number,
+  data: Partial<HealthFormData>
+): Promise<Form2SubmitResponse> => {
+  const res = await api.put(`/form2/${id}`, data);
+  const result = res.data.data;
+  return {
+    success: true,
+    message: res.data.message || '档案更新成功',
+    data: {
+      id: result.id,
+      orderNo: result.orderNo,
+      submittedAt: result.submittedAt,
+      versionNumber: result.versionNumber,
     },
   };
 };

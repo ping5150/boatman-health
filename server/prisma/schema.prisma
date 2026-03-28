@@ -8,15 +8,23 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  username         String            @unique
-  phone            String            @unique
-  passwordHash     String            @map("password_hash")
-  role             String            @default("user")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  form1Submissions Form1Submission[]
-  form2Submissions Form2Submission[]
+  id                Int               @id @default(autoincrement())
+  username          String            @unique
+  phone             String            @unique
+  passwordHash      String            @map("password_hash")
+  role              String            @default("user")
+  gender            String?
+  birthDate         String?           @map("birth_date")
+  emergencyName     String?           @map("emergency_name")
+  emergencyRelation String?           @map("emergency_relation")
+  emergencyPhone    String?           @map("emergency_phone")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  form1Submissions  Form1Submission[]
+  form2Submissions  Form2Submission[]
 
+  @@index([phone])
+  @@index([role])
   @@map("users")
 }
 
@@ -30,7 +38,9 @@ model Form1Submission {
   preferredDate    String   @map("preferred_date")
   preferredTime    String   @map("preferred_time")
   brief            String
+  submittedBy      String   @map("submitted_by")
   submittedAt      DateTime @default(now()) @map("submitted_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
   versionNumber    Int      @map("version_number")
   feishuRecordId   String?  @map("feishu_record_id")
   feishuSyncStatus String   @default("pending") @map("feishu_sync_status")
@@ -46,8 +56,13 @@ model Form1Submission {
 model Form2Submission {
   id               Int      @id @default(autoincrement())
   userId           Int      @map("user_id")
+  orderNo          String   @unique @map("order_no")
+  name             String
+  phone            String
+  submittedBy      String   @map("submitted_by")
   formData         String   @map("form_data")
   submittedAt      DateTime @default(now()) @map("submitted_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
   versionNumber    Int      @map("version_number")
   feishuRecordId   String?  @map("feishu_record_id")
   feishuSyncStatus String   @default("pending") @map("feishu_sync_status")
@@ -56,5 +71,6 @@ model Form2Submission {
   @@index([userId])
   @@index([feishuSyncStatus])
   @@index([submittedAt])
+  @@index([orderNo])
   @@map("form2_submissions")
 }

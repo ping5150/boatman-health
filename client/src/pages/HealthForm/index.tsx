@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
+import { submitForm2, HealthFormData } from '@/api/form2.api';
 
 interface UploadedFile {
   id: string;
@@ -44,14 +45,36 @@ const HealthForm = () => {
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('提交健康档案:', formData);
-    navigate('/archive-success');
+    setSubmitting(true);
+
+    try {
+      const submitData: HealthFormData = {
+        ...formData,
+        uploadedFiles: uploadedFiles.map(f => ({
+          name: f.name,
+          size: f.size,
+          url: f.id, // 实际应该是上传后的 URL
+          type: f.name.endsWith('.pdf') ? 'pdf' :
+                /\.(jpg|jpeg|png|gif)$/i.test(f.name) ? 'image' :
+                /\.(doc|docx)$/i.test(f.name) ? 'doc' : 'other',
+        })),
+      };
+
+      await submitForm2(submitData);
+      navigate('/archive-success');
+    } catch (error) {
+      console.error('提交失败:', error);
+      alert('提交失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const updateField = (field: string, value: any) => {
@@ -796,10 +819,11 @@ const HealthForm = () => {
           <div className="pt-4 max-w-lg mx-auto">
             <button
               type="submit"
-              className="w-full bg-primary text-on-primary font-headline font-bold py-5 rounded-full text-base tracking-tight editorial-shadow hover:bg-primary-container active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              disabled={submitting}
+              className="w-full bg-primary text-on-primary font-headline font-bold py-5 rounded-full text-base tracking-tight editorial-shadow hover:bg-primary-container active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              提交详细档案
-              <span className="material-symbols-outlined">arrow_forward_ios</span>
+              {submitting ? '提交中...' : '提交详细档案'}
+              {!submitting && <span className="material-symbols-outlined">arrow_forward_ios</span>}
             </button>
             {/* <p className="text-center text-[10px] text-outline-variant mt-12 uppercase tracking-[0.2em]">
               Official Boatman Stewardship Channel
