@@ -26,9 +26,11 @@ const App = () => {
         {/* 登录页 - 无布局 */}
         <Route path="/login" element={<Login />} />
 
+        {/* 首页 - 独立布局 */}
+        <Route path="/" element={<Home />} />
+
         {/* 主布局页面（带底部导航） */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
           <Route path="/services" element={<Services />} />
           <Route path="/account" element={<Account />} />
         </Route>

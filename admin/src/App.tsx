@@ -9,6 +9,7 @@ import Form1ListPage from './pages/Form1List';
 import Form2ListPage from './pages/Form2List';
 import FormDetailPage from './pages/FormDetail';
 import SyncManagementPage from './pages/SyncManagement';
+import UserListPage from './pages/UserList';
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
             }
           >
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/users" element={<UserListPage />} />
             <Route path="/form1" element={<Form1ListPage />} />
             <Route path="/form2" element={<Form2ListPage />} />
             <Route path="/form1/:id" element={<FormDetailPage />} />

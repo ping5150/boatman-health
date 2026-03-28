@@ -7,6 +7,7 @@ import {
   MedicineBoxOutlined,
   SyncOutlined,
   LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -29,6 +30,11 @@ const AdminLayout: React.FC = () => {
       label: '仪表盘',
     },
     {
+      key: '/users',
+      icon: <UserOutlined />,
+      label: '用户管理',
+    },
+    {
       key: '/form1',
       icon: <FileTextOutlined />,
       label: '咨询表单',
@@ -48,6 +54,9 @@ const AdminLayout: React.FC = () => {
   // 计算当前选中的菜单项
   const getSelectedKey = () => {
     const path = location.pathname;
+    if (path.startsWith('/users')) {
+      return '/users';
+    }
     if (path.startsWith('/form1')) {
       return '/form1';
     }

@@ -199,4 +199,52 @@ export const adminService = {
       form2: form2Transformed,
     };
   },
+
+  /**
+   * 获取用户列表（分页 + 搜索）
+   */
+  async getUserList(page: number, limit: number, search?: string): Promise<PaginatedResult<unknown>> {
+    const where = search
+      ? {
+          OR: [
+            { username: { contains: search } },
+            { phone: { contains: search } },
+          ],
+        }
+      : {};
+
+    const [total, list] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          username: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+          _count: {
+            select: {
+              form1Submissions: true,
+              form2Submissions: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const users = list.map((user) => ({
+      id: user.id,
+      username: user.username,
+      phone: user.phone,
+      role: user.role,
+      createdAt: user.createdAt,
+      formCount: user._count.form1Submissions + user._count.form2Submissions,
+    }));
+
+    return { total, page, limit, list: users };
+  },
 };

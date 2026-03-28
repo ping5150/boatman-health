@@ -29,4 +29,7 @@ router.get('/sync/failed', adminController.syncFailedList);
 // POST /admin/sync/retry — 重试飞书同步
 router.post('/sync/retry', adminController.syncRetry);
 
+// GET /admin/users — 用户列表
+router.get('/users', adminController.userList);
+
 export default router;

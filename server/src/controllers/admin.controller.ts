@@ -140,4 +140,20 @@ export const adminController = {
       }
     }
   },
+
+  /**
+   * 用户列表
+   */
+  async userList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 20;
+      const search = req.query.search as string | undefined;
+
+      const result = await adminService.getUserList(page, limit, search);
+      sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };

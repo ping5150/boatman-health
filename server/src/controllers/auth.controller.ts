@@ -4,12 +4,48 @@ import { sendSuccess, sendCreated, sendError } from '../utils/response';
 
 export const authController = {
   /**
-   * 用户注册
+   * 检查用户是否存在
+   */
+  async checkUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { phone } = req.body;
+      const result = await authService.checkUser(phone);
+      sendSuccess(res, result, '查询成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message, 400);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 密码登录（老用户）
+   */
+  async passwordLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { phone, password } = req.body;
+      const result = await authService.passwordLogin(phone, password);
+      sendSuccess(res, result, '登录成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message, 401);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 用户注册（新用户）
    */
   async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const { phone, password } = req.body;
-      const result = await authService.register(phone, password);
+      const { phone, username, password } = req.body;
+      const result = await authService.register(phone, username, password);
       sendCreated(res, result, '注册成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
