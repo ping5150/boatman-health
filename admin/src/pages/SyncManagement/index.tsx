@@ -2,24 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Card, Tag, Tabs, message, Popconfirm } from 'antd';
 import { SyncOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { syncApi } from '../../api/sync.api';
 
 interface SyncFailedItem {
   id: number;
+  orderNo: string;
   name: string;
   phone: string;
   submittedAt: string;
   feishuSyncStatus: string;
 }
 
-// 模拟数据
-const mockForm1Failed: SyncFailedItem[] = [
-  { id: 4, name: '赵六', phone: '13800138004', submittedAt: '2026-03-25T16:45:00', feishuSyncStatus: 'failed' },
-];
-
-const mockForm2Failed: SyncFailedItem[] = [
-  { id: 6, name: '孙八', phone: '13800138006', submittedAt: '2026-03-24T11:20:00', feishuSyncStatus: 'failed' },
-  { id: 7, name: '周九', phone: '13800138007', submittedAt: '2026-03-23T09:30:00', feishuSyncStatus: 'failed' },
-];
+// 模拟数据（注释保留）
+// const mockForm1Failed: SyncFailedItem[] = [
+//   { id: 4, name: '赵六', phone: '13800138004', submittedAt: '2026-03-25T16:45:00', feishuSyncStatus: 'failed' },
+// ];
+// const mockForm2Failed: SyncFailedItem[] = [
+//   { id: 6, name: '孙八', phone: '13800138006', submittedAt: '2026-03-24T11:20:00', feishuSyncStatus: 'failed' },
+//   { id: 7, name: '周九', phone: '13800138007', submittedAt: '2026-03-23T09:30:00', feishuSyncStatus: 'failed' },
+// ];
 
 const SyncManagementPage: React.FC = () => {
   const [form1Failed, setForm1Failed] = useState<SyncFailedItem[]>([]);
@@ -27,44 +28,66 @@ const SyncManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setForm1Failed(mockForm1Failed);
-      setForm2Failed(mockForm2Failed);
+    try {
+      const res = await syncApi.getFailedList();
+      if (res.code === 0 && res.data) {
+        setForm1Failed(res.data.booking || []);
+        setForm2Failed(res.data.archive || []);
+      }
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const handleRetry = (table: 'form1' | 'form2', recordId: number) => {
+  const handleRetry = async (table: 'booking' | 'archive', recordId: number) => {
     const key = `${table}-${recordId}`;
     setRetryingIds((prev) => new Set(prev).add(key));
 
-    setTimeout(() => {
-      message.success('同步重试成功');
-      // 从列表中移除
-      if (table === 'form1') {
-        setForm1Failed(prev => prev.filter(item => item.id !== recordId));
-      } else {
-        setForm2Failed(prev => prev.filter(item => item.id !== recordId));
+    try {
+      const res = await syncApi.retry(table, recordId);
+      if (res.code === 0) {
+        message.success('同步重试成功');
+        // 从列表中移除
+        if (table === 'booking') {
+          setForm1Failed(prev => prev.filter(item => item.id !== recordId));
+        } else {
+          setForm2Failed(prev => prev.filter(item => item.id !== recordId));
+        }
       }
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
       setRetryingIds((prev) => {
         const next = new Set(prev);
         next.delete(key);
         return next;
       });
-    }, 1000);
+    }
   };
 
-  const getColumns = (table: 'form1' | 'form2') => [
+  const getColumns = (table: 'booking' | 'archive') => [
     {
       title: 'ID',
       dataIndex: 'id',
       width: 70,
+    },
+    {
+      title: '订单编号',
+      dataIndex: 'orderNo',
+      width: 150,
+      render: (text: string) => (
+        <span style={{ fontFamily: 'monospace', color: table === 'booking' ? '#1890ff' : '#722ed1' }}>
+          {text}
+        </span>
+      ),
     },
     {
       title: '姓名',
@@ -77,7 +100,7 @@ const SyncManagementPage: React.FC = () => {
     {
       title: '提交时间',
       dataIndex: 'submittedAt',
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '同步状态',
@@ -114,7 +137,7 @@ const SyncManagementPage: React.FC = () => {
       label: `预约管理 (${form1Failed.length})`,
       children: (
         <Table
-          columns={getColumns('form1')}
+          columns={getColumns('booking')}
           dataSource={form1Failed}
           rowKey="id"
           loading={loading}
@@ -128,7 +151,7 @@ const SyncManagementPage: React.FC = () => {
       label: `档案管理 (${form2Failed.length})`,
       children: (
         <Table
-          columns={getColumns('form2')}
+          columns={getColumns('archive')}
           dataSource={form2Failed}
           rowKey="id"
           loading={loading}

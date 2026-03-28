@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { comparePassword } from '../utils/password';
+import { comparePassword, hashPassword } from '../utils/password';
 import { signToken } from '../utils/jwt';
 import {
   PaginatedResult,
@@ -45,6 +45,57 @@ export const adminService = {
       token,
       userId: user.id,
       phone: user.phone,
+      role: user.role,
+    };
+  },
+
+  /**
+   * 管理员注册
+   */
+  async register(phone: string, username: string, password: string) {
+    // 检查手机号是否已注册
+    const existingUser = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (existingUser) {
+      throw { code: 409, message: '该手机号已注册' };
+    }
+
+    // 检查用户名是否已存在
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUsername) {
+      throw { code: 409, message: '该用户名已被使用' };
+    }
+
+    // 创建管理员账号
+    const passwordHash = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: {
+        username,
+        phone,
+        passwordHash,
+        role: 'admin',
+      },
+    });
+
+    logger.info('ADMIN', `Admin registered: userId=${user.id}, phone=${phone}`);
+
+    // 注册成功后自动登录，签发 Token
+    const token = signToken({
+      userId: user.id,
+      phone: user.phone,
+      role: user.role as 'user' | 'admin',
+    });
+
+    return {
+      token,
+      userId: user.id,
+      phone: user.phone,
+      username: user.username,
       role: user.role,
     };
   },

@@ -7,15 +7,24 @@ import { validate } from '../middleware/validator';
 
 const router = Router();
 
-// ==================== 管理员登录（无需认证） ====================
+// ==================== 管理员登录/注册（无需认证） ====================
 
 const adminLoginSchema = z.object({
   phone: z.string().regex(/^\d{11}$/, '手机号格式错误'),
   password: z.string().min(6, '密码长度不能少于6位'),
 });
 
+const adminRegisterSchema = z.object({
+  phone: z.string().regex(/^\d{11}$/, '手机号格式错误'),
+  username: z.string().min(2, '用户名长度不能少于2位').max(20, '用户名长度不能超过20位'),
+  password: z.string().min(6, '密码长度不能少于6位'),
+});
+
 // POST /admin/auth/login — 管理员登录
 router.post('/auth/login', validate(adminLoginSchema), adminController.login);
+
+// POST /admin/auth/register — 管理员注册
+router.post('/auth/register', validate(adminRegisterSchema), adminController.register);
 
 // ==================== 需要认证的管理后台路由 ====================
 

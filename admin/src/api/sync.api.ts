@@ -7,15 +7,26 @@ interface ApiResponse<T = unknown> {
 }
 
 interface DashboardStats {
-  form1Total: number;
-  form1Today: number;
-  form2Total: number;
-  form2Today: number;
-  syncFailedTotal: number;
+  userTotal: number;
+  userToday: number;
+  userGrowthRate: number;
+  bookingTotal: number;
+  bookingToday: number;
+  bookingGrowthRate: number;
+  archiveTotal: number;
+  archiveToday: number;
+  archiveGrowthRate: number;
+  bookingStatusDistribution: {
+    submitted: number;
+    processing: number;
+    completed: number;
+    cancelled: number;
+  };
 }
 
 interface SyncFailedItem {
   id: number;
+  orderNo: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -23,8 +34,8 @@ interface SyncFailedItem {
 }
 
 interface SyncFailedList {
-  form1: SyncFailedItem[];
-  form2: SyncFailedItem[];
+  booking: SyncFailedItem[];
+  archive: SyncFailedItem[];
 }
 
 interface SyncRetryResult {
@@ -50,7 +61,7 @@ export const syncApi = {
   /**
    * 重试飞书同步
    */
-  async retry(table: 'form1' | 'form2', recordId: number): Promise<ApiResponse<SyncRetryResult>> {
+  async retry(table: 'booking' | 'archive', recordId: number): Promise<ApiResponse<SyncRetryResult>> {
     return request.post('/admin/sync/retry', { table, recordId });
   },
 };

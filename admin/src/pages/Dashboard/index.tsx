@@ -9,11 +9,13 @@ import {
   FallOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
+import { syncApi } from '../../api/sync.api';
+import { form1Api } from '../../api/form1.api';
 
 interface StatCard {
   total: number;
   today: number;
-  growthRate: number; // 环比增长率，正数表示增长，负数表示下降
+  growthRate: number;
 }
 
 interface StatusDistribution {
@@ -28,7 +30,7 @@ interface LatestBooking {
   name: string;
   phone: string;
   consultationType: string;
-  status: string;
+  feishuSyncStatus: string;
   submittedAt: string;
 }
 
@@ -46,43 +48,58 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 模拟数据
-    setTimeout(() => {
-      setData({
-        users: {
-          total: 1256,
-          today: 23,
-          growthRate: 12.5,
-        },
-        bookings: {
-          total: 389,
-          today: 8,
-          growthRate: -3.2,
-        },
-        healthRecords: {
-          total: 512,
-          today: 15,
-          growthRate: 8.7,
-        },
-        statusDistribution: {
-          submitted: 45,
-          processing: 28,
-          completed: 298,
-          cancelled: 18,
-        },
-        latestBookings: [
-          { id: 1, name: '张三', phone: '138****8001', consultationType: '重疾咨询', status: 'submitted', submittedAt: '2026-03-28 10:30' },
-          { id: 2, name: '李四', phone: '139****8002', consultationType: '慢病管理', status: 'processing', submittedAt: '2026-03-28 09:15' },
-          { id: 3, name: '王五', phone: '137****8003', consultationType: '健康资产规划', status: 'submitted', submittedAt: '2026-03-27 16:45' },
-          { id: 4, name: '赵六', phone: '136****8004', consultationType: '重疾咨询', status: 'completed', submittedAt: '2026-03-27 14:20' },
-          { id: 5, name: '钱七', phone: '135****8005', consultationType: '慢病管理', status: 'processing', submittedAt: '2026-03-26 11:00' },
-        ],
-      });
-      setLoading(false);
-    }, 500);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // 获取仪表盘统计数据
+        const dashboardRes = await syncApi.getDashboard();
+        
+        if (dashboardRes.code === 0 && dashboardRes.data) {
+          const dashboard = dashboardRes.data;
+          
+          // 获取最新预约列表（取前5条）
+          const bookingRes = await form1Api.getList({ page: 1, limit: 5 });
+          
+          setData({
+            users: {
+              total: dashboard.userTotal,
+              today: dashboard.userToday,
+              growthRate: dashboard.userGrowthRate,
+            },
+            bookings: {
+              total: dashboard.bookingTotal,
+              today: dashboard.bookingToday,
+              growthRate: dashboard.bookingGrowthRate,
+            },
+            healthRecords: {
+              total: dashboard.archiveTotal,
+              today: dashboard.archiveToday,
+              growthRate: dashboard.archiveGrowthRate,
+            },
+            statusDistribution: dashboard.bookingStatusDistribution,
+            latestBookings: bookingRes.data?.list || [],
+          });
+        }
+      } catch (error) {
+        // 错误已在 request.ts 中处理
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 100 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div style={{ textAlign: 'center', padding: 100 }}>
         <Spin size="large" />
@@ -137,6 +154,13 @@ const DashboardPage: React.FC = () => {
     cancelled: { color: 'red', text: '已取消' },
   };
 
+  // 同步状态配置
+  const syncStatusConfig: Record<string, { color: string; text: string }> = {
+    success: { color: 'green', text: '已同步' },
+    pending: { color: 'blue', text: '同步中' },
+    failed: { color: 'red', text: '同步失败' },
+  };
+
   // 最新预约表格列配置
   const columns = [
     {
@@ -156,15 +180,18 @@ const DashboardPage: React.FC = () => {
     },
     {
       title: '状态',
-      dataIndex: 'status',
+      dataIndex: 'feishuSyncStatus',
       render: (status: string) => (
-        <Tag color={statusConfig[status]?.color}>{statusConfig[status]?.text}</Tag>
+        <Tag color={syncStatusConfig[status]?.color || 'default'}>
+          {syncStatusConfig[status]?.text || status}
+        </Tag>
       ),
     },
     {
       title: '提交时间',
       dataIndex: 'submittedAt',
       width: 140,
+      render: (text: string) => text ? new Date(text).toLocaleString('zh-CN') : '-',
     },
   ];
 
@@ -186,7 +213,7 @@ const DashboardPage: React.FC = () => {
             '总用户数',
             <UserOutlined style={{ fontSize: 24, color: '#1890ff' }} />,
             '#1890ff',
-            data!.users
+            data.users
           )}
         </Col>
         <Col xs={24} sm={12} lg={8}>
@@ -194,7 +221,7 @@ const DashboardPage: React.FC = () => {
             '总预约数',
             <CalendarOutlined style={{ fontSize: 24, color: '#722ed1' }} />,
             '#722ed1',
-            data!.bookings
+            data.bookings
           )}
         </Col>
         <Col xs={24} sm={12} lg={8}>
@@ -202,7 +229,7 @@ const DashboardPage: React.FC = () => {
             '健康档案数',
             <FileTextOutlined style={{ fontSize: 24, color: '#13c2c2' }} />,
             '#13c2c2',
-            data!.healthRecords
+            data.healthRecords
           )}
         </Col>
       </Row>
@@ -212,7 +239,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} lg={10}>
           <Card title="预约状态分布" hoverable style={{ height: '100%' }}>
             <div style={{ marginBottom: 24 }}>
-              {Object.entries(data!.statusDistribution).map(([key, value]) => {
+              {Object.entries(data.statusDistribution).map(([key, value]) => {
                 const config = statusConfig[key];
                 const percent = totalStatus > 0 ? Math.round((value / totalStatus) * 100) : 0;
                 return (
@@ -244,7 +271,7 @@ const DashboardPage: React.FC = () => {
                 borderTop: '1px solid #f0f0f0',
               }}
             >
-              {Object.entries(data!.statusDistribution).map(([key, value]) => {
+              {Object.entries(data.statusDistribution).map(([key, value]) => {
                 const config = statusConfig[key];
                 return (
                   <div key={key} style={{ textAlign: 'center' }}>
@@ -269,7 +296,7 @@ const DashboardPage: React.FC = () => {
           >
             <Table
               columns={columns}
-              dataSource={data!.latestBookings}
+              dataSource={data.latestBookings}
               rowKey="id"
               pagination={false}
               size="small"

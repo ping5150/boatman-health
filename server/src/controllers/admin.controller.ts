@@ -24,6 +24,24 @@ export const adminController = {
   },
 
   /**
+   * 管理员注册
+   */
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { phone, username, password } = req.body;
+      const result = await adminService.register(phone, username, password);
+      sendSuccess(res, result, '注册成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message, error.code === 409 ? 409 : 400);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
    * 获取当前管理员信息
    */
   async getCurrentAdmin(req: Request, res: Response, next: NextFunction) {

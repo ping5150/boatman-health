@@ -3,56 +3,11 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, Descriptions, Tag, Button, Spin, Typography, Divider, Input, Select, Checkbox, Radio, InputNumber, Slider, Form, Row, Col, Space, message } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, DownloadOutlined, EyeOutlined, FilePdfOutlined, FileImageOutlined, FileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { form1Api } from '../../api/form1.api';
+import { form2Api, HealthFormData } from '../../api/form2.api';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
-
-interface HealthFormData {
-  name: string;
-  phone: string;
-  emergencyContact: string;
-  diseases: { name: string; date: string }[];
-  medications: { name: string; dosage: string }[];
-  surgery: { has: string; detail: string };
-  allergy: { has: string; detail: string };
-  vascular: { qualified: string; reason: string };
-  familyHistory: string[];
-  familyHistoryOther: string;
-  familyHistoryNote: string;
-  dietModes: string[];
-  drinks: string[];
-  drinksOther: string;
-  mealFeeling: string[];
-  mealFeelingOther: string;
-  dietRestriction: string;
-  exerciseTypes: string[];
-  exerciseFrequency: string;
-  exerciseDuration: string;
-  sleepDuration: string;
-  sleepQuality: string;
-  wakeUpFeeling: string[];
-  stressLevel: number;
-  anxietyFrequency: string;
-  brainFog: string[];
-  brainFogOther: string;
-  healthConcerns: string;
-  uploadedFiles?: { name: string; size: number; url: string; type: string }[];
-}
-
-interface ArchiveDetail {
-  id: number;
-  orderNo: string;
-  userId: number;
-  name: string;
-  phone: string;
-  submittedBy: string;
-  versionNumber: number;
-  submittedAt: string;
-  updatedAt: string;
-  feishuSyncStatus: string;
-  feishuRecordId: string;
-  formData: HealthFormData;
-}
 
 interface BookingDetail {
   id: number;
@@ -72,79 +27,24 @@ interface BookingDetail {
   feishuRecordId: string;
 }
 
-// 模拟预约详情数据
-const mockBookingDetail: BookingDetail = {
-  id: 1,
-  orderNo: 'BH20260328001',
-  userId: 100,
-  name: '张三',
-  phone: '13800138001',
-  consultationType: '重疾咨询',
-  preferredDate: '2026-03-30',
-  preferredTime: '14:00',
-  brief: '想咨询一下关于肺癌早期筛查的相关问题，家族有病史。',
-  versionNumber: 1,
-  submittedAt: '2026-03-28T10:00:00',
-  updatedAt: '2026-03-28T10:00:00',
-  submittedBy: '张三',
-  feishuSyncStatus: 'success',
-  feishuRecordId: 'recXXXXXX',
-};
+interface ArchiveDetail {
+  id: number;
+  orderNo: string;
+  userId: number;
+  name: string;
+  phone: string;
+  submittedBy: string;
+  versionNumber: number;
+  submittedAt: string;
+  updatedAt: string;
+  feishuSyncStatus: string;
+  feishuRecordId: string;
+  formData: HealthFormData;
+}
 
-// 模拟档案详情数据（完整健康表单）
-const mockArchiveDetail: ArchiveDetail = {
-  id: 1,
-  orderNo: 'HA20260328001',
-  userId: 100,
-  name: '张三',
-  phone: '13800138001',
-  submittedBy: '张三',
-  versionNumber: 1,
-  submittedAt: '2026-03-28T10:00:00',
-  updatedAt: '2026-03-28T10:00:00',
-  feishuSyncStatus: 'success',
-  feishuRecordId: 'recYYYYYY',
-  formData: {
-    name: '张三',
-    phone: '13800138001',
-    emergencyContact: '李四 13900139000',
-    diseases: [
-      { name: '高血压', date: '2023年5月' },
-      { name: '糖尿病前期', date: '2024年1月' },
-    ],
-    medications: [
-      { name: '络活喜', dosage: '5mg/日' },
-      { name: '二甲双胍', dosage: '500mg/日' },
-    ],
-    surgery: { has: 'no', detail: '' },
-    allergy: { has: 'yes', detail: '青霉素过敏' },
-    vascular: { qualified: 'yes', reason: '' },
-    familyHistory: ['心血管疾病', '糖尿病'],
-    familyHistoryOther: '',
-    familyHistoryNote: '父亲有冠心病史，母亲有糖尿病史',
-    dietModes: ['混合膳食', '轻断食'],
-    drinks: ['水', '咖啡', '茶'],
-    drinksOther: '',
-    mealFeeling: ['昏昏欲睡', '很快饥饿'],
-    mealFeelingOther: '',
-    dietRestriction: '少吃油腻食物',
-    exerciseTypes: ['散步', '游泳'],
-    exerciseFrequency: '3',
-    exerciseDuration: '45',
-    sleepDuration: '6-7 小时',
-    sleepQuality: '需要一段时间（15-30分钟），或易醒但能再次入睡',
-    wakeUpFeeling: ['需要一点时间"开机"，但白天状态尚可'],
-    stressLevel: 6,
-    anxietyFrequency: 'few',
-    brainFog: ['记忆力下降', '注意力不集中'],
-    brainFogOther: '',
-    healthConcerns: '希望了解心血管疾病的预防措施',
-    uploadedFiles: [
-      { name: '体检报告2024.pdf', size: 2048000, url: '/mock-files/体检报告2024.pdf', type: 'pdf' },
-      { name: '心电图检查报告.jpg', size: 512000, url: '/mock-files/心电图检查报告.jpg', type: 'image' },
-    ],
-  },
-};
+// 模拟数据（注释保留）
+// const mockBookingDetail: BookingDetail = { ... };
+// const mockArchiveDetail: ArchiveDetail = { ... };
 
 const FormDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -154,6 +54,7 @@ const FormDetailPage: React.FC = () => {
   const [bookingDetail, setBookingDetail] = useState<BookingDetail | null>(null);
   const [archiveDetail, setArchiveDetail] = useState<ArchiveDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   // 判断是预约还是档案
@@ -161,26 +62,42 @@ const FormDetailPage: React.FC = () => {
   const formType = isBooking ? 'booking' : 'archive';
 
   useEffect(() => {
-    // 模拟获取详情
-    setTimeout(() => {
-      if (isBooking) {
-        setBookingDetail(mockBookingDetail);
-        // 初始化预约表单数据
-        form.setFieldsValue({
-          name: mockBookingDetail.name,
-          phone: mockBookingDetail.phone,
-          consultationType: mockBookingDetail.consultationType,
-          preferredDate: mockBookingDetail.preferredDate,
-          preferredTime: mockBookingDetail.preferredTime,
-          brief: mockBookingDetail.brief,
-        });
-      } else {
-        setArchiveDetail(mockArchiveDetail);
-        // 初始化表单数据
-        form.setFieldsValue(mockArchiveDetail.formData);
+    const fetchDetail = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+
+        if (isBooking) {
+          const res = await form1Api.getDetail(parseInt(id, 10));
+          if (res.code === 0 && res.data) {
+            const data = res.data as BookingDetail;
+            setBookingDetail(data);
+            form.setFieldsValue({
+              name: data.name,
+              phone: data.phone,
+              consultationType: data.consultationType,
+              preferredDate: data.preferredDate,
+              preferredTime: data.preferredTime,
+              brief: data.brief,
+            });
+          }
+        } else {
+          const res = await form2Api.getDetail(parseInt(id, 10));
+          if (res.code === 0 && res.data) {
+            const data = res.data as ArchiveDetail;
+            setArchiveDetail(data);
+            form.setFieldsValue(data.formData);
+          }
+        }
+      } catch (error) {
+        // 错误已在 request.ts 中处理
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
+    };
+
+    fetchDetail();
   }, [id, isBooking, form]);
 
   const syncStatusTag = (status: string) => {
@@ -197,12 +114,41 @@ const FormDetailPage: React.FC = () => {
     return <Tag color={colorMap[status] || 'default'}>{textMap[status] || status}</Tag>;
   };
 
-  const handleSave = () => {
-    form.validateFields().then((values) => {
-      console.log('保存表单:', values);
-      message.success('保存成功');
-      setIsEditing(false);
-    });
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+
+      if (isBooking && bookingDetail) {
+        const res = await form1Api.update(bookingDetail.id, {
+          preferredDate: values.preferredDate,
+          preferredTime: values.preferredTime,
+          brief: values.brief,
+        });
+        if (res.code === 0) {
+          message.success('保存成功');
+          setIsEditing(false);
+          if (res.data) {
+            setBookingDetail(res.data as BookingDetail);
+          }
+        }
+      } else if (archiveDetail) {
+        const res = await form2Api.update(archiveDetail.id, {
+          formData: values,
+        });
+        if (res.code === 0) {
+          message.success('保存成功');
+          setIsEditing(false);
+          if (res.data) {
+            setArchiveDetail(res.data as ArchiveDetail);
+          }
+        }
+      }
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -225,18 +171,11 @@ const FormDetailPage: React.FC = () => {
 
   // 查看文件
   const handleViewFile = (file: { name: string; url: string; type: string }) => {
-    if (file.type === 'image') {
-      // 图片类型直接新窗口打开
-      window.open(file.url, '_blank');
-    } else {
-      // PDF等文件新窗口打开
-      window.open(file.url, '_blank');
-    }
+    window.open(file.url, '_blank');
   };
 
   // 下载文件
   const handleDownloadFile = (file: { name: string; url: string }) => {
-    // 模拟下载
     const link = document.createElement('a');
     link.href = file.url;
     link.download = file.name;
@@ -260,10 +199,10 @@ const FormDetailPage: React.FC = () => {
             <Descriptions.Item label="用户 ID">{bookingDetail.userId}</Descriptions.Item>
             <Descriptions.Item label="版本号">{bookingDetail.versionNumber}</Descriptions.Item>
             <Descriptions.Item label="提交时间">
-              {dayjs(bookingDetail.submittedAt).format('YYYY-MM-DD HH:mm:ss')}
+              {bookingDetail.submittedAt ? dayjs(bookingDetail.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="更新时间">
-              {dayjs(bookingDetail.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+              {bookingDetail.updatedAt ? dayjs(bookingDetail.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="飞书同步状态">
               {syncStatusTag(bookingDetail.feishuSyncStatus)}
@@ -278,7 +217,7 @@ const FormDetailPage: React.FC = () => {
                 {bookingDetail.orderNo}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="提交人">{bookingDetail.submittedBy}</Descriptions.Item>
+            <Descriptions.Item label="提交人">{bookingDetail.submittedBy || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -287,7 +226,7 @@ const FormDetailPage: React.FC = () => {
           {isEditing ? (
             <Space>
               <Button onClick={() => { setIsEditing(false); form.resetFields(); }}>取消</Button>
-              <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>保存修改</Button>
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存修改</Button>
             </Space>
           ) : (
             <Button type="primary" onClick={() => setIsEditing(true)}>编辑表单</Button>
@@ -299,17 +238,17 @@ const FormDetailPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="姓名" name="name">
-                  <Input placeholder="请输入姓名" />
+                  <Input placeholder="请输入姓名" disabled />
                 </Form.Item>
               </Col>
               <Col span={8}>
                 <Form.Item label="联系电话" name="phone">
-                  <Input placeholder="请输入联系电话" />
+                  <Input placeholder="请输入联系电话" disabled />
                 </Form.Item>
               </Col>
               <Col span={8}>
                 <Form.Item label="咨询类型" name="consultationType">
-                  <Select placeholder="请选择咨询类型">
+                  <Select placeholder="请选择咨询类型" disabled>
                     <Select.Option value="重疾咨询">重疾咨询</Select.Option>
                     <Select.Option value="慢病管理">慢病管理</Select.Option>
                     <Select.Option value="健康资产规划">健康资产规划</Select.Option>
@@ -352,10 +291,10 @@ const FormDetailPage: React.FC = () => {
             <Descriptions.Item label="用户 ID">{archiveDetail.userId}</Descriptions.Item>
             <Descriptions.Item label="版本号">{archiveDetail.versionNumber}</Descriptions.Item>
             <Descriptions.Item label="提交时间">
-              {dayjs(archiveDetail.submittedAt).format('YYYY-MM-DD HH:mm:ss')}
+              {archiveDetail.submittedAt ? dayjs(archiveDetail.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="更新时间">
-              {dayjs(archiveDetail.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+              {archiveDetail.updatedAt ? dayjs(archiveDetail.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="飞书同步状态">
               {syncStatusTag(archiveDetail.feishuSyncStatus)}
@@ -368,7 +307,7 @@ const FormDetailPage: React.FC = () => {
                 {archiveDetail.orderNo}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="提交人">{archiveDetail.submittedBy}</Descriptions.Item>
+            <Descriptions.Item label="提交人">{archiveDetail.submittedBy || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -377,7 +316,7 @@ const FormDetailPage: React.FC = () => {
           {isEditing ? (
             <Space>
               <Button onClick={() => { setIsEditing(false); form.resetFields(); }}>取消</Button>
-              <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>保存修改</Button>
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存修改</Button>
             </Space>
           ) : (
             <Button type="primary" onClick={() => setIsEditing(true)}>编辑表单</Button>
@@ -741,7 +680,7 @@ const FormDetailPage: React.FC = () => {
 
           {/* Section 4: 上传附件 */}
           <Card title={<><Tag color="blue">04</Tag> 上传附件</>}>
-            {archiveDetail.formData.uploadedFiles && archiveDetail.formData.uploadedFiles.length > 0 ? (
+            {archiveDetail.formData?.uploadedFiles && archiveDetail.formData.uploadedFiles.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {archiveDetail.formData.uploadedFiles.map((file, index) => (
                   <div 

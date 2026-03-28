@@ -4,26 +4,18 @@ import { Table, Card, Input, Tag, Space, Typography, Button } from 'antd';
 import { UserOutlined, SearchOutlined, FormOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { userApi, UserItem } from '../../api/user.api';
 
 const { Title } = Typography;
 
-interface UserItem {
-  id: number;
-  username: string;
-  phone: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 模拟数据
-const mockData: UserItem[] = [
-  { id: 1, username: '张三', phone: '13800138001', role: 'user', createdAt: '2026-03-01T10:00:00', updatedAt: '2026-03-15T14:30:00' },
-  { id: 2, username: '李四', phone: '13800138002', role: 'user', createdAt: '2026-03-02T14:30:00', updatedAt: '2026-03-10T09:00:00' },
-  { id: 3, username: '管理员', phone: '13800138000', role: 'admin', createdAt: '2026-01-01T09:00:00', updatedAt: '2026-01-01T09:00:00' },
-  { id: 4, username: '王五', phone: '13800138003', role: 'user', createdAt: '2026-03-05T16:45:00', updatedAt: '2026-03-20T11:00:00' },
-  { id: 5, username: '赵六', phone: '13800138004', role: 'user', createdAt: '2026-03-10T11:20:00', updatedAt: '2026-03-18T16:00:00' },
-];
+// 模拟数据（注释保留）
+// const mockData: UserItem[] = [
+//   { id: 1, username: '张三', phone: '13800138001', role: 'user', createdAt: '2026-03-01T10:00:00', updatedAt: '2026-03-15T14:30:00' },
+//   { id: 2, username: '李四', phone: '13800138002', role: 'user', createdAt: '2026-03-02T14:30:00', updatedAt: '2026-03-10T09:00:00' },
+//   { id: 3, username: '管理员', phone: '13800138000', role: 'admin', createdAt: '2026-01-01T09:00:00', updatedAt: '2026-01-01T09:00:00' },
+//   { id: 4, username: '王五', phone: '13800138003', role: 'user', createdAt: '2026-03-05T16:45:00', updatedAt: '2026-03-20T11:00:00' },
+//   { id: 5, username: '赵六', phone: '13800138004', role: 'user', createdAt: '2026-03-10T11:20:00', updatedAt: '2026-03-18T16:00:00' },
+// ];
 
 const UserListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,20 +26,20 @@ const UserListPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
 
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      let filtered = mockData;
-      if (search) {
-        filtered = mockData.filter(item =>
-          item.username.includes(search) || item.phone.includes(search)
-        );
+    try {
+      const res = await userApi.getList({ page, limit: pageSize, search: search || undefined });
+      if (res.code === 0 && res.data) {
+        setData(res.data.list);
+        setTotal(res.data.total);
       }
-      setData(filtered);
-      setTotal(filtered.length);
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
       setLoading(false);
-    }, 300);
-  }, [search]);
+    }
+  }, [page, pageSize, search]);
 
   useEffect(() => {
     fetchData();
@@ -67,7 +59,7 @@ const UserListPage: React.FC = () => {
       render: (text: string) => (
         <Space>
           <UserOutlined style={{ color: '#1890ff' }} />
-          <span>{text}</span>
+          <span>{text || '-'}</span>
         </Space>
       ),
     },
@@ -92,14 +84,14 @@ const UserListPage: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 170,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '更新时间',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
       width: 170,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '操作',

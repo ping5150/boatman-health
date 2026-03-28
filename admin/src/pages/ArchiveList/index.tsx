@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Input, Tag, Button, Card } from 'antd';
 import { SearchOutlined, FormOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { form2Api } from '../../api/form2.api';
 
 interface ArchiveListItem {
   id: number;
@@ -16,14 +17,14 @@ interface ArchiveListItem {
   feishuSyncStatus: string;
 }
 
-// 模拟数据
-const mockData: ArchiveListItem[] = [
-  { id: 1, orderNo: 'HA20260328001', name: '张三', phone: '13800138001', submittedAt: '2026-03-28T10:00:00', updatedAt: '2026-03-28T10:00:00', submittedBy: '张三', versionNumber: 1, feishuSyncStatus: 'success' },
-  { id: 2, orderNo: 'HA20260327002', name: '李四', phone: '13800138002', submittedAt: '2026-03-27T14:30:00', updatedAt: '2026-03-28T11:00:00', submittedBy: '李四', versionNumber: 1, feishuSyncStatus: 'success' },
-  { id: 3, orderNo: 'HA20260326003', name: '王五', phone: '13800138003', submittedAt: '2026-03-26T09:15:00', updatedAt: '2026-03-27T16:00:00', submittedBy: '王五', versionNumber: 2, feishuSyncStatus: 'pending' },
-  { id: 4, orderNo: 'HA20260325004', name: '赵六', phone: '13800138004', submittedAt: '2026-03-25T16:45:00', updatedAt: '2026-03-25T16:45:00', submittedBy: '赵六', versionNumber: 1, feishuSyncStatus: 'failed' },
-  { id: 5, orderNo: 'HA20260324005', name: '钱七', phone: '13800138005', submittedAt: '2026-03-24T11:20:00', updatedAt: '2026-03-25T10:00:00', submittedBy: '钱七', versionNumber: 1, feishuSyncStatus: 'success' },
-];
+// 模拟数据（注释保留）
+// const mockData: ArchiveListItem[] = [
+//   { id: 1, orderNo: 'HA20260328001', name: '张三', phone: '13800138001', submittedAt: '2026-03-28T10:00:00', updatedAt: '2026-03-28T10:00:00', submittedBy: '张三', versionNumber: 1, feishuSyncStatus: 'success' },
+//   { id: 2, orderNo: 'HA20260327002', name: '李四', phone: '13800138002', submittedAt: '2026-03-27T14:30:00', updatedAt: '2026-03-28T11:00:00', submittedBy: '李四', versionNumber: 1, feishuSyncStatus: 'success' },
+//   { id: 3, orderNo: 'HA20260326003', name: '王五', phone: '13800138003', submittedAt: '2026-03-26T09:15:00', updatedAt: '2026-03-27T16:00:00', submittedBy: '王五', versionNumber: 2, feishuSyncStatus: 'pending' },
+//   { id: 4, orderNo: 'HA20260325004', name: '赵六', phone: '13800138004', submittedAt: '2026-03-25T16:45:00', updatedAt: '2026-03-25T16:45:00', submittedBy: '赵六', versionNumber: 1, feishuSyncStatus: 'failed' },
+//   { id: 5, orderNo: 'HA20260324005', name: '钱七', phone: '13800138005', submittedAt: '2026-03-24T11:20:00', updatedAt: '2026-03-25T10:00:00', submittedBy: '钱七', versionNumber: 1, feishuSyncStatus: 'success' },
+// ];
 
 const ArchiveListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,22 +35,20 @@ const ArchiveListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      let filtered = mockData;
-      if (search) {
-        filtered = mockData.filter(item =>
-          item.name.includes(search) ||
-          item.phone.includes(search) ||
-          item.orderNo.includes(search)
-        );
+    try {
+      const res = await form2Api.getList({ page, limit, search: search || undefined });
+      if (res.code === 0 && res.data) {
+        setData(res.data.list);
+        setTotal(res.data.total);
       }
-      setData(filtered);
-      setTotal(filtered.length);
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
       setLoading(false);
-    }, 300);
-  }, [search]);
+    }
+  }, [page, limit, search]);
 
   useEffect(() => {
     fetchData();
@@ -102,13 +101,13 @@ const ArchiveListPage: React.FC = () => {
       title: '提交时间',
       dataIndex: 'submittedAt',
       width: 170,
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '更新时间',
       dataIndex: 'updatedAt',
       width: 170,
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
       title: '提交人',

@@ -3,127 +3,94 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Spin, Tag, Divider, Form, Input, Select, DatePicker, Space, message, Row, Col } from 'antd';
 import { ArrowLeftOutlined, UserOutlined, PhoneOutlined, ContactsOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { userApi, UserDetail } from '../../api/user.api';
 
-interface UserProfile {
-  id: number;
-  username: string;
-  phone: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-  // 基本信息
-  gender: string;
-  birthDate: string;
-  // 紧急联系人
-  emergencyName: string;
-  emergencyRelation: string;
-  emergencyPhone: string;
-}
-
-// 模拟数据
-const mockUserProfiles: Record<number, UserProfile> = {
-  1: {
-    id: 1,
-    username: '张三',
-    phone: '13800138001',
-    role: 'user',
-    createdAt: '2026-03-01T10:00:00',
-    updatedAt: '2026-03-15T14:30:00',
-    gender: '男',
-    birthDate: '1985-06-15',
-    emergencyName: '李美玲',
-    emergencyRelation: '配偶',
-    emergencyPhone: '13900139001',
-  },
-  2: {
-    id: 2,
-    username: '李四',
-    phone: '13800138002',
-    role: 'user',
-    createdAt: '2026-03-02T14:30:00',
-    updatedAt: '2026-03-10T09:00:00',
-    gender: '女',
-    birthDate: '1990-03-22',
-    emergencyName: '李父',
-    emergencyRelation: '父母',
-    emergencyPhone: '13900139002',
-  },
-  3: {
-    id: 3,
-    username: '管理员',
-    phone: '13800138000',
-    role: 'admin',
-    createdAt: '2026-01-01T09:00:00',
-    updatedAt: '2026-01-01T09:00:00',
-    gender: '男',
-    birthDate: '1980-01-01',
-    emergencyName: '未设置',
-    emergencyRelation: '其他',
-    emergencyPhone: '未设置',
-  },
-  4: {
-    id: 4,
-    username: '王五',
-    phone: '13800138003',
-    role: 'user',
-    createdAt: '2026-03-05T16:45:00',
-    updatedAt: '2026-03-20T11:00:00',
-    gender: '男',
-    birthDate: '1978-11-08',
-    emergencyName: '王母',
-    emergencyRelation: '父母',
-    emergencyPhone: '13900139003',
-  },
-  5: {
-    id: 5,
-    username: '赵六',
-    phone: '13800138004',
-    role: 'user',
-    createdAt: '2026-03-10T11:20:00',
-    updatedAt: '2026-03-18T16:00:00',
-    gender: '女',
-    birthDate: '1992-07-30',
-    emergencyName: '赵配偶',
-    emergencyRelation: '配偶',
-    emergencyPhone: '13900139004',
-  },
-};
+// 模拟数据（注释保留）
+// const mockUserProfiles: Record<number, UserProfile> = {
+//   1: {
+//     id: 1,
+//     username: '张三',
+//     phone: '13800138001',
+//     role: 'user',
+//     createdAt: '2026-03-01T10:00:00',
+//     updatedAt: '2026-03-15T14:30:00',
+//     gender: '男',
+//     birthDate: '1985-06-15',
+//     emergencyName: '李美玲',
+//     emergencyRelation: '配偶',
+//     emergencyPhone: '13900139001',
+//   },
+//   ...
+// };
 
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    // 模拟获取用户详情
-    setTimeout(() => {
-      const userId = parseInt(id!, 10);
-      const userData = mockUserProfiles[userId] || null;
-      setProfile(userData);
-      if (userData) {
-        form.setFieldsValue({
-          username: userData.username,
-          phone: userData.phone,
-          gender: userData.gender,
-          birthDate: userData.birthDate ? dayjs(userData.birthDate) : null,
-          emergencyName: userData.emergencyName,
-          emergencyRelation: userData.emergencyRelation,
-          emergencyPhone: userData.emergencyPhone,
-        });
+    const fetchUser = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const res = await userApi.getDetail(parseInt(id, 10));
+        if (res.code === 0 && res.data) {
+          const userData = res.data;
+          setProfile(userData);
+          form.setFieldsValue({
+            username: userData.username,
+            phone: userData.phone,
+            gender: userData.gender,
+            birthDate: userData.birthDate ? dayjs(userData.birthDate) : null,
+            emergencyName: userData.emergencyName,
+            emergencyRelation: userData.emergencyRelation,
+            emergencyPhone: userData.emergencyPhone,
+          });
+        }
+      } catch (error) {
+        // 错误已在 request.ts 中处理
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
+    };
+
+    fetchUser();
   }, [id, form]);
 
-  const handleSave = () => {
-    form.validateFields().then((values) => {
-      console.log('保存用户信息:', values);
-      message.success('保存成功');
-      setIsEditing(false);
-    });
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+
+      const updateData = {
+        username: values.username,
+        gender: values.gender,
+        birthDate: values.birthDate ? dayjs(values.birthDate).format('YYYY-MM-DD') : undefined,
+        emergencyName: values.emergencyName,
+        emergencyRelation: values.emergencyRelation,
+        emergencyPhone: values.emergencyPhone,
+      };
+
+      const res = await userApi.update(parseInt(id!, 10), updateData);
+      
+      if (res.code === 0) {
+        message.success('保存成功');
+        setIsEditing(false);
+        // 更新本地数据
+        if (res.data) {
+          setProfile(res.data);
+        }
+      }
+    } catch (error) {
+      // 错误已在 request.ts 中处理
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -154,7 +121,7 @@ const UserDetailPage: React.FC = () => {
         {isEditing ? (
           <Space>
             <Button onClick={() => { setIsEditing(false); form.resetFields(); }}>取消</Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>保存</Button>
+            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存</Button>
           </Space>
         ) : (
           <Button type="primary" onClick={() => setIsEditing(true)}>编辑</Button>
@@ -179,10 +146,10 @@ const UserDetailPage: React.FC = () => {
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="注册时间">
-            {dayjs(profile.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+            {profile.createdAt ? dayjs(profile.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
           </Descriptions.Item>
           <Descriptions.Item label="更新时间">
-            {dayjs(profile.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+            {profile.updatedAt ? dayjs(profile.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -206,12 +173,12 @@ const UserDetailPage: React.FC = () => {
             </Col>
             <Col span={6}>
               <Form.Item label="联系电话" name="phone">
-                <Input prefix={<PhoneOutlined style={{ color: '#999' }} />} placeholder="请输入联系电话" />
+                <Input prefix={<PhoneOutlined style={{ color: '#999' }} />} placeholder="请输入联系电话" disabled />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item label="性别" name="gender">
-                <Select placeholder="请选择性别">
+                <Select placeholder="请选择性别" allowClear>
                   <Select.Option value="男">男</Select.Option>
                   <Select.Option value="女">女</Select.Option>
                 </Select>
@@ -231,7 +198,6 @@ const UserDetailPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <ContactsOutlined style={{ color: '#ff4d4f' }} />
               <span>紧急联系人</span>
-              <Tag color="red" style={{ marginLeft: 8 }}>必填</Tag>
             </div>
           }
         >
@@ -243,7 +209,7 @@ const UserDetailPage: React.FC = () => {
             </Col>
             <Col span={8}>
               <Form.Item label="关系" name="emergencyRelation">
-                <Select placeholder="请选择关系">
+                <Select placeholder="请选择关系" allowClear>
                   <Select.Option value="配偶">配偶</Select.Option>
                   <Select.Option value="父母">父母</Select.Option>
                   <Select.Option value="子女">子女</Select.Option>

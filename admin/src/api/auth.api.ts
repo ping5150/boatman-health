@@ -10,21 +10,43 @@ interface LoginResult {
   token: string;
   userId: number;
   phone: string;
+  username?: string;
+  role: string;
+}
+
+interface RegisterResult {
+  token: string;
+  userId: number;
+  phone: string;
+  username: string;
+  role: string;
+}
+
+interface AdminInfo {
+  id: number;
+  phone: string;
   role: string;
 }
 
 export const authApi = {
   /**
-   * 发送验证码
+   * 管理员登录（手机号+密码）
    */
-  async sendCode(phone: string): Promise<ApiResponse> {
-    return request.post('/api/auth/send-code', { phone });
+  async login(phone: string, password: string): Promise<ApiResponse<LoginResult>> {
+    return request.post('/admin/auth/login', { phone, password });
   },
 
   /**
-   * 验证码登录
+   * 管理员注册
    */
-  async login(phone: string, code: string): Promise<ApiResponse<LoginResult>> {
-    return request.post('/api/auth/login', { phone, code });
+  async register(phone: string, username: string, password: string): Promise<ApiResponse<RegisterResult>> {
+    return request.post('/admin/auth/register', { phone, username, password });
+  },
+
+  /**
+   * 获取当前管理员信息
+   */
+  async getMe(): Promise<ApiResponse<AdminInfo>> {
+    return request.get('/admin/auth/me');
   },
 };
