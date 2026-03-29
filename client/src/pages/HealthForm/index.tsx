@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
-import { submitForm2, HealthFormData } from '@/api/form2.api';
+import { submitForm2, getLatestArchive, HealthFormData } from '@/api/form2.api';
 
 interface UploadedFile {
   id: string;
@@ -46,9 +46,33 @@ const HealthForm = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
+
+  // 加载已有档案数据
+  useEffect(() => {
+    const loadLatestArchive = async () => {
+      try {
+        const archive = await getLatestArchive();
+        if (archive?.formData) {
+          setFormData(prev => ({
+            ...prev,
+            ...archive.formData,
+            diseases: archive.formData.diseases || prev.diseases,
+            medications: archive.formData.medications || prev.medications,
+          }));
+        }
+      } catch (error) {
+        console.error('加载档案失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLatestArchive();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +168,20 @@ const HealthForm = () => {
   const removeFile = (fileId: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
+
+  if (loading) {
+    return (
+      <>
+        <TopBar showBack showAccount={false} />
+        <main className="pt-4 pb-12 px-4 sm:px-6 max-w-4xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </main>
+        <BottomNav />
+      </>
+    );
+  }
 
   return (
     <>

@@ -174,4 +174,81 @@ export const authService = {
       role: user.role,
     };
   },
+
+  /**
+   * 获取用户信息
+   */
+  async getProfile(userId: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        phone: true,
+        gender: true,
+        birthDate: true,
+        emergencyName: true,
+        emergencyRelation: true,
+        emergencyPhone: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw { code: 404, message: '用户不存在' };
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      phone: user.phone,
+      gender: user.gender || '',
+      birthDate: user.birthDate || '',
+      emergencyName: user.emergencyName || '',
+      emergencyRelation: user.emergencyRelation || '',
+      emergencyPhone: user.emergencyPhone || '',
+      role: user.role,
+    };
+  },
+
+  /**
+   * 更新用户信息
+   */
+  async updateProfile(userId: number, data: Record<string, unknown>) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw { code: 404, message: '用户不存在' };
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (data.username !== undefined) updateData.username = data.username;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.birthDate !== undefined) updateData.birthDate = data.birthDate;
+    if (data.emergencyName !== undefined) updateData.emergencyName = data.emergencyName;
+    if (data.emergencyRelation !== undefined) updateData.emergencyRelation = data.emergencyRelation;
+    if (data.emergencyPhone !== undefined) updateData.emergencyPhone = data.emergencyPhone;
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    logger.info('AUTH', `User profile updated: userId=${userId}`);
+
+    return {
+      id: updated.id,
+      username: updated.username,
+      gender: updated.gender || '',
+      birthDate: updated.birthDate || '',
+      emergencyName: updated.emergencyName || '',
+      emergencyRelation: updated.emergencyRelation || '',
+      emergencyPhone: updated.emergencyPhone || '',
+      updatedAt: updated.updatedAt.toISOString(),
+    };
+  },
 };

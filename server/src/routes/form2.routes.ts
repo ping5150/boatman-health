@@ -75,6 +75,9 @@ router.post('/', authMiddleware, validate(healthFormSchema), form2Controller.sub
 // GET /api/form2 — 获取用户档案列表
 router.get('/', authMiddleware, form2Controller.getList);
 
+// GET /api/form2/latest — 获取用户最新档案
+router.get('/latest', authMiddleware, form2Controller.getLatest);
+
 // GET /api/form2/:id — 获取档案详情
 router.get('/:id', authMiddleware, form2Controller.getDetail);
 

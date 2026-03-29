@@ -337,6 +337,37 @@ export const formService = {
   },
 
   /**
+   * 获取用户最新档案
+   */
+  async getForm2Latest(userId: number): Promise<ArchiveDetail | null> {
+    const submission = await prisma.form2Submission.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    if (!submission) {
+      return null;
+    }
+
+    const formData = JSON.parse(submission.formData) as HealthFormData;
+
+    return {
+      id: submission.id,
+      orderNo: submission.orderNo,
+      userId: submission.userId,
+      name: submission.name,
+      phone: submission.phone,
+      submittedAt: submission.submittedAt.toISOString(),
+      updatedAt: submission.updatedAt.toISOString(),
+      submittedBy: submission.submittedBy,
+      versionNumber: submission.versionNumber,
+      feishuSyncStatus: submission.feishuSyncStatus as ArchiveDetail['feishuSyncStatus'],
+      feishuRecordId: submission.feishuRecordId,
+      formData,
+    };
+  },
+
+  /**
    * 更新档案
    */
   async updateForm2(userId: number, id: number, data: Partial<HealthFormData>) {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authController } from '../controllers/auth.controller';
 import { validate } from '../middleware/validator';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
@@ -53,6 +54,16 @@ const loginSchema = z.object({
     .length(6, '验证码为6位数字'),
 });
 
+// 更新用户信息参数校验
+const updateProfileSchema = z.object({
+  username: z.string().min(2, '用户名长度不能少于2位').max(20, '用户名长度不能超过20位').optional(),
+  gender: z.string().optional(),
+  birthDate: z.string().optional(),
+  emergencyName: z.string().optional(),
+  emergencyRelation: z.string().optional(),
+  emergencyPhone: z.string().optional(),
+});
+
 // POST /api/auth/check-user — 检查用户是否存在
 router.post('/check-user', validate(checkUserSchema), authController.checkUser);
 
@@ -67,5 +78,11 @@ router.post('/send-code', validate(sendCodeSchema), authController.sendCode);
 
 // POST /api/auth/login — 验证码登录
 router.post('/login', validate(loginSchema), authController.login);
+
+// GET /api/auth/me — 获取当前用户信息（需要认证）
+router.get('/me', authMiddleware, authController.getProfile);
+
+// PUT /api/auth/me — 更新当前用户信息（需要认证）
+router.put('/me', authMiddleware, validate(updateProfileSchema), authController.updateProfile);
 
 export default router;

@@ -119,6 +119,14 @@ export const getArchiveDetail = async (id: number): Promise<ArchiveDetail> => {
 };
 
 /**
+ * 获取用户最新档案
+ */
+export const getLatestArchive = async (): Promise<ArchiveDetail | null> => {
+  const res = await api.get('/form2/latest');
+  return res.data.data;
+};
+
+/**
  * 更新档案
  */
 export const updateArchive = async (

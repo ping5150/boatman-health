@@ -61,6 +61,29 @@ export interface AuthResponse {
   };
 }
 
+/** 用户信息 */
+export interface UserProfile {
+  id: number;
+  username: string;
+  phone: string;
+  gender: string;
+  birthDate: string;
+  emergencyName: string;
+  emergencyRelation: string;
+  emergencyPhone: string;
+  role: string;
+}
+
+/** 更新用户信息 - 请求 */
+export interface UpdateProfileRequest {
+  username?: string;
+  gender?: string;
+  birthDate?: string;
+  emergencyName?: string;
+  emergencyRelation?: string;
+  emergencyPhone?: string;
+}
+
 // ==================== API 方法 ====================
 
 /**
@@ -135,4 +158,20 @@ export const login = async (data: CodeLoginRequest): Promise<AuthResponse> => {
       role: result.role,
     },
   };
+};
+
+/**
+ * 获取当前用户信息
+ */
+export const getProfile = async (): Promise<{ success: boolean; data: UserProfile }> => {
+  const res = await api.get('/auth/me');
+  return { success: true, data: res.data.data };
+};
+
+/**
+ * 更新当前用户信息
+ */
+export const updateProfile = async (data: UpdateProfileRequest): Promise<{ success: boolean; data: Partial<UserProfile> }> => {
+  const res = await api.put('/auth/me', data);
+  return { success: true, data: res.data.data };
 };

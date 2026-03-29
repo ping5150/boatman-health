@@ -92,4 +92,40 @@ export const authController = {
       }
     }
   },
+
+  /**
+   * 获取当前用户信息
+   */
+  async getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const result = await authService.getProfile(userId);
+      sendSuccess(res, result);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 更新当前用户信息
+   */
+  async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const result = await authService.updateProfile(userId, req.body);
+      sendSuccess(res, result, '更新成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
 };

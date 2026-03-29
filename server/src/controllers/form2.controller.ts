@@ -43,6 +43,24 @@ export const form2Controller = {
   },
 
   /**
+   * 获取用户最新档案
+   */
+  async getLatest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const result = await formService.getForm2Latest(userId);
+      sendSuccess(res, result, '获取成功');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
    * 获取档案详情
    */
   async getDetail(req: Request, res: Response, next: NextFunction) {
