@@ -15,7 +15,8 @@ export interface HealthFormData {
   // 基本信息
   name: string;
   phone: string;
-  emergencyContact: string;
+  emergencyName: string;
+  emergencyPhone: string;
   // 健康背景
   diseases: Array<{ name: string; date: string }>;
   medications: Array<{ name: string; dosage: string }>;
@@ -138,6 +139,31 @@ export const updateArchive = async (
   return {
     success: true,
     message: res.data.message || '档案更新成功',
+    data: {
+      id: result.id,
+      orderNo: result.orderNo,
+      submittedAt: result.submittedAt,
+      versionNumber: result.versionNumber,
+    },
+  };
+};
+
+/**
+ * 保存草稿（创建或更新）
+ */
+export const saveDraft = async (
+  data: Partial<HealthFormData>,
+  existingId?: number
+): Promise<Form2SubmitResponse> => {
+  if (existingId) {
+    return updateArchive(existingId, data);
+  }
+  // 如果没有现有档案，创建一个新的
+  const res = await api.post('/form2/draft', data);
+  const result = res.data.data;
+  return {
+    success: true,
+    message: res.data.message || '草稿保存成功',
     data: {
       id: result.id,
       orderNo: result.orderNo,

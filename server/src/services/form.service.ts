@@ -274,6 +274,40 @@ export const formService = {
   },
 
   /**
+   * 保存草稿（创建新的草稿记录）
+   */
+  async saveDraft(userId: number, formData: Partial<HealthFormData>) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const versionNumber = await this.getNextVersion(userId, 'form2');
+    const orderNo = await generateOrderNo('HA');
+    const submittedBy = user?.username || formData.name || 'unknown';
+    const name = formData.name || '';
+    const phone = formData.phone || '';
+
+    const submission = await prisma.form2Submission.create({
+      data: {
+        userId,
+        orderNo,
+        name,
+        phone,
+        submittedBy,
+        formData: JSON.stringify(formData),
+        versionNumber,
+        feishuSyncStatus: 'pending',
+      },
+    });
+
+    logger.info('FORM', `Form2 draft saved: userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, id=${submission.id}`);
+
+    return {
+      id: submission.id,
+      orderNo: submission.orderNo,
+      submittedAt: submission.submittedAt.toISOString(),
+      versionNumber: submission.versionNumber,
+    };
+  },
+
+  /**
    * 获取用户档案列表
    */
   async getForm2List(userId: number): Promise<ArchiveListItem[]> {

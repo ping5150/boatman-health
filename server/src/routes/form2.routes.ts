@@ -11,7 +11,8 @@ const healthFormSchema = z.object({
   // 基本信息
   name: z.string().min(1, '姓名不能为空'),
   phone: z.string().min(1, '联系电话不能为空'),
-  emergencyContact: z.string().optional(),
+  emergencyName: z.string().optional(),
+  emergencyPhone: z.string().optional(),
   // 健康背景
   diseases: z.array(z.object({
     name: z.string(),
@@ -71,6 +72,9 @@ const healthFormUpdateSchema = healthFormSchema.partial();
 
 // POST /api/form2 — 提交健康评估表单
 router.post('/', authMiddleware, validate(healthFormSchema), form2Controller.submit);
+
+// POST /api/form2/draft — 保存草稿
+router.post('/draft', authMiddleware, validate(healthFormUpdateSchema), form2Controller.saveDraft);
 
 // GET /api/form2 — 获取用户档案列表
 router.get('/', authMiddleware, form2Controller.getList);

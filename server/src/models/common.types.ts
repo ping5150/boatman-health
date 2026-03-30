@@ -122,7 +122,8 @@ export interface HealthFormData {
   // 基本信息
   name: string;
   phone: string;
-  emergencyContact: string;
+  emergencyName: string;
+  emergencyPhone: string;
   // 健康背景
   diseases: Array<{ name: string; date: string }>;
   medications: Array<{ name: string; dosage: string }>;

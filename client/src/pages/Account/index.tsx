@@ -132,13 +132,13 @@ const Account = () => {
                         </p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full uppercase">管家处理中</span>
+                    {/* <span className="px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full uppercase">管家处理中</span> */}
                   </div>
-                  <div className="flex gap-2">
+                  {/* <div className="flex gap-2">
                     <div className="flex-1 h-1 bg-primary/10 rounded-full overflow-hidden">
                       <div className="w-2/3 h-full bg-secondary"></div>
                     </div>
-                  </div>
+                  </div> */}
                 </Link>
               ))
             )}

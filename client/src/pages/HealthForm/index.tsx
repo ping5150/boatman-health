@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
-import { submitForm2, getLatestArchive, HealthFormData } from '@/api/form2.api';
+import { submitForm2, getLatestArchive, saveDraft, updateArchive, HealthFormData } from '@/api/form2.api';
 
 interface UploadedFile {
   id: string;
@@ -12,42 +12,50 @@ interface UploadedFile {
   status: 'uploading' | 'success' | 'error';
 }
 
-const HealthForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    emergencyContact: '',
-    diseases: [{ name: '', date: '' }],
-    medications: [{ name: '', dosage: '' }],
-    surgery: { has: '', detail: '' },
-    allergy: { has: '', detail: '' },
-    vascular: { qualified: '', reason: '' },
-    familyHistory: [] as string[],
-    familyHistoryOther: '',
-    familyHistoryNote: '',
-    dietModes: [] as string[],
-    drinksOther: '',
-    mealFeelingOther: '',
-    brainFogOther: '',
-    drinks: [] as string[],
-    mealFeeling: [] as string[],
-    dietRestriction: '',
-    exerciseTypes: [] as string[],
-    exerciseFrequency: '',
-    exerciseDuration: '',
-    sleepDuration: '',
-    sleepQuality: '',
-    wakeUpFeeling: [] as string[],
-    stressLevel: 5,
-    anxietyFrequency: '',
-    brainFog: [] as string[],
-    healthConcerns: '',
-  });
+const TOTAL_STEPS = 7;
 
+const initialFormData = {
+  name: '',
+  phone: '',
+  emergencyName: '',
+  emergencyPhone: '',
+  diseases: [{ name: '', date: '' }],
+  medications: [{ name: '', dosage: '' }],
+  surgery: { has: '', detail: '' },
+  allergy: { has: '', detail: '' },
+  vascular: { qualified: '', reason: '' },
+  familyHistory: [] as string[],
+  familyHistoryOther: '',
+  familyHistoryNote: '',
+  dietModes: [] as string[],
+  drinksOther: '',
+  mealFeelingOther: '',
+  brainFogOther: '',
+  drinks: [] as string[],
+  mealFeeling: [] as string[],
+  dietRestriction: '',
+  exerciseTypes: [] as string[],
+  exerciseFrequency: '',
+  exerciseDuration: '',
+  sleepDuration: '',
+  sleepQuality: '',
+  wakeUpFeeling: [] as string[],
+  stressLevel: 5,
+  anxietyFrequency: '',
+  brainFog: [] as string[],
+  healthConcerns: '',
+};
+
+const HealthForm = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState(initialFormData);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saveIndicator, setSaveIndicator] = useState(false);
+  const [archiveId, setArchiveId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
 
@@ -57,12 +65,20 @@ const HealthForm = () => {
       try {
         const archive = await getLatestArchive();
         if (archive?.formData) {
+          // 兼容旧数据：如果存在 emergencyContact 但不存在 emergencyName/emergencyPhone
+          const oldData = archive.formData as any;
+          const emergencyName = oldData.emergencyName || '';
+          const emergencyPhone = oldData.emergencyPhone || '';
+          
           setFormData(prev => ({
             ...prev,
             ...archive.formData,
+            emergencyName,
+            emergencyPhone,
             diseases: archive.formData.diseases || prev.diseases,
             medications: archive.formData.medications || prev.medications,
           }));
+          setArchiveId(archive.id);
         }
       } catch (error) {
         console.error('加载档案失败:', error);
@@ -74,17 +90,77 @@ const HealthForm = () => {
     loadLatestArchive();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+  // 显示保存指示器
+  const showSaveIndicator = useCallback(() => {
+    setSaveIndicator(true);
+    setTimeout(() => setSaveIndicator(false), 1500);
+  }, []);
 
+  // 保存当前步骤数据
+  const handleSaveStep = async () => {
+    setSaving(true);
+    try {
+      const partialData: Partial<HealthFormData> = { ...formData };
+      
+      if (archiveId) {
+        await updateArchive(archiveId, partialData);
+      } else {
+        const result = await saveDraft(partialData);
+        setArchiveId(result.data.id);
+      }
+      showSaveIndicator();
+    } catch (error) {
+      console.error('保存失败:', error);
+      alert('保存失败，请重试');
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 下一步
+  const handleNextStep = async () => {
+    try {
+      await handleSaveStep();
+      if (currentStep < TOTAL_STEPS - 1) {
+        setCurrentStep(prev => prev + 1);
+      }
+    } catch {
+      // 错误已在 handleSaveStep 中处理
+    }
+  };
+
+  // 上一步
+  const handlePrevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // 跳转到指定步骤
+  const goToStep = async (index: number) => {
+    if (index === currentStep) return;
+    try {
+      if (index > currentStep) {
+        // 向前跳转需要先保存
+        await handleSaveStep();
+      }
+      setCurrentStep(index);
+    } catch {
+      // 错误已处理
+    }
+  };
+
+  // 最终提交
+  const handleFinalSubmit = async () => {
+    setSaving(true);
     try {
       const submitData: HealthFormData = {
         ...formData,
         uploadedFiles: uploadedFiles.map(f => ({
           name: f.name,
           size: f.size,
-          url: f.id, // 实际应该是上传后的 URL
+          url: f.id,
           type: f.name.endsWith('.pdf') ? 'pdf' :
                 /\.(jpg|jpeg|png|gif)$/i.test(f.name) ? 'image' :
                 /\.(doc|docx)$/i.test(f.name) ? 'doc' : 'other',
@@ -97,7 +173,7 @@ const HealthForm = () => {
       console.error('提交失败:', error);
       alert('提交失败，请重试');
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
@@ -143,7 +219,6 @@ const HealthForm = () => {
 
       setUploadedFiles((prev) => [...prev, newFile]);
 
-      // 模拟上传进度
       let progress = 0;
       const interval = setInterval(() => {
         progress += Math.random() * 20 + 10;
@@ -161,13 +236,14 @@ const HealthForm = () => {
       }, 200);
     });
 
-    // 清空 input 以允许重复选择同一文件
     e.target.value = '';
   };
 
   const removeFile = (fileId: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
+
+  const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
 
   if (loading) {
     return (
@@ -184,92 +260,163 @@ const HealthForm = () => {
   }
 
   return (
-    <>
-      <TopBar showBack showAccount={false} />
+    <div className="flex flex-col h-screen bg-surface">
+      {/* 顶部导航 & 进度条 */}
+      <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shrink-0">
+        <div className="grid grid-cols-3 items-center w-full px-4 py-3">
+          <div className="flex justify-start">
+            {currentStep > 0 ? (
+              <button
+                onClick={handlePrevStep}
+                className="text-primary hover:opacity-70 transition-opacity"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(-1)}
+                className="text-primary hover:opacity-70 transition-opacity"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+            )}
+          </div>
+          <div className="flex justify-center">
+            <h1 className="font-headline font-bold tracking-tight text-lg text-primary">船夫健康</h1>
+          </div>
+          <div className="flex justify-end items-center gap-2">
+            <span
+              id="save-indicator"
+              className={`text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full transition-opacity duration-300 ${saveIndicator ? 'opacity-100' : 'opacity-0'}`}
+            >
+              已保存
+            </span>
+            <span className="material-symbols-outlined text-primary text-xl">account_circle</span>
+          </div>
+        </div>
 
-      <main className="pt-4 pb-12 px-4 sm:px-6 max-w-4xl mx-auto">
-        {/* Hero Header Section */}
-        <section className="mb-8 md:ml-4">
-          <span className="text-secondary font-headline font-bold tracking-widest uppercase text-xs mb-4 block">
-            Personal Steward Service
-          </span>
-          <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-extrabold text-primary leading-tight tracking-tighter mb-4">
-            医疗咨询登记<br />健康档案建立
-          </h2>
-          <p className="text-on-surface-variant font-body text-base max-w-xl leading-relaxed">
-            为您的生活提供独立、客观且极具前瞻性的健康资产管理建议。我们不仅是咨询者，更是您的私人健康舵手。
-          </p>
-        </section>
+        {/* 进度条 */}
+        <div className="w-full px-4 pb-2">
+          <div className="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+            <div
+              className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </header>
 
-        <form className="space-y-8" onSubmit={handleSubmit}>
-          {/* Section 1: Basic Information */}
-          <section className="bg-surface-container-low p-6 md:p-8 rounded-[2rem] editorial-shadow border border-outline-variant/5">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm">01</span>
-              <h3 className="font-headline font-bold text-primary text-lg tracking-tight">基本信息</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">姓名</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => updateField('name', e.target.value)}
-                  className="w-full bg-surface-container-lowest border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface font-body input-shadow"
-                  placeholder="请输入尊称"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">联系电话</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
-                  className="w-full bg-surface-container-lowest border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface font-body input-shadow"
-                  placeholder="主要联系号码"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">紧急联系人/电话</label>
-                <input
-                  type="text"
-                  value={formData.emergencyContact}
-                  onChange={(e) => updateField('emergencyContact', e.target.value)}
-                  className="w-full bg-surface-container-lowest border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface font-body input-shadow"
-                  placeholder="紧急联系方式"
-                />
-              </div>
-            </div>
-          </section>
+      {/* 主体滑动区域 */}
+      <main className="relative overflow-x-hidden pb-28">
+        <div
+          ref={sliderRef}
+          className="flex w-full items-start"
+          style={{
+            transform: `translateX(-${currentStep * 100}%)`,
+            transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+          }}
+        >
+          {/* ================= 步骤 1: 基本信息 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 1 of {TOTAL_STEPS}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">基本信息</h2>
+              <p className="text-on-surface-variant text-sm mb-8">开启您的私人管家级健康资产管理。</p>
 
-          {/* Section 2: Deep Physiological Health Background */}
-          <section className="bg-surface-container-low p-6 md:p-8 rounded-[2rem] editorial-shadow border border-outline-variant/5">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm">02</span>
-              <h3 className="font-headline font-bold text-primary text-lg tracking-tight">深度生理健康背景</h3>
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">姓名</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => updateField('name', e.target.value)}
+                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    placeholder="请输入尊称"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">联系电话</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => updateField('phone', e.target.value)}
+                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    placeholder="主要联系号码"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">紧急联系人</label>
+                  <input
+                    type="text"
+                    value={formData.emergencyName}
+                    onChange={(e) => updateField('emergencyName', e.target.value)}
+                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    placeholder="紧急联系人姓名"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">紧急联系人电话</label>
+                  <input
+                    type="tel"
+                    value={formData.emergencyPhone}
+                    onChange={(e) => updateField('emergencyPhone', e.target.value)}
+                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    placeholder="紧急联系人电话"
+                  />
+                </div>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  返回
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
             </div>
-            <div className="space-y-6">
-              {/* Current Diseases */}
-              <div className="space-y-3">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">当前疾病</label>
+          </div>
+
+          {/* ================= 步骤 2: 生理健康背景 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 2 of {TOTAL_STEPS}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">生理健康背景</h2>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-8">
+                {/* 当前疾病 */}
                 <div className="space-y-3">
-                  {formData.diseases.map((disease, index) => (
-                    <div key={index} className="relative bg-surface-container-lowest rounded-xl p-4">
-                      {formData.diseases.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = formData.diseases.filter((_, i) => i !== index);
-                            updateField('diseases', updated);
-                          }}
-                          className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
-                        </button>
-                      )}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs text-on-surface-variant">诊断名称</label>
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">当前疾病</label>
+                  <div className="space-y-3">
+                    {formData.diseases.map((disease, index) => (
+                      <div key={index} className="relative bg-surface rounded-xl p-4">
+                        {formData.diseases.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = formData.diseases.filter((_, i) => i !== index);
+                              updateField('diseases', updated);
+                            }}
+                            className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+                          </button>
+                        )}
+                        <div className="grid grid-cols-1 gap-3">
                           <input
                             type="text"
                             value={disease.name}
@@ -278,12 +425,9 @@ const HealthForm = () => {
                               updated[index].name = e.target.value;
                               updateField('diseases', updated);
                             }}
-                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
-                            placeholder="请输入诊断名称"
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm shadow-input"
+                            placeholder="诊断名称 (选填)"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-on-surface-variant">确诊时间</label>
                           <input
                             type="text"
                             value={disease.date}
@@ -292,44 +436,41 @@ const HealthForm = () => {
                               updated[index].date = e.target.value;
                               updateField('diseases', updated);
                             }}
-                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
-                            placeholder="请输入确诊时间"
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm shadow-input"
+                            placeholder="确诊时间"
                           />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addDisease}
-                    className="text-secondary text-xs font-bold flex items-center gap-1 hover:opacity-70"
-                  >
-                    + 添加其他诊断
-                  </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addDisease}
+                      className="text-secondary text-xs font-bold flex items-center gap-1"
+                    >
+                      + 添加其他诊断
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Medication */}
-              <div className="space-y-3">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">目前用药记录</label>
+                {/* 目前用药记录 */}
                 <div className="space-y-3">
-                  {formData.medications.map((med, index) => (
-                    <div key={index} className="relative bg-surface-container-lowest rounded-xl p-4">
-                      {formData.medications.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = formData.medications.filter((_, i) => i !== index);
-                            updateField('medications', updated);
-                          }}
-                          className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
-                        </button>
-                      )}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs text-on-surface-variant">药物名称</label>
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">目前用药记录</label>
+                  <div className="space-y-3">
+                    {formData.medications.map((med, index) => (
+                      <div key={index} className="relative bg-surface rounded-xl p-4">
+                        {formData.medications.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = formData.medications.filter((_, i) => i !== index);
+                              updateField('medications', updated);
+                            }}
+                            className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+                          </button>
+                        )}
+                        <div className="grid grid-cols-1 gap-3">
                           <input
                             type="text"
                             value={med.name}
@@ -338,12 +479,9 @@ const HealthForm = () => {
                               updated[index].name = e.target.value;
                               updateField('medications', updated);
                             }}
-                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
-                            placeholder="请输入药物名称"
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm shadow-input"
+                            placeholder="药物名称 (选填)"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-on-surface-variant">剂量 / 频率</label>
                           <input
                             type="text"
                             value={med.dosage}
@@ -352,47 +490,46 @@ const HealthForm = () => {
                               updated[index].dosage = e.target.value;
                               updateField('medications', updated);
                             }}
-                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
-                            placeholder="请输入剂量和频率"
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm shadow-input"
+                            placeholder="剂量 / 频率"
                           />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addMedication}
-                    className="text-secondary text-xs font-bold flex items-center gap-1 hover:opacity-70"
-                  >
-                    + 添加药物记录
-                  </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addMedication}
+                      className="text-secondary text-xs font-bold flex items-center gap-1"
+                    >
+                      + 添加药物记录
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Surgery & Allergy */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">手术史</label>
-                  <div className="flex gap-3 items-center">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                {/* 既往史 */}
+                <div className="space-y-3">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">既往史</label>
+                  <div className="flex items-center gap-4 bg-surface p-3 rounded-xl">
+                    <span className="text-xs w-12 text-on-surface-variant">手术史</span>
+                    <label className="flex items-center gap-1 cursor-pointer text-xs">
                       <input
                         type="radio"
                         name="surgery"
                         checked={formData.surgery.has === 'no'}
                         onChange={() => updateField('surgery', { ...formData.surgery, has: 'no', detail: '' })}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
+                        className="text-secondary"
                       />
-                      <span className="text-sm font-body">无</span>
+                      无
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-1 cursor-pointer text-xs">
                       <input
                         type="radio"
                         name="surgery"
                         checked={formData.surgery.has === 'yes'}
                         onChange={() => updateField('surgery', { ...formData.surgery, has: 'yes' })}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
+                        className="text-secondary"
                       />
-                      <span className="text-sm font-body">有</span>
+                      有
                     </label>
                   </div>
                   {formData.surgery.has === 'yes' && (
@@ -400,33 +537,31 @@ const HealthForm = () => {
                       type="text"
                       value={formData.surgery.detail}
                       onChange={(e) => updateField('surgery', { ...formData.surgery, detail: e.target.value })}
-                      className="w-full bg-surface-container-lowest border border-secondary/30 rounded-lg p-2 text-xs font-body input-shadow"
+                      className="w-full bg-surface border-none rounded-xl p-3 text-sm shadow-input"
                       placeholder="请说明手术名称及时间..."
                     />
                   )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">过敏史</label>
-                  <div className="flex gap-3 items-center">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  <div className="flex items-center gap-4 bg-surface p-3 rounded-xl">
+                    <span className="text-xs w-12 text-on-surface-variant">过敏史</span>
+                    <label className="flex items-center gap-1 cursor-pointer text-xs">
                       <input
                         type="radio"
                         name="allergy"
                         checked={formData.allergy.has === 'no'}
                         onChange={() => updateField('allergy', { ...formData.allergy, has: 'no', detail: '' })}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
+                        className="text-secondary"
                       />
-                      <span className="text-sm font-body">无</span>
+                      无
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-1 cursor-pointer text-xs">
                       <input
                         type="radio"
                         name="allergy"
                         checked={formData.allergy.has === 'yes'}
                         onChange={() => updateField('allergy', { ...formData.allergy, has: 'yes' })}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
+                        className="text-secondary"
                       />
-                      <span className="text-sm font-body">有</span>
+                      有
                     </label>
                   </div>
                   {formData.allergy.has === 'yes' && (
@@ -434,508 +569,514 @@ const HealthForm = () => {
                       type="text"
                       value={formData.allergy.detail}
                       onChange={(e) => updateField('allergy', { ...formData.allergy, detail: e.target.value })}
-                      className="w-full bg-surface-container-lowest border border-secondary/30 rounded-lg p-2 text-xs font-body input-shadow"
+                      className="w-full bg-surface border-none rounded-xl p-3 text-sm shadow-input"
                       placeholder="请说明过敏源..."
                     />
                   )}
                 </div>
               </div>
 
-              {/* Vascular Evaluation */}
-              <div className="space-y-2">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">血管评估</label>
-                <div className="flex flex-wrap gap-4 items-center">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="vascular"
-                      checked={formData.vascular.qualified === 'yes'}
-                      onChange={() => updateField('vascular', { ...formData.vascular, qualified: 'yes' })}
-                      className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
-                    />
-                    <span className="text-sm font-body">合格（适合留置针操作）</span>
-                  </label>
-                  <div className="flex items-center gap-2 flex-grow min-w-[200px]">
-                    <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                      <input
-                        type="radio"
-                        name="vascular"
-                        checked={formData.vascular.qualified === 'no'}
-                        onChange={() => updateField('vascular', { ...formData.vascular, qualified: 'no' })}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded-full"
-                      />
-                      <span className="text-sm font-body">不合格</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.vascular.reason}
-                      onChange={(e) => updateField('vascular', { ...formData.vascular, reason: e.target.value })}
-                      className="flex-grow bg-surface-container-lowest border-none rounded-lg p-2 text-xs font-body input-shadow"
-                      placeholder="原因"
-                    />
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= 步骤 3: 饮食模式 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 3 of {TOTAL_STEPS} · 生活方式评估
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食模式</h2>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">您平时的饮食偏好？</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['混合膳食', '地中海饮食', '轻断食', '素食'].map((mode) => (
+                      <label
+                        key={mode}
+                        className={`flex items-center gap-2 p-3 rounded-xl text-xs cursor-pointer transition-all ${
+                          formData.dietModes.includes(mode)
+                            ? 'bg-secondary/10 border border-secondary/30'
+                            : 'bg-surface'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.dietModes.includes(mode)}
+                          onChange={() => toggleArray('dietModes', mode)}
+                          className="rounded text-secondary"
+                        />
+                        {mode}
+                      </label>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Family History */}
-              <div className="space-y-3">
-                <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">家族史 (直系亲属是否有以下情况)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  {['心血管疾病', '糖尿病', '阿尔兹海默症', '肿瘤', '其他'].map((item) => (
-                    <label
-                      key={item}
-                      className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${
-                        formData.familyHistory.includes(item)
-                          ? 'bg-secondary/10 border border-secondary/30'
-                          : 'bg-surface-container-lowest border border-outline-variant/10'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.familyHistory.includes(item)}
-                        onChange={() => toggleArray('familyHistory', item)}
-                        className="w-4 h-4 text-secondary focus:ring-secondary rounded"
-                      />
-                      <span className="text-xs font-body">{item}</span>
-                    </label>
-                  ))}
-                </div>
-                {formData.familyHistory.includes('其他') && (
-                  <input
-                    type="text"
-                    value={formData.familyHistoryOther}
-                    onChange={(e) => updateField('familyHistoryOther', e.target.value)}
-                    className="w-full bg-surface-container-lowest border border-secondary/30 rounded-xl p-3 text-sm font-body input-shadow"
-                    placeholder="请补充其他家族病史..."
-                  />
-                )}
-                <div className="space-y-2 mt-3">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">体检疑问/诉求</label>
-                  <textarea
-                    value={formData.familyHistoryNote}
-                    onChange={(e) => updateField('familyHistoryNote', e.target.value)}
-                    className="w-full bg-surface-container-lowest border-none rounded-2xl p-4 text-sm font-body input-shadow"
-                    placeholder="请注明具体类型或其他补充..."
-                    rows={2}
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 3: Refined Lifestyle Assessment */}
-          <section className="bg-surface-container-low p-6 md:p-8 rounded-[2rem] editorial-shadow border border-outline-variant/5">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm">03</span>
-              <h3 className="font-headline font-bold text-primary text-lg tracking-tight">精细化生活方式评估</h3>
-            </div>
-            <div className="space-y-8">
-              {/* Diet Pattern */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-headline font-bold text-secondary-container bg-primary-container inline-block px-3 py-1 rounded-full">
-                  饮食模式
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {['混合膳食', '地中海饮食', '生酮饮食', '轻断食', '素食', '不规律'].map((mode) => (
-                    <label
-                      key={mode}
-                      className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${
-                        formData.dietModes.includes(mode)
-                          ? 'bg-secondary/10'
-                          : 'bg-surface-container-lowest'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.dietModes.includes(mode)}
-                        onChange={() => toggleArray('dietModes', mode)}
-                        className="rounded text-secondary"
-                      />
-                      <span className="text-xs">{mode}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">常饮饮品</label>
-                  <div className="flex flex-wrap gap-4 text-xs">
-                    {['水', '咖啡', '茶', '酒精', '含/无糖饮料', '其他'].map((drink) => (
-                      <label key={drink} className="flex items-center gap-1 cursor-pointer">
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">常饮饮品 (多选)</label>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {['水', '咖啡', '茶', '酒精', '含糖饮料'].map((drink) => (
+                      <label
+                        key={drink}
+                        className={`px-3 py-2 rounded-full flex items-center gap-1 cursor-pointer transition-all ${
+                          formData.drinks.includes(drink)
+                            ? 'bg-secondary/10 border border-secondary/30'
+                            : 'border border-outline-variant/30'
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           checked={formData.drinks.includes(drink)}
                           onChange={() => toggleArray('drinks', drink)}
-                          className="rounded"
+                          className="rounded text-secondary w-3 h-3"
                         />
                         {drink}
                       </label>
                     ))}
                   </div>
-                  {formData.drinks.includes('其他') && (
-                    <input
-                      type="text"
-                      value={formData.drinksOther}
-                      onChange={(e) => updateField('drinksOther', e.target.value)}
-                      className="w-full bg-surface-container-lowest border border-secondary/30 rounded-xl p-3 text-sm font-body input-shadow mt-2"
-                      placeholder="请补充其他常饮饮品..."
-                    />
-                  )}
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">餐后感受</label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px]">
-                    {['精力充沛', '昏昏欲睡', '腹胀', '很快饥饿', '其他'].map((feeling) => (
-                      <label
-                        key={feeling}
-                        className={`p-2 border rounded flex items-center justify-center text-center cursor-pointer transition-all ${
-                          formData.mealFeeling.includes(feeling)
-                            ? 'border-secondary text-secondary'
-                            : 'border-outline-variant/30'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.mealFeeling.includes(feeling)}
-                          onChange={() => toggleArray('mealFeeling', feeling)}
-                          className="sr-only peer"
-                        />
-                        <span>{feeling}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {formData.mealFeeling.includes('其他') && (
-                    <input
-                      type="text"
-                      value={formData.mealFeelingOther}
-                      onChange={(e) => updateField('mealFeelingOther', e.target.value)}
-                      className="w-full bg-surface-container-lowest border border-secondary/30 rounded-xl p-3 text-sm font-body input-shadow mt-2"
-                      placeholder="请补充其他餐后感受..."
-                    />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest px-1">饮食忌口</label>
+
+                <div className="space-y-2 pt-2">
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase px-1">特殊忌口</label>
                   <input
                     type="text"
                     value={formData.dietRestriction}
                     onChange={(e) => updateField('dietRestriction', e.target.value)}
-                    className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-sm font-body input-shadow"
+                    className="w-full bg-surface border-none rounded-xl p-3 text-sm shadow-input"
                     placeholder="如有特殊饮食忌口请注明"
                   />
                 </div>
               </div>
 
-              {/* Exercise */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-headline font-bold text-secondary-container bg-primary-container inline-block px-3 py-1 rounded-full">
-                  运动习惯
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  {['球类', '跳绳', '跑步', '散步', '游泳', '登山', '健身房'].map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.exerciseTypes.includes(type)}
-                        onChange={() => toggleArray('exerciseTypes', type)}
-                        className="rounded"
-                      />
-                      {type}
-                    </label>
-                  ))}
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= 步骤 4: 运动习惯 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 4 of {TOTAL_STEPS} · 生活方式评估
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">运动习惯</h2>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">常做的运动类型 (多选)</label>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {['球类', '跑步', '游泳', '健身房', '散步', '基本不运动'].map((sport) => (
+                      <label
+                        key={sport}
+                        className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${
+                          formData.exerciseTypes.includes(sport)
+                            ? 'bg-secondary/10 border border-secondary/30'
+                            : 'bg-surface'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.exerciseTypes.includes(sport)}
+                          onChange={() => toggleArray('exerciseTypes', sport)}
+                          className="rounded text-secondary"
+                        />
+                        {sport}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">运动频率</label>
-                    <div className="flex items-center gap-2">
+
+                <div className="flex gap-4">
+                  <div className="space-y-2 flex-1">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase">每周频率</label>
+                    <div className="relative">
                       <input
                         type="number"
                         value={formData.exerciseFrequency}
                         onChange={(e) => updateField('exerciseFrequency', e.target.value)}
-                        className="w-16 bg-surface-container-lowest border-none rounded-lg p-2 text-sm input-shadow"
+                        className="w-full bg-surface border-none rounded-xl p-3 text-sm shadow-input pr-10"
+                        placeholder="次数"
                       />
-                      <span className="text-xs">周 / 次</span>
+                      <span className="absolute right-3 top-3 text-xs text-outline">次</span>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">平均时长</label>
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2 flex-1">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase">每次时长</label>
+                    <div className="relative">
                       <input
                         type="number"
                         value={formData.exerciseDuration}
                         onChange={(e) => updateField('exerciseDuration', e.target.value)}
-                        className="w-16 bg-surface-container-lowest border-none rounded-lg p-2 text-sm input-shadow"
+                        className="w-full bg-surface border-none rounded-xl p-3 text-sm shadow-input pr-10"
+                        placeholder="分钟"
                       />
-                      <span className="text-xs">分 / 次</span>
+                      <span className="absolute right-3 top-3 text-xs text-outline">分</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Sleep */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-headline font-bold text-secondary-container bg-primary-container inline-block px-3 py-1 rounded-full">
-                  睡眠情况
-                </h4>
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= 步骤 5: 睡眠情况 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 5 of {TOTAL_STEPS} · 生活方式评估
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">睡眠情况</h2>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-8">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">工作日平均睡眠时长？</p>
-                    <div className="flex flex-wrap gap-4 text-xs">
-                      {['< 6 小时', '6-7 小时', '7-8 小时', '> 8 小时'].map((duration) => (
-                        <label key={duration} className="flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="sleepDuration"
-                            checked={formData.sleepDuration === duration}
-                            onChange={() => updateField('sleepDuration', duration)}
-                            className="text-secondary"
-                          />
-                          {duration}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">入睡与质量：</p>
-                    <div className="space-y-2">
-                      {[
-                        '很快入睡（<15分钟），且夜间很少醒来',
-                        '需要一段时间（15-30分钟），或易醒但能再次入睡',
-                        '入睡困难、夜间多醒且难以再入睡，伴有焦虑',
-                      ].map((quality) => (
-                        <label
-                          key={quality}
-                          className="flex items-start gap-2 p-3 bg-surface-container-lowest rounded-xl text-xs cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="sleepQuality"
-                            checked={formData.sleepQuality === quality}
-                            onChange={() => updateField('sleepQuality', quality)}
-                            className="mt-0.5 text-secondary"
-                          />
-                          <span>{quality}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">早晨醒来后的感受：</p>
-                    <div className="space-y-2">
-                      {[
-                        '神清气爽，精力充沛，白天几乎不困',
-                        '需要一点时间"开机"，但白天状态尚可',
-                        '感觉疲惫，仿佛没睡够，白天需要靠咖啡/茶提神',
-                        '无论睡多久都感觉疲惫，白天精神不济，影响注意力',
-                      ].map((feeling) => (
-                        <label
-                          key={feeling}
-                          className="flex items-start gap-2 p-3 bg-surface-container-lowest rounded-xl text-xs cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.wakeUpFeeling.includes(feeling)}
-                            onChange={() => toggleArray('wakeUpFeeling', feeling)}
-                            className="mt-0.5 text-secondary"
-                          />
-                          <span>{feeling}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stress & Emotion */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-headline font-bold text-secondary-container bg-primary-container inline-block px-3 py-1 rounded-full">
-                  压力、情绪与脑雾
-                </h4>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">压力水平评价 (1-10, 1最小)</p>
-                    <div className="flex justify-between items-center bg-surface-container-lowest p-3 rounded-2xl px-4">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={formData.stressLevel}
-                        onChange={(e) => updateField('stressLevel', parseInt(e.target.value))}
-                        className="w-full accent-secondary"
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-on-surface-variant">
-                      <span>低（1）</span>
-                      <span className="font-bold text-primary">{formData.stressLevel}</span>
-                      <span>高（10）</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">近两周焦虑/担忧频率？</p>
-                      <select
-                        value={formData.anxietyFrequency}
-                        onChange={(e) => updateField('anxietyFrequency', e.target.value)}
-                        className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-xs input-shadow"
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">工作日平均睡眠时长</label>
+                  <div className="flex flex-col gap-2 text-xs">
+                    {['< 6 小时', '6-7 小时', '7-8 小时', '> 8 小时'].map((duration) => (
+                      <label
+                        key={duration}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                          formData.sleepDuration === duration ? 'bg-secondary/10' : 'bg-surface hover:bg-surface-variant'
+                        }`}
                       >
-                        <option value="">请选择</option>
-                        <option value="none">没有</option>
-                        <option value="few">几天</option>
-                        <option value="half">一半以上</option>
-                        <option value="daily">每天</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest">脑雾/记忆力表现</p>
-                      <div className="grid grid-cols-2 gap-2 text-[10px]">
-                        {['记忆力下降', '注意力不集中', '思维迟缓', '其他'].map((symptom) => (
-                          <label key={symptom} className="flex items-center gap-1 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.brainFog.includes(symptom)}
-                              onChange={() => toggleArray('brainFog', symptom)}
-                              className="rounded"
-                            />
-                            {symptom}
-                          </label>
-                        ))}
-                      </div>
-                      {formData.brainFog.includes('其他') && (
                         <input
-                          type="text"
-                          value={formData.brainFogOther}
-                          onChange={(e) => updateField('brainFogOther', e.target.value)}
-                          className="w-full bg-surface-container-lowest border border-secondary/30 rounded-xl p-3 text-sm font-body input-shadow mt-2"
-                          placeholder="请补充其他脑雾/记忆力表现..."
+                          type="radio"
+                          name="sleepDuration"
+                          checked={formData.sleepDuration === duration}
+                          onChange={() => updateField('sleepDuration', duration)}
+                          className="text-secondary w-4 h-4"
                         />
-                      )}
-                    </div>
+                        {duration}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">入睡质量评估</label>
+                  <div className="flex flex-col gap-2 text-xs">
+                    <label
+                      className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                        formData.sleepQuality === 'good' ? 'bg-secondary/10' : 'bg-surface'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="sleepQuality"
+                        checked={formData.sleepQuality === 'good'}
+                        onChange={() => updateField('sleepQuality', 'good')}
+                        className="text-secondary w-4 h-4 mt-0.5"
+                      />
+                      <span className="leading-relaxed">很快入睡，夜间少醒</span>
+                    </label>
+                    <label
+                      className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                        formData.sleepQuality === 'mid' ? 'bg-secondary/10' : 'bg-surface'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="sleepQuality"
+                        checked={formData.sleepQuality === 'mid'}
+                        onChange={() => updateField('sleepQuality', 'mid')}
+                        className="text-secondary w-4 h-4 mt-0.5"
+                      />
+                      <span className="leading-relaxed">需15-30分钟，或易醒但能再入睡</span>
+                    </label>
+                    <label
+                      className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                        formData.sleepQuality === 'bad' ? 'bg-secondary/10' : 'bg-surface'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="sleepQuality"
+                        checked={formData.sleepQuality === 'bad'}
+                        onChange={() => updateField('sleepQuality', 'bad')}
+                        className="text-secondary w-4 h-4 mt-0.5"
+                      />
+                      <span className="leading-relaxed">入睡困难，多醒且难入睡</span>
+                    </label>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
 
-          {/* Section 4: Upload Attachments */}
-          <section className="bg-surface-container-low p-6 md:p-8 rounded-[2rem] editorial-shadow border border-outline-variant/5">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm">04</span>
-              <h3 className="font-headline font-bold text-primary text-lg tracking-tight">上传附件</h3>
-            </div>
-            <p className="text-xs text-on-surface-variant mb-4">
-              支持上传体检报告、病历资料等相关文件（支持多选）
-            </p>
-
-            {/* Upload Area */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-outline-variant/40 rounded-2xl p-8 text-center cursor-pointer hover:border-secondary/60 hover:bg-surface-container-lowest/50 transition-all"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <span className="material-symbols-outlined text-4xl text-secondary mb-2">upload_file</span>
-              <p className="text-sm font-body text-on-surface-variant">
-                点击或拖拽文件到此处上传
-              </p>
-              <p className="text-xs text-on-surface-variant/60 mt-1">
-                支持 PDF、Word、Excel、图片格式
-              </p>
-            </div>
-
-            {/* File List */}
-            {uploadedFiles.length > 0 && (
-              <div className="mt-4 space-y-3">
-                {uploadedFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="bg-surface-container-lowest rounded-xl p-4 flex items-center gap-3"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-secondary">description</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-body text-on-surface truncate">{file.name}</p>
-                      <p className="text-xs text-on-surface-variant">{formatFileSize(file.size)}</p>
-                      {file.status === 'uploading' && (
-                        <div className="mt-2 h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-secondary rounded-full transition-all duration-200"
-                            style={{ width: `${file.progress}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {file.status === 'uploading' && (
-                        <span className="text-xs text-secondary">{Math.round(file.progress)}%</span>
-                      )}
-                      {file.status === 'success' && (
-                        <span className="material-symbols-outlined text-green-600">check_circle</span>
-                      )}
-                      {file.status === 'error' && (
-                        <span className="material-symbols-outlined text-error">error</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeFile(file.id)}
-                        className="p-1 hover:bg-error/10 rounded-lg transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
               </div>
-            )}
-          </section>
-
-          {/* Submit Button */}
-          <div className="pt-4 max-w-lg mx-auto">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-primary text-on-primary font-headline font-bold py-5 rounded-full text-base tracking-tight editorial-shadow hover:bg-primary-container active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? '提交中...' : '提交详细档案'}
-              {!submitting && <span className="material-symbols-outlined">arrow_forward_ios</span>}
-            </button>
-            {/* <p className="text-center text-[10px] text-outline-variant mt-12 uppercase tracking-[0.2em]">
-              Official Boatman Stewardship Channel
-            </p> */}
-          </div>
-        </form>
-        
-        {/* Info Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 mt-8">
-          <div className="bg-surface-container-lowest p-5 rounded-3xl editorial-shadow border border-outline-variant/10 flex items-start gap-4">
-            <span className="material-symbols-outlined text-secondary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-              security
-            </span>
-            <div>
-              <h3 className="font-headline font-bold text-primary text-base mb-1">隐私承诺</h3>
-              <p className="text-on-surface-variant text-xs font-body leading-relaxed">
-                您的所有病史与个人身份信息均受严格的私人管家级加密保护，绝不流向任何医疗机构或商业实体。
-              </p>
             </div>
           </div>
-          <div className="bg-primary-container p-5 rounded-3xl editorial-shadow relative overflow-hidden flex items-start gap-4">
-            <span className="material-symbols-outlined text-secondary-container text-3xl">anchor</span>
-            <div className="relative z-10">
-              <h3 className="font-headline font-bold text-base mb-1 text-white">独立视角</h3>
-              <p className="text-on-primary-container text-xs font-body leading-relaxed">
-                坚持第三方立场，为您剔除医疗链条中的利益干扰，还原医学最真实的诊断逻辑。
-              </p>
+
+          {/* ================= 步骤 6: 压力与情绪 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 6 of {TOTAL_STEPS} · 生活方式评估
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">情绪与压力</h2>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-8">
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">主观压力水平 (1最轻松，10最紧绷)</label>
+                  <div className="bg-surface p-4 rounded-2xl shadow-input">
+                    <div className="flex justify-between text-[10px] text-outline mb-2 font-bold">
+                      <span>1</span>
+                      <span className="text-primary font-bold">{formData.stressLevel}</span>
+                      <span>10</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={formData.stressLevel}
+                      onChange={(e) => updateField('stressLevel', parseInt(e.target.value))}
+                      className="w-full accent-secondary"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block">是否有以下表现？(多选)</label>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {['记忆力下降', '注意力不集中', '思维迟缓', '情绪易波动'].map((symptom) => (
+                      <label
+                        key={symptom}
+                        className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${
+                          formData.brainFog.includes(symptom) ? 'bg-secondary/10 border border-secondary/30' : 'bg-surface'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.brainFog.includes(symptom)}
+                          onChange={() => toggleArray('brainFog', symptom)}
+                          className="rounded text-secondary"
+                        />
+                        {symptom}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= 步骤 7: 诉求与附件 ================= */}
+          <div className="w-full shrink-0 px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2 pb-4">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step 7 of {TOTAL_STEPS} · 诉求与资料
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">体检诉求与附件</h2>
+
+              <div className="space-y-6">
+                {/* 诉求输入 */}
+                <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block mb-3">体检疑问 / 诉求</label>
+                  <textarea
+                    value={formData.healthConcerns}
+                    onChange={(e) => updateField('healthConcerns', e.target.value)}
+                    className="w-full bg-surface border-none rounded-2xl p-4 text-sm shadow-input resize-none"
+                    placeholder="请描述您最关注的健康问题，以便我们为您匹配专家..."
+                    rows={4}
+                  />
+                </div>
+
+                {/* 上传附件 */}
+                <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5">
+                  <label className="text-xs font-headline font-bold text-primary uppercase block mb-3">上传附件 (非必填)</label>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <span className="material-symbols-outlined text-3xl text-secondary mb-2">cloud_upload</span>
+                    <p className="text-[10px] text-outline">点击上传 PDF, JPG (最大 50MB)</p>
+                  </div>
+
+                  {/* 已上传文件列表 */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center gap-2 p-2 bg-surface rounded-xl">
+                          <span className="material-symbols-outlined text-secondary text-lg">description</span>
+                          <span className="flex-1 text-xs truncate">{file.name}</span>
+                          <span className="text-[10px] text-outline">{formatFileSize(file.size)}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(file.id)}
+                            className="p-1 hover:bg-error/10 rounded"
+                          >
+                            <span className="material-symbols-outlined text-on-surface-variant text-sm">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 隐私承诺卡片 */}
+                <div className="bg-primary p-5 rounded-3xl shadow-editorial flex items-start gap-4 text-white">
+                  <span
+                    className="material-symbols-outlined text-secondary-container text-2xl"
+                    style={{ fontVariationSettings: '"FILL" 1' }}
+                  >
+                    security
+                  </span>
+                  <div>
+                    <h3 className="font-headline font-bold text-sm mb-1">隐私与独立视角承诺</h3>
+                    <p className="text-white/70 text-[10px] leading-relaxed">
+                      您的信息均受管家级加密保护。坚持第三方立场，剔除利益干扰，还原医学逻辑。
+                    </p>
+                  </div>
+                </div>
+
+                {/* 步骤底部按钮 */}
+                <div className="flex gap-3 pt-4 pb-10">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                  >
+                    上一步
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    disabled={saving}
+                    className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {saving ? '提交中...' : '完成并提交'}
+                    {!saving && <span className="material-symbols-outlined text-lg">check_circle</span>}
+                  </button>
+                </div>
+                <p className="text-center text-[9px] text-outline mt-4 uppercase tracking-widest font-label">
+                  Official Boatman Stewardship
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <BottomNav />
-    </>
+      {/* 固定底部：步骤指示点 */}
+      <footer className="fixed bottom-0 w-full bg-surface/90 backdrop-blur-xl border-t border-outline-variant/10 z-40">
+        <div className="px-4 py-3 flex items-center justify-center max-w-md mx-auto">
+          {/* 步骤指示点 */}
+          <div className="flex gap-2 items-center">
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goToStep(i)}
+                className={`transition-all duration-300 cursor-pointer ${
+                  i === currentStep
+                    ? 'w-4 h-2 rounded-full bg-primary'
+                    : 'w-2 h-2 rounded-full bg-outline-variant/40 hover:bg-outline-variant/60'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </footer>
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .editorial-shadow { box-shadow: 0 8px 32px rgba(0, 30, 64, 0.08); }
+        .shadow-input { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); }
+      `}</style>
+    </div>
   );
 };
 
