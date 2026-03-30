@@ -34,6 +34,16 @@ class FeishuTokenManager {
   }
 }
 
+/**
+ * 同步结果类型
+ */
+interface SyncResult {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
 const tokenManager = new FeishuTokenManager();
 
 /**
@@ -57,6 +67,33 @@ const createRecord = async (
   );
   return response.data.data.record.record_id;
 };
+
+/**
+ * 用户字段映射：数据库记录 → 飞书表格字段
+ */
+const mapUserToFeishu = (user: {
+  id: number;
+  username: string;
+  phone: string;
+  role: string;
+  gender: string | null;
+  birthDate: string | null;
+  emergencyName: string | null;
+  emergencyRelation: string | null;
+  emergencyPhone: string | null;
+  createdAt: Date;
+}): Record<string, unknown> => ({
+  '用户ID': String(user.id),
+  '用户名': user.username,
+  '手机号': user.phone,
+  '角色': user.role,
+  '性别': user.gender || '',
+  '出生日期': user.birthDate || '',
+  '紧急联系人': user.emergencyName || '',
+  '紧急联系人关系': user.emergencyRelation || '',
+  '紧急联系人电话': user.emergencyPhone || '',
+  '注册时间': user.createdAt.getTime(),
+});
 
 /**
  * 表单1字段映射：数据库记录 → 飞书表格字段
@@ -125,6 +162,54 @@ const mapForm2ToFeishu = (submission: {
 };
 
 export const feishuService = {
+  /**
+   * 同步用户到飞书
+   */
+  async syncUser(user: {
+    id: number;
+    username: string;
+    phone: string;
+    role: string;
+    gender: string | null;
+    birthDate: string | null;
+    emergencyName: string | null;
+    emergencyRelation: string | null;
+    emergencyPhone: string | null;
+    createdAt: Date;
+  }) {
+    if (!feishuConfig.isEnabled) {
+      logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping user sync');
+      return;
+    }
+
+    try {
+      const fields = mapUserToFeishu(user);
+      const recordId = await createRecord(
+        feishuConfig.user.appToken,
+        feishuConfig.user.tableId,
+        fields,
+      );
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          feishuSyncStatus: 'success',
+          feishuRecordId: recordId,
+        },
+      });
+
+      logger.info('FEISHU', `Sync success: table=user, recordId=${user.id}, feishuRecordId=${recordId}`);
+    } catch (err) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { feishuSyncStatus: 'failed' },
+      });
+
+      logger.error('FEISHU', `Sync failed: table=user, recordId=${user.id}`, err);
+      throw err;
+    }
+  },
+
   /**
    * 同步表单1到飞书
    */
@@ -222,12 +307,54 @@ export const feishuService = {
   /**
    * 统一重试同步方法
    */
-  async retrySync(table: 'form1' | 'form2', recordId: number) {
-    if (table === 'form1') {
+  async retrySync(table: 'user' | 'form1' | 'form2', recordId: number) {
+    if (table === 'user') {
+      return this.retrySyncUser(recordId);
+    } else if (table === 'form1') {
       return this.retrySyncForm1(recordId);
     } else {
       return this.retrySyncForm2(recordId);
     }
+  },
+
+  /**
+   * 重试同步用户
+   */
+  async retrySyncUser(recordId: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: recordId },
+    });
+
+    if (!user) {
+      throw { code: 404, message: '用户不存在' };
+    }
+
+    // 只允许重试普通用户
+    if (user.role !== 'user') {
+      throw { code: 400, message: '只能同步普通用户，管理员和业务员不需要同步到飞书' };
+    }
+
+    if (user.feishuSyncStatus !== 'failed') {
+      throw { code: 400, message: '该用户同步状态不是失败，无需重试' };
+    }
+
+    // 重置状态为 pending
+    await prisma.user.update({
+      where: { id: recordId },
+      data: { feishuSyncStatus: 'pending' },
+    });
+
+    await this.syncUser(user);
+
+    const updated = await prisma.user.findUnique({
+      where: { id: recordId },
+      select: { feishuSyncStatus: true, feishuRecordId: true },
+    });
+
+    return {
+      syncStatus: updated?.feishuSyncStatus,
+      feishuRecordId: updated?.feishuRecordId,
+    };
   },
 
   /**
@@ -299,5 +426,94 @@ export const feishuService = {
       syncStatus: updated?.feishuSyncStatus,
       feishuRecordId: updated?.feishuRecordId,
     };
+  },
+
+  /**
+   * 一键同步用户
+   */
+  async syncAllUsers(): Promise<SyncResult> {
+    const result: SyncResult = { total: 0, success: 0, failed: 0, errors: [] };
+
+    // 只同步普通用户（role=user）
+    const users = await prisma.user.findMany({
+      where: {
+        role: 'user',
+        feishuSyncStatus: { in: ['pending', 'failed'] },
+      },
+    });
+
+    result.total = users.length;
+
+    for (const user of users) {
+      try {
+        await this.syncUser(user);
+        result.success++;
+      } catch (err) {
+        result.failed++;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result.errors.push(`用户ID ${user.id}: ${errMsg}`);
+      }
+    }
+
+    logger.info('FEISHU', `Batch sync users: total=${result.total}, success=${result.success}, failed=${result.failed}`);
+    return result;
+  },
+
+  /**
+   * 一键同步预约（表单1）
+   */
+  async syncAllForm1(): Promise<SyncResult> {
+    const result: SyncResult = { total: 0, success: 0, failed: 0, errors: [] };
+
+    const submissions = await prisma.form1Submission.findMany({
+      where: {
+        feishuSyncStatus: { in: ['pending', 'failed'] },
+      },
+    });
+
+    result.total = submissions.length;
+
+    for (const submission of submissions) {
+      try {
+        await this.syncForm1(submission);
+        result.success++;
+      } catch (err) {
+        result.failed++;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result.errors.push(`预约ID ${submission.id}: ${errMsg}`);
+      }
+    }
+
+    logger.info('FEISHU', `Batch sync form1: total=${result.total}, success=${result.success}, failed=${result.failed}`);
+    return result;
+  },
+
+  /**
+   * 一键同步档案（表单2）
+   */
+  async syncAllForm2(): Promise<SyncResult> {
+    const result: SyncResult = { total: 0, success: 0, failed: 0, errors: [] };
+
+    const submissions = await prisma.form2Submission.findMany({
+      where: {
+        feishuSyncStatus: { in: ['pending', 'failed'] },
+      },
+    });
+
+    result.total = submissions.length;
+
+    for (const submission of submissions) {
+      try {
+        await this.syncForm2(submission);
+        result.success++;
+      } catch (err) {
+        result.failed++;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result.errors.push(`档案ID ${submission.id}: ${errMsg}`);
+      }
+    }
+
+    logger.info('FEISHU', `Batch sync form2: total=${result.total}, success=${result.success}, failed=${result.failed}`);
+    return result;
   },
 };

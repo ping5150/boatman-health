@@ -80,8 +80,20 @@ router.put('/users/:id', authMiddleware, adminGuard, validate(updateUserSchema),
 
 // ==================== 同步管理 ====================
 
+// GET /admin/sync/stats — 同步统计
+router.get('/sync/stats', authMiddleware, adminGuard, adminController.syncStats);
+
 // GET /admin/sync/failed — 同步失败列表
 router.get('/sync/failed', authMiddleware, adminGuard, adminController.syncFailedList);
+
+// POST /admin/sync/user — 一键同步用户
+router.post('/sync/user', authMiddleware, adminGuard, adminController.syncAllUsers);
+
+// POST /admin/sync/booking — 一键同步预约
+router.post('/sync/booking', authMiddleware, adminGuard, adminController.syncAllBookings);
+
+// POST /admin/sync/archive — 一键同步档案
+router.post('/sync/archive', authMiddleware, adminGuard, adminController.syncAllArchives);
 
 // POST /admin/sync/retry — 重试飞书同步
 router.post('/sync/retry', authMiddleware, adminGuard, adminController.syncRetry);

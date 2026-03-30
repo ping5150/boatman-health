@@ -256,6 +256,7 @@ export const adminService = {
           updatedAt: true,
           versionNumber: true,
           feishuSyncStatus: true,
+          status: true,
         },
       }),
     ]);
@@ -278,6 +279,7 @@ export const adminService = {
         submittedBy: item.submittedBy,
         versionNumber: item.versionNumber,
         feishuSyncStatus: item.feishuSyncStatus as BookingListItem['feishuSyncStatus'],
+        status: (item.status || 'active') as 'active' | 'cancelled',
       })),
     };
   },
@@ -371,6 +373,8 @@ export const adminService = {
       versionNumber: submission.versionNumber,
       feishuSyncStatus: submission.feishuSyncStatus as BookingDetail['feishuSyncStatus'],
       feishuRecordId: submission.feishuRecordId,
+      status: (submission.status || 'active') as 'active' | 'cancelled',
+      cancelledAt: submission.cancelledAt?.toISOString() || null,
     };
   },
 
@@ -473,9 +477,21 @@ export const adminService = {
 
   /**
    * 获取同步失败记录列表
+   * 用户失败列表只查普通用户（role=user）
    */
   async getSyncFailedList(): Promise<SyncFailedList> {
-    const [form1Failed, form2Failed] = await Promise.all([
+    const [usersFailed, form1Failed, form2Failed] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: 'user', feishuSyncStatus: 'failed' },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          username: true,
+          phone: true,
+          createdAt: true,
+          feishuSyncStatus: true,
+        },
+      }),
       prisma.form1Submission.findMany({
         where: { feishuSyncStatus: 'failed' },
         orderBy: { submittedAt: 'desc' },
@@ -514,6 +530,13 @@ export const adminService = {
     });
 
     return {
+      user: usersFailed.map((item) => ({
+        id: item.id,
+        name: item.username,
+        phone: item.phone,
+        submittedAt: item.createdAt.toISOString(),
+        feishuSyncStatus: item.feishuSyncStatus as SyncFailedList['user'][0]['feishuSyncStatus'],
+      })),
       booking: form1Failed.map((item) => ({
         id: item.id,
         orderNo: item.orderNo,
@@ -523,6 +546,38 @@ export const adminService = {
         feishuSyncStatus: item.feishuSyncStatus as SyncFailedList['booking'][0]['feishuSyncStatus'],
       })),
       archive: form2Transformed,
+    };
+  },
+
+  /**
+   * 获取同步统计
+   * 用户统计只统计普通用户（role包含user）
+   */
+  async getSyncStats() {
+    const [userTotal, userSuccess, userFailed, userPending,
+      bookingTotal, bookingSuccess, bookingFailed, bookingPending,
+      archiveTotal, archiveSuccess, archiveFailed, archivePending] = await Promise.all([
+      // 用户统计：只统计普通用户（role包含user，不含admin/salesman）
+      prisma.user.count({ where: { role: 'user' } }),
+      prisma.user.count({ where: { role: 'user', feishuSyncStatus: 'success' } }),
+      prisma.user.count({ where: { role: 'user', feishuSyncStatus: 'failed' } }),
+      prisma.user.count({ where: { role: 'user', feishuSyncStatus: 'pending' } }),
+      // 预约统计
+      prisma.form1Submission.count(),
+      prisma.form1Submission.count({ where: { feishuSyncStatus: 'success' } }),
+      prisma.form1Submission.count({ where: { feishuSyncStatus: 'failed' } }),
+      prisma.form1Submission.count({ where: { feishuSyncStatus: 'pending' } }),
+      // 档案统计
+      prisma.form2Submission.count(),
+      prisma.form2Submission.count({ where: { feishuSyncStatus: 'success' } }),
+      prisma.form2Submission.count({ where: { feishuSyncStatus: 'failed' } }),
+      prisma.form2Submission.count({ where: { feishuSyncStatus: 'pending' } }),
+    ]);
+
+    return {
+      user: { total: userTotal, success: userSuccess, failed: userFailed, pending: userPending },
+      booking: { total: bookingTotal, success: bookingSuccess, failed: bookingFailed, pending: bookingPending },
+      archive: { total: archiveTotal, success: archiveSuccess, failed: archiveFailed, pending: archivePending },
     };
   },
 

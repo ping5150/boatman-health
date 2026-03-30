@@ -3,6 +3,10 @@ import { env } from './env';
 export const feishuConfig = {
   appId: env.FEISHU_APP_ID,
   appSecret: env.FEISHU_APP_SECRET,
+  user: {
+    appToken: env.USER_APP_TOKEN,
+    tableId: env.USER_TABLE_ID,
+  },
   form1: {
     appToken: env.FORM1_APP_TOKEN,
     tableId: env.FORM1_TABLE_ID,

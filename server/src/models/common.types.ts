@@ -246,10 +246,19 @@ export interface DashboardStats {
   };
 }
 
+/** 同步失败项（用户） */
+export interface SyncFailedUserItem {
+  id: number;
+  name: string;
+  phone: string;
+  submittedAt: string;
+  feishuSyncStatus: SyncStatus;
+}
+
 /** 同步失败项 */
 export interface SyncFailedItem {
   id: number;
-  orderNo: string;
+  orderNo?: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -258,13 +267,29 @@ export interface SyncFailedItem {
 
 /** 同步失败列表 */
 export interface SyncFailedList {
+  user: SyncFailedUserItem[];
   booking: SyncFailedItem[];
   archive: SyncFailedItem[];
 }
 
+/** 同步统计 */
+export interface SyncStats {
+  user: { total: number; success: number; failed: number; pending: number };
+  booking: { total: number; success: number; failed: number; pending: number };
+  archive: { total: number; success: number; failed: number; pending: number };
+}
+
+/** 同步结果 */
+export interface SyncResult {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
 /** 同步重试请求 */
 export interface SyncRetryRequest {
-  table: 'booking' | 'archive';
+  table: 'user' | 'booking' | 'archive';
   recordId: number;
 }
 

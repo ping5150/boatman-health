@@ -24,9 +24,17 @@ interface DashboardStats {
   };
 }
 
+interface SyncFailedUserItem {
+  id: number;
+  name: string;
+  phone: string;
+  submittedAt: string;
+  feishuSyncStatus: string;
+}
+
 interface SyncFailedItem {
   id: number;
-  orderNo: string;
+  orderNo?: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -34,8 +42,22 @@ interface SyncFailedItem {
 }
 
 interface SyncFailedList {
+  user: SyncFailedUserItem[];
   booking: SyncFailedItem[];
   archive: SyncFailedItem[];
+}
+
+interface SyncStats {
+  user: { total: number; success: number; failed: number; pending: number };
+  booking: { total: number; success: number; failed: number; pending: number };
+  archive: { total: number; success: number; failed: number; pending: number };
+}
+
+interface SyncResult {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
 }
 
 interface SyncRetryResult {
@@ -52,6 +74,13 @@ export const syncApi = {
   },
 
   /**
+   * 获取同步统计
+   */
+  async getStats(): Promise<ApiResponse<SyncStats>> {
+    return request.get('/admin/sync/stats');
+  },
+
+  /**
    * 获取同步失败列表
    */
   async getFailedList(): Promise<ApiResponse<SyncFailedList>> {
@@ -59,9 +88,30 @@ export const syncApi = {
   },
 
   /**
+   * 一键同步用户
+   */
+  async syncAllUsers(): Promise<ApiResponse<SyncResult>> {
+    return request.post('/admin/sync/user');
+  },
+
+  /**
+   * 一键同步预约
+   */
+  async syncAllBookings(): Promise<ApiResponse<SyncResult>> {
+    return request.post('/admin/sync/booking');
+  },
+
+  /**
+   * 一键同步档案
+   */
+  async syncAllArchives(): Promise<ApiResponse<SyncResult>> {
+    return request.post('/admin/sync/archive');
+  },
+
+  /**
    * 重试飞书同步
    */
-  async retry(table: 'booking' | 'archive', recordId: number): Promise<ApiResponse<SyncRetryResult>> {
+  async retry(table: 'user' | 'booking' | 'archive', recordId: number): Promise<ApiResponse<SyncRetryResult>> {
     return request.post('/admin/sync/retry', { table, recordId });
   },
 };

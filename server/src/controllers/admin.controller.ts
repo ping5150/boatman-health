@@ -210,6 +210,54 @@ export const adminController = {
   },
 
   /**
+   * 获取同步统计
+   */
+  async syncStats(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminService.getSyncStats();
+      sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * 一键同步用户
+   */
+  async syncAllUsers(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await feishuService.syncAllUsers();
+      sendSuccess(res, result, `同步完成: 成功 ${result.success} 条，失败 ${result.failed} 条`);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * 一键同步预约
+   */
+  async syncAllBookings(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await feishuService.syncAllForm1();
+      sendSuccess(res, result, `同步完成: 成功 ${result.success} 条，失败 ${result.failed} 条`);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * 一键同步档案
+   */
+  async syncAllArchives(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await feishuService.syncAllForm2();
+      sendSuccess(res, result, `同步完成: 成功 ${result.success} 条，失败 ${result.failed} 条`);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * 重试飞书同步
    */
   async syncRetry(req: Request, res: Response, next: NextFunction) {
@@ -221,12 +269,13 @@ export const adminController = {
         return;
       }
 
-      if (table !== 'booking' && table !== 'archive') {
-        sendError(res, 400, 'table 参数只能是 booking 或 archive');
+      if (table !== 'user' && table !== 'booking' && table !== 'archive') {
+        sendError(res, 400, 'table 参数只能是 user、booking 或 archive');
         return;
       }
 
-      const result = await feishuService.retrySync(table === 'booking' ? 'form1' : 'form2', recordId);
+      const tableMap = { user: 'user', booking: 'form1', archive: 'form2' } as const;
+      const result = await feishuService.retrySync(tableMap[table], recordId);
       sendSuccess(res, result, '同步重试成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {

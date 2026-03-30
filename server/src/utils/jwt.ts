@@ -4,7 +4,7 @@ import { env } from '../config/env';
 export interface JwtPayload {
   userId: number;
   phone: string;
-  role: 'user' | 'admin';
+  role: string; // 支持多角色，逗号分隔，如 "user,salesman,admin"
 }
 
 export const signToken = (payload: JwtPayload): string => {

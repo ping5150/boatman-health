@@ -20,6 +20,8 @@ model User {
   emergencyName     String?           @map("emergency_name")
   emergencyRelation String?           @map("emergency_relation")
   emergencyPhone    String?           @map("emergency_phone")
+  feishuRecordId    String?           @map("feishu_record_id")
+  feishuSyncStatus  String            @default("pending") @map("feishu_sync_status")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
   form1Submissions  Form1Submission[]
@@ -27,6 +29,7 @@ model User {
 
   @@index([phone])
   @@index([role])
+  @@index([feishuSyncStatus])
   @@map("users")
 }
 
