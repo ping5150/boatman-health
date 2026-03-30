@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
-import { getBookingDetail, updateBooking, BookingData, ConsultationType } from '@/api/form1.api';
+import { getBookingDetail, updateBooking, cancelBooking, BookingData, ConsultationType } from '@/api/form1.api';
 
 const BookingDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +11,7 @@ const BookingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const [editForm, setEditForm] = useState<{
     name: string;
@@ -83,6 +84,25 @@ const BookingDetail = () => {
       alert('更新失败，请稍后重试');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!id || !booking) return;
+
+    const confirmed = window.confirm('确定要取消该预约吗？此操作不可撤销。');
+    if (!confirmed) return;
+
+    setIsCancelling(true);
+    try {
+      await cancelBooking(parseInt(id, 10));
+      alert('预约已取消');
+      navigate('/account');
+    } catch (error) {
+      console.error('取消预约失败:', error);
+      alert('取消预约失败，请稍后重试');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -292,6 +312,13 @@ const BookingDetail = () => {
                 className="w-full bg-surface-container text-primary font-headline font-bold py-4 rounded-full text-base hover:bg-surface-container-high transition-all"
               >
                 继续完善档案
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={isCancelling}
+                className="w-full bg-error/10 text-error font-headline font-bold py-4 rounded-full text-base hover:bg-error/20 transition-all disabled:opacity-50"
+              >
+                {isCancelling ? '取消中...' : '取消预约'}
               </button>
             </div>
           </div>

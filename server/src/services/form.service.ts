@@ -120,6 +120,7 @@ export const formService = {
         updatedAt: true,
         versionNumber: true,
         feishuSyncStatus: true,
+        status: true,
       },
     });
 
@@ -137,6 +138,7 @@ export const formService = {
       submittedBy: item.submittedBy,
       versionNumber: item.versionNumber,
       feishuSyncStatus: item.feishuSyncStatus as BookingListItem['feishuSyncStatus'],
+      status: (item.status || 'active') as 'active' | 'cancelled',
     }));
   },
 
@@ -168,6 +170,41 @@ export const formService = {
       versionNumber: submission.versionNumber,
       feishuSyncStatus: submission.feishuSyncStatus as BookingDetail['feishuSyncStatus'],
       feishuRecordId: submission.feishuRecordId,
+      status: (submission.status || 'active') as 'active' | 'cancelled',
+      cancelledAt: submission.cancelledAt?.toISOString() || null,
+    };
+  },
+
+  /**
+   * 取消预约
+   */
+  async cancelForm1(userId: number, id: number): Promise<{ id: number; orderNo: string; status: string }> {
+    const submission = await prisma.form1Submission.findFirst({
+      where: { id, userId },
+    });
+
+    if (!submission) {
+      throw { code: 404, message: '预约记录不存在' };
+    }
+
+    if (submission.status === 'cancelled') {
+      throw { code: 400, message: '预约已取消' };
+    }
+
+    const updated = await prisma.form1Submission.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+      },
+    });
+
+    logger.info('FORM', `Form1 cancelled: userId=${userId}, orderNo=${submission.orderNo}, id=${id}`);
+
+    return {
+      id: updated.id,
+      orderNo: updated.orderNo,
+      status: updated.status,
     };
   },
 

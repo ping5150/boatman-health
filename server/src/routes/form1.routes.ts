@@ -38,4 +38,7 @@ router.get('/:id', authMiddleware, form1Controller.getDetail);
 // PUT /api/form1/:id — 更新预约（新增记录，不覆盖）
 router.put('/:id', authMiddleware, validate(form1UpdateSchema), form1Controller.update);
 
+// DELETE /api/form1/:id — 取消预约
+router.delete('/:id', authMiddleware, form1Controller.cancel);
+
 export default router;

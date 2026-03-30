@@ -41,6 +41,8 @@ model Form1Submission {
   preferredTime    String   @map("preferred_time")
   brief            String
   submittedBy      String   @map("submitted_by")
+  status           String   @default("active") @map("status") // active, cancelled
+  cancelledAt      DateTime? @map("cancelled_at")
   submittedAt      DateTime @default(now()) @map("submitted_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
   versionNumber    Int      @map("version_number")

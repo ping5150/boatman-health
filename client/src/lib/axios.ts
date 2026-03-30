@@ -30,10 +30,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // 避免在登录页循环跳转
-      if (window.location.hash !== '#/login') {
-        window.location.href = '/#/login';
-      }
+      // 触发自定义事件，通知 AuthModal 打开
+      window.dispatchEvent(new CustomEvent('auth:required'));
     }
     return Promise.reject(error);
   },

@@ -23,12 +23,15 @@ export interface BookingListItem {
   submittedBy: string;
   versionNumber: number;
   feishuSyncStatus: SyncStatus;
+  status?: 'active' | 'cancelled';
 }
 
 /** 预约详情 */
 export interface BookingDetail extends BookingListItem {
   userId: number;
   feishuRecordId: string | null;
+  status: 'active' | 'cancelled';
+  cancelledAt: string | null;
 }
 
 /** 预约提交请求 */
@@ -116,6 +119,17 @@ export const updateBooking = async (id: number, data: BookingUpdateRequest): Pro
       preferredDate: result.preferredDate,
       preferredTime: result.preferredTime,
     },
+  };
+};
+
+/**
+ * 取消预约
+ */
+export const cancelBooking = async (id: number): Promise<{ success: boolean; message: string }> => {
+  const res = await api.delete(`/form1/${id}`);
+  return {
+    success: true,
+    message: res.data.message || '预约已取消',
   };
 };
 

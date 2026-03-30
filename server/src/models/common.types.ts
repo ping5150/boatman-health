@@ -99,12 +99,14 @@ export interface BookingListItem {
   submittedBy: string;
   versionNumber: number;
   feishuSyncStatus: SyncStatus;
+  status: 'active' | 'cancelled';
 }
 
 /** 预约详情 */
 export interface BookingDetail extends BookingListItem {
   userId: number;
   feishuRecordId: string | null;
+  cancelledAt: string | null;
 }
 
 // ==================== 健康档案 (Form2) ====================

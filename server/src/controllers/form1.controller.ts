@@ -96,4 +96,24 @@ export const form1Controller = {
       }
     }
   },
+
+  /**
+   * 取消预约
+   */
+  async cancel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const id = parseInt(req.params.id as string, 10);
+
+      const result = await formService.cancelForm1(userId, id);
+      sendSuccess(res, result, '预约已取消');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message);
+      } else {
+        next(err);
+      }
+    }
+  },
 };

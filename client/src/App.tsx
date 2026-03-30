@@ -2,6 +2,8 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import SubPageLayout from '@/layouts/SubPageLayout';
 import ScrollToTop from '@/components/ScrollToTop';
+import AuthGuard from '@/components/AuthGuard';
+import AuthModal from '@/components/AuthModal';
 import Home from '@/pages/Home';
 import Services from '@/pages/Services';
 import Login from '@/pages/Login';
@@ -44,9 +46,23 @@ const App = () => {
           <Route path="/paradigm" element={<Paradigm />} />
           <Route path="/cases" element={<Cases />} />
           <Route path="/consultation" element={<Consultation />} />
-          <Route path="/health-form" element={<HealthForm />} />
+          <Route
+            path="/health-form"
+            element={
+              <AuthGuard>
+                <HealthForm />
+              </AuthGuard>
+            }
+          />
           <Route path="/health-profile" element={<HealthProfile />} />
-          <Route path="/account/profile" element={<AccountProfile />} />
+          <Route
+            path="/account/profile"
+            element={
+              <AuthGuard>
+                <AccountProfile />
+              </AuthGuard>
+            }
+          />
           <Route path="/account/health-archive" element={<HealthArchiveEdit />} />
           <Route path="/account/settings" element={<Settings />} />
           <Route path="/account/contact" element={<Contact />} />
@@ -56,6 +72,8 @@ const App = () => {
           <Route path="/archive-success" element={<ArchiveSuccess />} />
         </Route>
       </Routes>
+      {/* 登录/注册弹窗 */}
+      <AuthModal />
     </HashRouter>
   );
 };
