@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Input, Tag, Button, Card } from 'antd';
-import { SearchOutlined, FormOutlined } from '@ant-design/icons';
+import { Table, Input, Tag, Button, Card, message } from 'antd';
+import { SearchOutlined, FormOutlined, DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import { form1Api } from '../../api/form1.api';
 
 interface BookingListItem {
@@ -14,8 +15,6 @@ interface BookingListItem {
   submittedAt: string;
   updatedAt: string;
   submittedBy: string;
-  versionNumber: number;
-  feishuSyncStatus: string;
 }
 
 // 模拟数据（注释保留）
@@ -65,18 +64,31 @@ const BookingListPage: React.FC = () => {
     }, 300);
   };
 
-  const syncStatusTag = (status: string) => {
-    const colorMap: Record<string, string> = {
-      success: 'green',
-      pending: 'blue',
-      failed: 'red',
-    };
-    const textMap: Record<string, string> = {
-      success: '已同步',
-      pending: '同步中',
-      failed: '同步失败',
-    };
-    return <Tag color={colorMap[status] || 'default'}>{textMap[status] || status}</Tag>;
+  // 导出Excel
+  const handleExport = () => {
+    if (data.length === 0) {
+      message.warning('暂无数据可导出');
+      return;
+    }
+
+    const exportData = data.map((item, index) => ({
+      '序号': index + 1,
+      '订单编号': item.orderNo,
+      '姓名': item.name,
+      '手机号': item.phone,
+      '咨询类型': item.consultationType,
+      '提交时间': item.submittedAt ? dayjs(item.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-',
+      '更新时间': item.updatedAt ? dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-',
+      '提交人': item.submittedBy,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '预约列表');
+    
+    const fileName = `预约列表_${dayjs().format('YYYY-MM-DD_HHmmss')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    message.success('导出成功');
   };
 
   const columns = [
@@ -126,18 +138,6 @@ const BookingListPage: React.FC = () => {
       width: 100,
     },
     {
-      title: '版本号',
-      dataIndex: 'versionNumber',
-      width: 80,
-      align: 'center' as const,
-    },
-    {
-      title: '同步状态',
-      dataIndex: 'feishuSyncStatus',
-      width: 100,
-      render: syncStatusTag,
-    },
-    {
       title: '操作',
       width: 120,
       fixed: 'right' as const,
@@ -155,7 +155,12 @@ const BookingListPage: React.FC = () => {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>预约管理</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>预约管理</h2>
+        <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport}>
+          导出
+        </Button>
+      </div>
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Input

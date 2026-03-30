@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/contexts/UserContext';
+import { submitForm1 } from '@/api/form1.api';
 
 interface BookingResult {
   id: number;
@@ -46,24 +47,51 @@ const Consultation = () => {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 表单验证
+    if (!formData.name.trim()) {
+      alert('请输入姓名');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      alert('请输入联系电话');
+      return;
+    }
+    if (!formData.consultationType) {
+      alert('请选择咨询需求');
+      return;
+    }
+    if (!formData.preferredDate) {
+      alert('请选择首选联系日期');
+      return;
+    }
+    if (!formData.preferredTime) {
+      alert('请选择首选联系时间');
+      return;
+    }
+    if (!formData.brief.trim()) {
+      alert('请填写简要病史');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // 模拟提交延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 生成模拟数据
-      const now = new Date();
-      const orderNo = `BH${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-      const submittedAt = now.toLocaleString('zh-CN');
+      const result = await submitForm1({
+        name: formData.name,
+        phone: formData.phone,
+        consultationType: formData.consultationType as any,
+        preferredDate: formData.preferredDate,
+        preferredTime: formData.preferredTime,
+        brief: formData.brief,
+      });
 
       // 跳转到成功页面，携带数据
       navigate('/booking-success', {
         state: {
-          orderNo,
-          submittedAt,
-          consultationType: formData.consultationType || '健康咨询',
-          preferredDate: formData.preferredDate,
-          preferredTime: formData.preferredTime,
+          orderNo: result.data.orderNo,
+          submittedAt: result.data.submittedAt,
+          consultationType: result.data.consultationType,
+          preferredDate: result.data.preferredDate,
+          preferredTime: result.data.preferredTime,
         } as BookingResult,
       });
     } catch (error) {

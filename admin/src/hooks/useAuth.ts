@@ -4,7 +4,7 @@ import { tokenUtil } from '../utils/token';
 interface AuthUser {
   userId: number;
   phone: string;
-  role: string;
+  role: string; // 逗号分隔的多角色
 }
 
 export const useAuth = () => {
@@ -31,11 +31,20 @@ export const useAuth = () => {
     setUser(null);
   }, []);
 
+  // 检查是否拥有某个角色
+  const hasRole = useCallback((role: string): boolean => {
+    if (!user?.role) return false;
+    const roles = user.role.split(',').map(r => r.trim());
+    return roles.includes(role);
+  }, [user]);
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: hasRole('admin'),
+    isSalesman: hasRole('salesman'),
+    hasRole,
     login,
     logout,
   };

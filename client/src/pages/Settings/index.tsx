@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import Icon from '@/components/Icon';
+import { updateProfile } from '@/api/auth.api';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ const Settings = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editField, setEditField] = useState<'username' | 'phone' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleEdit = (field: 'username' | 'phone') => {
     setEditField(field);
@@ -16,43 +18,27 @@ const Settings = () => {
     setShowEditModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user || !editField) return;
-    const updatedUser = {
-      ...user,
-      [editField]: editValue,
-    };
-    login(updatedUser);
-    setShowEditModal(false);
-    setEditField(null);
+    setSaving(true);
+    try {
+      await updateProfile({ [editField]: editValue });
+      const updatedUser = {
+        ...user,
+        [editField]: editValue,
+      };
+      login(updatedUser);
+      setShowEditModal(false);
+      setEditField(null);
+    } catch (error: unknown) {
+      console.error('保存失败:', error);
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || '保存失败，请重试';
+      alert(message);
+    } finally {
+      setSaving(false);
+    }
   };
-
-  const settingItems = [
-    {
-      icon: 'notifications',
-      title: '消息通知',
-      desc: '管理推送通知偏好',
-      action: () => {},
-    },
-    {
-      icon: 'lock',
-      title: '隐私设置',
-      desc: '管理数据隐私与安全',
-      action: () => {},
-    },
-    {
-      icon: 'help_outline',
-      title: '帮助与反馈',
-      desc: '常见问题与意见反馈',
-      action: () => {},
-    },
-    {
-      icon: 'info',
-      title: '关于我们',
-      desc: '了解船夫健康',
-      action: () => navigate('/about'),
-    },
-  ];
 
   return (
     <div className="pb-8">
@@ -107,7 +93,7 @@ const Settings = () => {
       </section>
 
       {/* Settings Items */}
-      <section className="px-6 mb-8">
+      {/* <section className="px-6 mb-8">
         <h3 className="font-headline font-bold text-base text-on-surface mb-4 px-1">通用设置</h3>
         <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
           {settingItems.map((item, index) => (
@@ -131,7 +117,7 @@ const Settings = () => {
             </button>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* Danger Zone */}
       <section className="px-6">
@@ -146,7 +132,7 @@ const Settings = () => {
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-surface rounded-t-3xl p-6 pb-8 animate-slide-up">
+          <div className="w-full max-w-md bg-surface rounded-t-3xl p-6 pb-[calc(8rem+env(safe-area-inset-bottom))] animate-slide-up">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-headline font-bold text-lg text-on-surface">
                 编辑{editField === 'username' ? '用户名' : '手机号'}
@@ -171,9 +157,10 @@ const Settings = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 py-3 bg-primary text-on-primary font-medium rounded-xl shadow-sm active:scale-[0.98] transition-all"
+                disabled={saving}
+                className="flex-1 py-3 bg-primary text-on-primary font-medium rounded-xl shadow-sm active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                保存
+                {saving ? '保存中...' : '保存'}
               </button>
             </div>
           </div>

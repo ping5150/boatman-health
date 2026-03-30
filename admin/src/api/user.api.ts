@@ -10,7 +10,7 @@ interface UserItem {
   id: number;
   username: string;
   phone: string;
-  role: string;
+  role: string; // 逗号分隔的多角色，如 "user,salesman"
   createdAt: string;
   updatedAt: string;
 }
@@ -26,7 +26,7 @@ interface UserDetail {
   id: number;
   username: string;
   phone: string;
-  role: string;
+  role: string; // 逗号分隔的多角色
   createdAt: string;
   updatedAt: string;
   gender: string | null;
@@ -43,7 +43,25 @@ interface UserUpdateData {
   emergencyName?: string;
   emergencyRelation?: string;
   emergencyPhone?: string;
+  role?: string; // 逗号分隔的多角色
 }
+
+// 角色类型
+type UserRole = 'user' | 'salesman' | 'admin';
+
+// 角色显示名称映射
+const roleNames: Record<UserRole, string> = {
+  user: '用户',
+  salesman: '业务员',
+  admin: '管理员',
+};
+
+// 角色颜色映射
+const roleColors: Record<UserRole, string> = {
+  user: 'blue',
+  salesman: 'green',
+  admin: 'gold',
+};
 
 export const userApi = {
   /**
@@ -73,4 +91,5 @@ export const userApi = {
   },
 };
 
-export type { UserItem, UserDetail, UserUpdateData };
+export type { UserItem, UserDetail, UserUpdateData, UserRole };
+export { roleNames, roleColors };

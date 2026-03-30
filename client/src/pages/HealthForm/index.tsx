@@ -252,31 +252,51 @@ const HealthForm = () => {
               {/* Current Diseases */}
               <div className="space-y-3">
                 <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">当前疾病</label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {formData.diseases.map((disease, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        value={disease.name}
-                        onChange={(e) => {
-                          const updated = [...formData.diseases];
-                          updated[index].name = e.target.value;
-                          updateField('diseases', updated);
-                        }}
-                        className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-sm font-body input-shadow"
-                        placeholder="诊断名称"
-                      />
-                      <input
-                        type="text"
-                        value={disease.date}
-                        onChange={(e) => {
-                          const updated = [...formData.diseases];
-                          updated[index].date = e.target.value;
-                          updateField('diseases', updated);
-                        }}
-                        className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-sm font-body input-shadow"
-                        placeholder="确诊时间"
-                      />
+                    <div key={index} className="relative bg-surface-container-lowest rounded-xl p-4">
+                      {formData.diseases.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = formData.diseases.filter((_, i) => i !== index);
+                            updateField('diseases', updated);
+                          }}
+                          className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+                        </button>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs text-on-surface-variant">诊断名称</label>
+                          <input
+                            type="text"
+                            value={disease.name}
+                            onChange={(e) => {
+                              const updated = [...formData.diseases];
+                              updated[index].name = e.target.value;
+                              updateField('diseases', updated);
+                            }}
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
+                            placeholder="请输入诊断名称"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-on-surface-variant">确诊时间</label>
+                          <input
+                            type="text"
+                            value={disease.date}
+                            onChange={(e) => {
+                              const updated = [...formData.diseases];
+                              updated[index].date = e.target.value;
+                              updateField('diseases', updated);
+                            }}
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
+                            placeholder="请输入确诊时间"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                   <button
@@ -292,31 +312,51 @@ const HealthForm = () => {
               {/* Medication */}
               <div className="space-y-3">
                 <label className="text-xs font-headline font-bold text-primary/60 uppercase tracking-widest block">目前用药记录</label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {formData.medications.map((med, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        value={med.name}
-                        onChange={(e) => {
-                          const updated = [...formData.medications];
-                          updated[index].name = e.target.value;
-                          updateField('medications', updated);
-                        }}
-                        className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-sm font-body input-shadow"
-                        placeholder="药物名称"
-                      />
-                      <input
-                        type="text"
-                        value={med.dosage}
-                        onChange={(e) => {
-                          const updated = [...formData.medications];
-                          updated[index].dosage = e.target.value;
-                          updateField('medications', updated);
-                        }}
-                        className="w-full bg-surface-container-lowest border-none rounded-xl p-3 text-sm font-body input-shadow"
-                        placeholder="剂量 / 频率"
-                      />
+                    <div key={index} className="relative bg-surface-container-lowest rounded-xl p-4">
+                      {formData.medications.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = formData.medications.filter((_, i) => i !== index);
+                            updateField('medications', updated);
+                          }}
+                          className="absolute top-2 right-2 p-1 hover:bg-error/10 rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+                        </button>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs text-on-surface-variant">药物名称</label>
+                          <input
+                            type="text"
+                            value={med.name}
+                            onChange={(e) => {
+                              const updated = [...formData.medications];
+                              updated[index].name = e.target.value;
+                              updateField('medications', updated);
+                            }}
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
+                            placeholder="请输入药物名称"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-on-surface-variant">剂量 / 频率</label>
+                          <input
+                            type="text"
+                            value={med.dosage}
+                            onChange={(e) => {
+                              const updated = [...formData.medications];
+                              updated[index].dosage = e.target.value;
+                              updateField('medications', updated);
+                            }}
+                            className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body input-shadow"
+                            placeholder="请输入剂量和频率"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                   <button

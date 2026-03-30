@@ -9,9 +9,11 @@ datasource db {
 
 model User {
   id                Int               @id @default(autoincrement())
-  username          String            @unique
+  username          String
   phone             String            @unique
   passwordHash      String            @map("password_hash")
+  /// 角色类型，逗号分隔，支持多角色：user(用户)、salesman(业务员)、admin(管理员)
+  /// 例如：user、admin、user,salesman、salesman,admin
   role              String            @default("user")
   gender            String?
   birthDate         String?           @map("birth_date")

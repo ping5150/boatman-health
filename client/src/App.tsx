@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import SubPageLayout from '@/layouts/SubPageLayout';
+import ScrollToTop from '@/components/ScrollToTop';
 import Home from '@/pages/Home';
 import Services from '@/pages/Services';
 import Login from '@/pages/Login';
@@ -23,6 +24,7 @@ import ArchiveSuccess from '@/pages/ArchiveSuccess';
 const App = () => {
   return (
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         {/* 登录页 - 无布局 */}
         <Route path="/login" element={<Login />} />

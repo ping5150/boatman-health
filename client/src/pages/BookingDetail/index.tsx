@@ -145,14 +145,6 @@ const BookingDetail = () => {
           <h1 className="font-headline text-2xl font-bold text-primary">
             {isEditing ? '编辑预约' : '预约详情'}
           </h1>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 text-xs font-bold text-secondary bg-secondary/5 rounded-full hover:bg-secondary/10 transition-colors"
-            >
-              编辑
-            </button>
-          )}
         </div>
 
         {isEditing ? (
@@ -283,9 +275,25 @@ const BookingDetail = () => {
             )}
 
             {/* 版本信息 */}
-            <p className="text-center text-xs text-on-surface-variant">
+            {/* <p className="text-center text-xs text-on-surface-variant">
               版本：v{booking.versionNumber}
-            </p>
+            </p> */}
+
+            {/* 底部操作按钮 */}
+            <div className="space-y-3 pt-4">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full bg-primary text-on-primary font-headline font-bold py-4 rounded-full text-base shadow-lg transition-all active:scale-95"
+              >
+                编辑预约
+              </button>
+              <button
+                onClick={() => navigate('/health-form')}
+                className="w-full bg-surface-container text-primary font-headline font-bold py-4 rounded-full text-base hover:bg-surface-container-high transition-all"
+              >
+                继续完善档案
+              </button>
+            </div>
           </div>
         )}
       </main>

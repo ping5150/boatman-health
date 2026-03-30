@@ -280,6 +280,7 @@ export const adminController = {
 
   /**
    * 更新用户
+   * 只有管理员才能更新用户角色
    */
   async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
@@ -289,7 +290,17 @@ export const adminController = {
         return;
       }
 
-      const result = await adminService.updateUser(id, req.body);
+      // 检查是否为管理员
+      const currentUserRole = req.user?.role || '';
+      const isAdmin = currentUserRole.split(',').map(r => r.trim()).includes('admin');
+
+      // 如果不是管理员，且尝试更新角色字段，则拒绝
+      if (!isAdmin && req.body.role !== undefined) {
+        sendError(res, 403, '只有管理员才能修改用户角色', 403);
+        return;
+      }
+
+      const result = await adminService.updateUser(id, req.body, isAdmin);
       sendSuccess(res, result, '更新成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {

@@ -7,6 +7,17 @@ import { validate } from '../middleware/validator';
 
 const router = Router();
 
+// 更新用户参数校验
+const updateUserSchema = z.object({
+  username: z.string().min(2, '用户名长度不能少于2位').max(20, '用户名长度不能超过20位').optional(),
+  gender: z.string().optional(),
+  birthDate: z.string().optional(),
+  emergencyName: z.string().optional(),
+  emergencyRelation: z.string().optional(),
+  emergencyPhone: z.string().optional(),
+  role: z.string().optional(), // 支持多角色，逗号分隔，如 "user,salesman"
+});
+
 // ==================== 管理员登录/注册（无需认证） ====================
 
 const adminLoginSchema = z.object({
@@ -64,8 +75,8 @@ router.get('/users', authMiddleware, adminGuard, adminController.userList);
 // GET /admin/users/:id — 用户详情
 router.get('/users/:id', authMiddleware, adminGuard, adminController.userDetail);
 
-// PUT /admin/users/:id — 更新用户
-router.put('/users/:id', authMiddleware, adminGuard, adminController.updateUser);
+// PUT /admin/users/:id — 更新用户（包括角色）
+router.put('/users/:id', authMiddleware, adminGuard, validate(updateUserSchema), adminController.updateUser);
 
 // ==================== 同步管理 ====================
 

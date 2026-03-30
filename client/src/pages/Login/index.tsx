@@ -152,9 +152,9 @@ const Login = () => {
         {/* Logo and Title */}
         <div className="text-center mb-20">
           <div className="flex items-center justify-center mb-3">
-            <img src="/logo.png" alt="船夫健康Logo" className="h-16 w-auto drop-shadow-sm" />
+            <img src={new URL('@/images/img-04.png', import.meta.url).href} alt="船夫健康Logo" className="h-48 w-auto drop-shadow-sm" />
           </div>
-          <h1 className="font-headline font-extrabold text-3xl text-primary tracking-tight">船夫健康</h1>
+          {/* <h1 className="font-headline font-extrabold text-3xl text-primary tracking-tight">船夫健康</h1> */}
           <p className="text-on-surface-variant text-sm mt-1">您的专属私人健康管家</p>
         </div>
 

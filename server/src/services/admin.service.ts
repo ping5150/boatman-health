@@ -15,17 +15,34 @@ import {
 } from '../models/common.types';
 import { logger } from '../utils/logger';
 
+// 角色类型定义
+type UserRole = 'user' | 'salesman' | 'admin';
+
+/**
+ * 检查用户是否有管理后台访问权限（admin 或 salesman）
+ */
+function hasAdminAccess(roleString: string): boolean {
+  const roles = roleString.split(',').map(r => r.trim() as UserRole);
+  return roles.includes('admin') || roles.includes('salesman');
+}
+
 export const adminService = {
   /**
    * 管理员登录
+   * 只有拥有 admin 或 salesman 角色的用户才能登录管理后台
    */
   async login(phone: string, password: string) {
     const user = await prisma.user.findUnique({
       where: { phone },
     });
 
-    if (!user || user.role !== 'admin') {
-      throw { code: 1002, message: '管理员账号不存在' };
+    if (!user) {
+      throw { code: 1002, message: '账号不存在' };
+    }
+
+    // 检查是否有管理后台访问权限
+    if (!hasAdminAccess(user.role)) {
+      throw { code: 1003, message: '该账号无管理后台访问权限，仅管理员或业务员可登录' };
     }
 
     const isValid = await comparePassword(password, user.passwordHash);
@@ -36,21 +53,23 @@ export const adminService = {
     const token = signToken({
       userId: user.id,
       phone: user.phone,
-      role: user.role as 'user' | 'admin',
+      role: user.role,
     });
 
-    logger.info('ADMIN', `Admin logged in: userId=${user.id}`);
+    logger.info('ADMIN', `Admin logged in: userId=${user.id}, roles=${user.role}`);
 
     return {
       token,
       userId: user.id,
       phone: user.phone,
+      username: user.username,
       role: user.role,
     };
   },
 
   /**
    * 管理员注册
+   * 注意：只有数据库为空时允许注册（第一个用户自动成为管理员）
    */
   async register(phone: string, username: string, password: string) {
     // 检查手机号是否已注册
@@ -63,7 +82,7 @@ export const adminService = {
     }
 
     // 检查用户名是否已存在
-    const existingUsername = await prisma.user.findUnique({
+    const existingUsername = await prisma.user.findFirst({
       where: { username },
     });
 
@@ -71,24 +90,33 @@ export const adminService = {
       throw { code: 409, message: '该用户名已被使用' };
     }
 
-    // 创建管理员账号
+    // 判断是否为第一个用户（自动设为管理员）
+    const userCount = await prisma.user.count();
+    const role = userCount === 0 ? 'admin' : 'user';
+
+    // 创建用户账号
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         username,
         phone,
         passwordHash,
-        role: 'admin',
+        role,
       },
     });
 
-    logger.info('ADMIN', `Admin registered: userId=${user.id}, phone=${phone}`);
+    logger.info('ADMIN', `User registered: userId=${user.id}, phone=${phone}, role=${role}`);
+
+    // 如果是普通用户，不允许登录管理后台
+    if (!hasAdminAccess(role)) {
+      throw { code: 1003, message: '注册成功，但该账号无管理后台访问权限。请联系管理员分配角色。' };
+    }
 
     // 注册成功后自动登录，签发 Token
     const token = signToken({
       userId: user.id,
       phone: user.phone,
-      role: user.role as 'user' | 'admin',
+      role: user.role,
     });
 
     return {
@@ -499,7 +527,8 @@ export const adminService = {
   },
 
   /**
-   * 获取用户列表（分页 + 搜索）
+   * 获取用户列表（分页 + 搜索 + 角色筛选）
+   * 角色筛选支持多角色匹配（如筛选 admin 会匹配到 "admin" 和 "user,admin"）
    */
   async getUserList(
     page: number,
@@ -516,8 +545,9 @@ export const adminService = {
       ];
     }
 
+    // 角色筛选：使用 contains 支持多角色匹配
     if (role) {
-      where.role = role;
+      where.role = { contains: role };
     }
 
     const [total, list] = await Promise.all([
@@ -594,9 +624,10 @@ export const adminService = {
   },
 
   /**
-   * 更新用户
+   * 更新用户（包括角色）
+   * 只有管理员才能更新角色字段
    */
-  async updateUser(id: number, data: Record<string, unknown>) {
+  async updateUser(id: number, data: Record<string, unknown>, isAdmin: boolean = false) {
     const user = await prisma.user.findUnique({
       where: { id },
     });
@@ -612,17 +643,30 @@ export const adminService = {
     if (data.emergencyName !== undefined) updateData.emergencyName = data.emergencyName;
     if (data.emergencyRelation !== undefined) updateData.emergencyRelation = data.emergencyRelation;
     if (data.emergencyPhone !== undefined) updateData.emergencyPhone = data.emergencyPhone;
+    
+    // 只有管理员才能更新角色
+    if (data.role !== undefined && isAdmin) {
+      // 验证角色格式
+      const validRoles = ['user', 'salesman', 'admin'];
+      const roles = (data.role as string).split(',').map((r: string) => r.trim());
+      const isValidRoles = roles.every((r: string) => validRoles.includes(r));
+      if (!isValidRoles) {
+        throw { code: 400, message: '无效的角色类型，有效角色：user、salesman、admin' };
+      }
+      updateData.role = data.role;
+    }
 
     const updated = await prisma.user.update({
       where: { id },
       data: updateData,
     });
 
-    logger.info('ADMIN', `User updated: id=${id}`);
+    logger.info('ADMIN', `User updated: id=${id}, role=${updated.role}`);
 
     return {
       id: updated.id,
       username: updated.username,
+      role: updated.role,
       updatedAt: updated.updatedAt.toISOString(),
     };
   },

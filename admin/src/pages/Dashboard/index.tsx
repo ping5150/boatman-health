@@ -179,15 +179,6 @@ const DashboardPage: React.FC = () => {
       render: (text: string) => <Tag color="blue">{text}</Tag>,
     },
     {
-      title: '状态',
-      dataIndex: 'feishuSyncStatus',
-      render: (status: string) => (
-        <Tag color={syncStatusConfig[status]?.color || 'default'}>
-          {syncStatusConfig[status]?.text || status}
-        </Tag>
-      ),
-    },
-    {
       title: '提交时间',
       dataIndex: 'submittedAt',
       width: 140,

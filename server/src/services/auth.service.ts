@@ -225,8 +225,22 @@ export const authService = {
       throw { code: 404, message: '用户不存在' };
     }
 
+    // 如果要更新手机号，检查是否已被其他用户使用
+    if (data.phone !== undefined && data.phone !== user.phone) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          phone: data.phone as string,
+          id: { not: userId },
+        },
+      });
+      if (existingUser) {
+        throw { code: 400, message: '该手机号已被其他账号绑定' };
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (data.username !== undefined) updateData.username = data.username;
+    if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.birthDate !== undefined) updateData.birthDate = data.birthDate;
     if (data.emergencyName !== undefined) updateData.emergencyName = data.emergencyName;
@@ -243,6 +257,7 @@ export const authService = {
     return {
       id: updated.id,
       username: updated.username,
+      phone: updated.phone,
       gender: updated.gender || '',
       birthDate: updated.birthDate || '',
       emergencyName: updated.emergencyName || '',

@@ -57,6 +57,7 @@ const loginSchema = z.object({
 // 更新用户信息参数校验
 const updateProfileSchema = z.object({
   username: z.string().min(2, '用户名长度不能少于2位').max(20, '用户名长度不能超过20位').optional(),
+  phone: z.string().regex(/^\d{11}$/, '手机号格式错误，需为11位数字').optional(),
   gender: z.string().optional(),
   birthDate: z.string().optional(),
   emergencyName: z.string().optional(),
