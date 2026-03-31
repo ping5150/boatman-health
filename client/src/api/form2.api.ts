@@ -149,7 +149,8 @@ export const updateArchive = async (
 };
 
 /**
- * 保存草稿（创建或更新）
+ * 保存草稿
+ * 后端会自动查找用户已有档案：有则覆盖更新，无则创建新记录
  */
 export const saveDraft = async (
   data: Partial<HealthFormData>,
@@ -158,7 +159,6 @@ export const saveDraft = async (
   if (existingId) {
     return updateArchive(existingId, data);
   }
-  // 如果没有现有档案，创建一个新的
   const res = await api.post('/form2/draft', data);
   const result = res.data.data;
   return {

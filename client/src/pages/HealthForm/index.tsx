@@ -54,10 +54,52 @@ const HealthForm = () => {
   const [loading, setLoading] = useState(true);
   const [saveIndicator, setSaveIndicator] = useState(false);
   const [archiveId, setArchiveId] = useState<number | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigate = useNavigate();
+
+  // 显示 Toast 提示
+  const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2500);
+  }, []);
+
+  // 校验第一步必填项
+  const validateStep1 = (): boolean => {
+    const errors: Record<string, string> = {};
+    const name = formData.name.trim();
+    const phone = formData.phone.trim();
+
+    if (!name) {
+      errors.name = '请输入姓名';
+    }
+
+    if (!phone) {
+      errors.phone = '请输入联系电话';
+    } else if (!/^1[3-9]\d{9}$/.test(phone)) {
+      errors.phone = '请输入正确的手机号码';
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      showToast(firstError);
+      return false;
+    }
+
+    return true;
+  };
 
   // 加载已有档案数据
   useEffect(() => {
@@ -111,19 +153,30 @@ const HealthForm = () => {
       showSaveIndicator();
     } catch (error) {
       console.error('保存失败:', error);
-      alert('保存失败，请重试');
+      showToast('保存失败，请重试');
       throw error;
     } finally {
       setSaving(false);
     }
   };
 
+  // 切换步骤后滚动到顶部
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // 下一步
   const handleNextStep = async () => {
+    // 第一步需要校验必填项
+    if (currentStep === 0 && !validateStep1()) {
+      return;
+    }
+
     try {
       await handleSaveStep();
       if (currentStep < TOTAL_STEPS - 1) {
         setCurrentStep(prev => prev + 1);
+        scrollToTop();
       }
     } catch {
       // 错误已在 handleSaveStep 中处理
@@ -134,6 +187,7 @@ const HealthForm = () => {
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
+      scrollToTop();
     }
   };
 
@@ -146,6 +200,7 @@ const HealthForm = () => {
         await handleSaveStep();
       }
       setCurrentStep(index);
+      scrollToTop();
     } catch {
       // 错误已处理
     }
@@ -167,11 +222,17 @@ const HealthForm = () => {
         })),
       };
 
-      await submitForm2(submitData);
+      if (archiveId) {
+        // 已有档案：覆盖更新，保持档案编号不变
+        await updateArchive(archiveId, submitData);
+      } else {
+        // 首次提交：创建新档案
+        await submitForm2(submitData);
+      }
       navigate('/archive-success');
     } catch (error) {
       console.error('提交失败:', error);
-      alert('提交失败，请重试');
+      showToast('提交失败，请重试');
     } finally {
       setSaving(false);
     }
@@ -179,6 +240,14 @@ const HealthForm = () => {
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // 输入时清除对应字段的错误提示
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const toggleArray = (field: string, value: string) => {
@@ -306,18 +375,11 @@ const HealthForm = () => {
         </div>
       </header>
 
-      {/* 主体滑动区域 */}
-      <main className="relative overflow-x-hidden pb-28">
-        <div
-          ref={sliderRef}
-          className="flex w-full items-start"
-          style={{
-            transform: `translateX(-${currentStep * 100}%)`,
-            transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
-        >
+      {/* 主体内容区域 */}
+      <main className="relative pb-28">
+        <div ref={sliderRef}>
           {/* ================= 步骤 1: 基本信息 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 0 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 1 of {TOTAL_STEPS}
@@ -327,24 +389,26 @@ const HealthForm = () => {
 
               <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">姓名</label>
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">姓名 <span className="text-error">*</span></label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => updateField('name', e.target.value)}
-                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.name ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
                     placeholder="请输入尊称"
                   />
+                  {fieldErrors.name && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.name}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">联系电话</label>
+                  <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">联系电话 <span className="text-error">*</span></label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => updateField('phone', e.target.value)}
-                    className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                    className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.phone ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
                     placeholder="主要联系号码"
                   />
+                  {fieldErrors.phone && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.phone}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">紧急联系人</label>
@@ -390,7 +454,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 2: 生理健康背景 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 1 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 2 of {TOTAL_STEPS}
@@ -598,7 +662,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 3: 饮食模式 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 2 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 3 of {TOTAL_STEPS} · 生活方式评估
@@ -688,7 +752,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 4: 运动习惯 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 3 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 4 of {TOTAL_STEPS} · 生活方式评估
@@ -772,7 +836,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 5: 睡眠情况 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 4 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 5 of {TOTAL_STEPS} · 生活方式评估
@@ -874,7 +938,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 6: 压力与情绪 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 5 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 6 of {TOTAL_STEPS} · 生活方式评估
@@ -946,7 +1010,7 @@ const HealthForm = () => {
           </div>
 
           {/* ================= 步骤 7: 诉求与附件 ================= */}
-          <div className="w-full shrink-0 px-4 pb-4">
+          <div className={`px-4 pb-4 ${currentStep !== 6 ? 'hidden' : ''}`}>
             <div className="max-w-md mx-auto pt-2 pb-4">
               <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
                 Step 7 of {TOTAL_STEPS} · 诉求与资料
@@ -1075,6 +1139,34 @@ const HealthForm = () => {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .editorial-shadow { box-shadow: 0 8px 32px rgba(0, 30, 64, 0.08); }
         .shadow-input { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); }
+      `}</style>
+
+      {/* Toast 提示 */}
+      {toast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] animate-toast-in">
+          <div
+            className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-lg backdrop-blur-xl text-sm font-medium ${
+              toast.type === 'error'
+                ? 'bg-error/90 text-white'
+                : 'bg-secondary/90 text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg">
+              {toast.type === 'error' ? 'error' : 'check_circle'}
+            </span>
+            {toast.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes toast-in {
+          from { opacity: 0; transform: translate(-50%, -12px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-toast-in {
+          animation: toast-in 0.25s ease-out;
+        }
       `}</style>
     </div>
   );

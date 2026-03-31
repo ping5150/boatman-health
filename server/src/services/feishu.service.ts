@@ -69,6 +69,28 @@ const createRecord = async (
 };
 
 /**
+ * 更新飞书多维表格记录
+ */
+const updateRecord = async (
+  appToken: string,
+  tableId: string,
+  recordId: string,
+  fields: Record<string, unknown>,
+): Promise<void> => {
+  const token = await tokenManager.getToken();
+  await axios.put(
+    `${feishuConfig.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/records/${recordId}`,
+    { fields },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+};
+
+/**
  * 用户字段映射：数据库记录 → 飞书表格字段
  */
 const mapUserToFeishu = (user: {
@@ -206,6 +228,107 @@ export const feishuService = {
       });
 
       logger.error('FEISHU', `Sync failed: table=user, recordId=${user.id}`, err);
+      throw err;
+    }
+  },
+
+  /**
+   * 更新用户到飞书（已有 feishuRecordId 时更新，否则新建）
+   */
+  async updateUser(user: {
+    id: number;
+    username: string;
+    phone: string;
+    role: string;
+    gender: string | null;
+    birthDate: string | null;
+    emergencyName: string | null;
+    emergencyRelation: string | null;
+    emergencyPhone: string | null;
+    createdAt: Date;
+    feishuRecordId: string | null;
+  }) {
+    if (!feishuConfig.isEnabled) {
+      logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping user update');
+      return;
+    }
+
+    // 如果没有飞书记录 ID，退化为新建
+    if (!user.feishuRecordId) {
+      return this.syncUser(user);
+    }
+
+    try {
+      const fields = mapUserToFeishu(user);
+      await updateRecord(
+        feishuConfig.user.appToken,
+        feishuConfig.user.tableId,
+        user.feishuRecordId,
+        fields,
+      );
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { feishuSyncStatus: 'success' },
+      });
+
+      logger.info('FEISHU', `Update success: table=user, recordId=${user.id}, feishuRecordId=${user.feishuRecordId}`);
+    } catch (err) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { feishuSyncStatus: 'failed' },
+      });
+
+      logger.error('FEISHU', `Update failed: table=user, recordId=${user.id}`, err);
+      throw err;
+    }
+  },
+
+  /**
+   * 更新表单2到飞书（已有 feishuRecordId 时更新，否则新建）
+   */
+  async updateForm2(submission: {
+    id: number;
+    userId: number;
+    name: string;
+    phone: string;
+    formData: string;
+    submittedAt: Date;
+    versionNumber: number;
+    feishuRecordId: string | null;
+  }) {
+    if (!feishuConfig.isEnabled) {
+      logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form2 update');
+      return;
+    }
+
+    // 如果没有飞书记录 ID，退化为新建
+    if (!submission.feishuRecordId) {
+      return this.syncForm2(submission);
+    }
+
+    try {
+      const fields = mapForm2ToFeishu(submission);
+      await updateRecord(
+        feishuConfig.form2.appToken,
+        feishuConfig.form2.tableId,
+        submission.feishuRecordId,
+        fields,
+      );
+
+      await prisma.form2Submission.update({
+        where: { id: submission.id },
+        data: { feishuSyncStatus: 'success' },
+      });
+
+      logger.info('FEISHU', `Update success: table=form2, recordId=${submission.id}, feishuRecordId=${submission.feishuRecordId}`);
+    } catch (err) {
+      await prisma.form2Submission.update({
+        where: { id: submission.id },
+        data: { feishuSyncStatus: 'failed' },
+      });
+
+      logger.error('FEISHU', `Update failed: table=form2, recordId=${submission.id}`, err);
       throw err;
     }
   },

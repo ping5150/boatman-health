@@ -1,0 +1,349 @@
+---
+description: 船夫健康（Boatman Health）全栈项目规则，包含项目结构、子项目说明、依赖关系及开发规范
+alwaysApply: true
+enabled: true
+updatedAt: 2026-03-31T06:10:00.000Z
+provider: 
+---
+
+# 船夫健康（Boatman Health）— 项目规则
+
+## 一、项目概述
+
+**船夫健康**是一个面向高净值人士的高端医疗健康咨询与管理平台，采用前后端分离的 Monorepo 架构。项目包含三个独立子项目和若干辅助目录，统一在根目录下管理。
+
+- **项目名称**：chuanfu-health
+- **产品定位**：私人管家式高端医疗健康服务平台
+- **核心功能**：用户认证、咨询预约、深度健康档案管理、管理后台、飞书数据同步
+
+---
+
+## 二、项目目录结构与子项目说明
+
+```
+project-root/                       # Monorepo 根目录
+├── client/                         # 🟢 用户端前端（H5/移动端）
+├── admin/                          # 🔵 管理后台前端
+├── server/                         # 🟠 后端 API 服务
+├── api-docs/                       # 📄 API 接口文档
+├── docs/                           # 📋 项目文档（PRD、技术设计等）
+├── scripts/                        # 🔧 构建脚本
+├── package.json                    # 根目录 package.json（统一脚本入口）
+├── edgeone.json                    # EdgeOne Pages 部署配置
+└── product-requirements-document.md # 产品需求文档
+```
+
+### 2.1 `client/` — 用户端前端
+
+| 属性 | 说明 |
+|------|------|
+| **项目类型** | React SPA（单页应用），面向 C 端用户 |
+| **技术栈** | React 19 + TypeScript + Vite + Tailwind CSS 4 + React Router 7 |
+| **UI 方案** | 自定义组件 + Lucide Icons + CVA + Tailwind Merge |
+| **路由模式** | HashRouter |
+| **构建工具** | Vite 6 |
+| **入口文件** | `src/main.tsx` |
+| **构建产物** | `client/dist/` |
+
+**核心功能页面**：
+- 首页（品牌展示）、登录注册、用户中心
+- 咨询预约、预约详情、预约成功
+- 深度健康档案填写与查看
+- 服务流程、案例中心、品牌故事
+- 账户设置、联系管家、退出登录
+
+**目录结构**：
+```
+client/src/
+├── api/            # API 请求封装（axios）
+├── assets/         # 静态资源
+├── components/     # 通用组件（AuthGuard、AuthModal、ScrollToTop 等）
+├── contexts/       # React Context（用户状态管理）
+├── hooks/          # 自定义 Hooks
+├── images/         # 图片资源
+├── layouts/        # 布局组件（MainLayout、SubPageLayout）
+├── lib/            # 工具库
+├── pages/          # 页面组件（19 个页面）
+├── App.tsx         # 路由配置
+├── index.css       # 全局样式
+└── main.tsx        # 入口文件
+```
+
+### 2.2 `admin/` — 管理后台前端
+
+| 属性 | 说明 |
+|------|------|
+| **项目类型** | React SPA，面向管理员的后台管理系统 |
+| **技术栈** | React 19 + TypeScript + Vite + Ant Design 6 + React Router 7 |
+| **UI 方案** | Ant Design（antd）企业级组件库 |
+| **路由模式** | HashRouter |
+| **构建工具** | Vite 6 |
+| **入口文件** | `src/main.tsx` |
+| **构建产物** | `admin/dist/` |
+| **额外依赖** | xlsx（Excel 导出）、dayjs（日期处理） |
+
+**核心功能页面**：
+- 管理员登录、数据仪表盘
+- 用户管理（列表 + 详情）
+- 预约管理（列表 + 详情）
+- 健康档案管理（列表 + 详情）
+- 数据同步管理（飞书同步状态 + 重试）
+
+**目录结构**：
+```
+admin/src/
+├── api/            # API 请求封装
+├── assets/         # 静态资源
+├── components/     # 通用组件（AuthGuard、Layout）
+├── hooks/          # 自定义 Hooks
+├── pages/          # 页面组件
+├── types/          # TypeScript 类型定义
+├── utils/          # 工具函数
+├── App.tsx         # 路由配置
+├── index.css       # 全局样式
+└── main.tsx        # 入口文件
+```
+
+### 2.3 `server/` — 后端 API 服务
+
+| 属性 | 说明 |
+|------|------|
+| **项目类型** | RESTful API 服务 |
+| **技术栈** | Node.js + Express + TypeScript + Prisma ORM |
+| **数据库** | SQLite（开发） / PostgreSQL（可切换） |
+| **认证方案** | JWT（jsonwebtoken） + bcrypt 密码哈希 |
+| **外部集成** | 飞书多维表格 API（表单数据同步） |
+| **API 文档** | Swagger（swagger-jsdoc + swagger-ui-express） |
+| **入口文件** | `src/app.ts`（开发）/ `dist/app.js`（生产） |
+| **默认端口** | 3000 |
+| **部署方案** | 腾讯云轻量服务器 + PM2 进程守护 |
+
+**API 路由**：
+
+| 路由前缀 | 功能 |
+|----------|------|
+| `/api/auth` | 用户认证（注册、登录、验证码） |
+| `/api/form1` | 咨询预约表单 |
+| `/api/form2` | 健康评估表单 |
+| `/admin` | 管理后台接口（需 admin 权限） |
+| `/health` | 健康检查端点 |
+
+**目录结构**：
+```
+server/src/
+├── config/         # 配置管理（env、database、feishu）
+├── controllers/    # 控制器层
+├── middleware/      # 中间件（auth、adminGuard、errorHandler、validator）
+├── models/         # 数据模型 / 类型定义
+├── routes/         # 路由定义
+├── services/       # 业务逻辑层（含飞书同步服务）
+├── utils/          # 工具函数（JWT、密码、日志、响应格式）
+└── app.ts          # Express 应用入口
+
+server/prisma/
+├── schema.prisma   # 数据库模型定义
+├── migrations/     # 数据库迁移文件
+└── dev.db          # SQLite 开发数据库
+```
+
+### 2.4 `api-docs/` — API 接口文档
+
+独立维护的 Markdown 格式 API 文档，供前端开发参照。
+
+| 文件 | 内容 |
+|------|------|
+| `auth.api.md` | 认证相关接口（登录、注册、验证码） |
+| `booking.api.md` | 预约/咨询表单接口 |
+| `archive.api.md` | 健康档案接口 |
+| `admin.api.md` | 管理后台接口 |
+| `interfaces.ts` | TypeScript 类型定义（接口通用类型） |
+| `README.md` | 接口总览、Base URL、认证说明、错误码 |
+
+### 2.5 `docs/` — 项目文档
+
+| 文件 | 内容 |
+|------|------|
+| `需求规格文档(PRD).md` | 产品需求规格说明 |
+| `技术设计文档.md` | 技术架构、数据库设计、API 设计 |
+| `用户端业务说明文档.md` | 用户端业务流程说明 |
+
+### 2.6 `scripts/` — 构建脚本
+
+| 文件 | 功能 |
+|------|------|
+| `merge-dist.mjs` | 将 `client/dist` 和 `admin/dist` 合并到根目录 `dist/`，用于统一部署 |
+
+合并后的产物结构：
+```
+dist/
+├── index.html      # 用户端入口
+├── assets/         # 用户端静态资源
+└── admin/
+    ├── index.html  # 管理后台入口
+    └── assets/     # 管理后台静态资源
+```
+
+---
+
+## 三、子项目依赖关系
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     project-root (Monorepo)                     │
+│                                                                 │
+│   ┌──────────┐          HTTPS/API           ┌──────────────┐   │
+│   │ client/  │ ──────────────────────────▶  │   server/    │   │
+│   │ (用户端)  │  /api/auth, /api/form1,     │  (后端服务)   │   │
+│   └──────────┘  /api/form2                  │              │   │
+│                                              │              │   │
+│   ┌──────────┐          HTTPS/API           │    Express   │   │
+│   │ admin/   │ ──────────────────────────▶  │  + Prisma    │   │
+│   │ (管理后台) │  /admin/*, /api/auth        │  + SQLite    │   │
+│   └──────────┘                              └──────┬───────┘   │
+│                                                     │           │
+│   ┌──────────┐                                      │           │
+│   │api-docs/ │  ◀── 文档参考 ── client & admin      │           │
+│   └──────────┘                                      ▼           │
+│                                              ┌──────────────┐   │
+│   ┌──────────┐                               │ 飞书多维表格  │   │
+│   │ scripts/ │  合并 client + admin 构建产物   │  (数据同步)  │   │
+│   └──────────┘                               └──────────────┘   │
+│                                                                 │
+│   edgeone.json  ── 前端部署到 EdgeOne Pages                      │
+│                    API 请求通过 rewrites 代理到 server            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 关键依赖说明
+
+1. **client → server**：用户端通过 HTTP 请求调用后端 API（`/api/auth`、`/api/form1`、`/api/form2`）
+2. **admin → server**：管理后台通过 HTTP 请求调用后端 API（`/admin/*`、`/api/auth`）
+3. **server → 飞书**：后端异步将表单数据同步到飞书多维表格
+4. **server → SQLite/PostgreSQL**：通过 Prisma ORM 操作数据库
+5. **scripts → client & admin**：构建脚本合并两个前端项目的产物
+6. **edgeone.json**：前端统一部署到 EdgeOne Pages，`/api/*` 和 `/admin/*` 请求通过 rewrites 代理到后端服务器 `43.139.240.74:3000`
+7. **api-docs**：供 client 和 admin 开发时参照的接口文档，不参与运行
+8. **client 与 admin 之间无直接依赖**，它们是两个独立的 SPA 应用
+
+---
+
+## 四、开发与构建命令
+
+### 根目录统一脚本
+
+```bash
+# 启动开发
+npm run dev:server    # 启动后端（cd server && npm run dev）
+npm run dev:client    # 启动用户端（cd client && npm run dev）
+npm run dev:admin     # 启动管理后台（cd admin && npm run dev）
+
+# 构建
+npm run build:client  # 构建用户端
+npm run build:admin   # 构建管理后台
+npm run build         # 构建全部 + 合并产物到 dist/
+```
+
+### 各子项目独立脚本
+
+```bash
+# server/
+npm run dev           # ts-node-dev 热更新开发
+npm run build         # TypeScript 编译
+npm run start         # 启动生产服务
+npm run prisma:migrate  # 执行数据库迁移
+npm run prisma:studio   # 打开 Prisma Studio
+
+# client/ 和 admin/
+npm run dev           # Vite 开发服务器
+npm run build         # TypeScript 检查 + Vite 构建
+npm run preview       # 预览构建产物
+```
+
+---
+
+## 五、部署架构
+
+```
+用户浏览器
+    │
+    ▼
+EdgeOne Pages (CDN)
+├── / → client SPA (用户端)
+├── /admin/ → admin SPA (管理后台)
+├── /api/* → rewrite 代理 → 43.139.240.74:3000/api/*
+└── /admin/* (API) → rewrite 代理 → 43.139.240.74:3000/admin/*
+    │
+    ▼
+腾讯云轻量服务器 (43.139.240.74)
+└── PM2 → Node.js Express (port 3000)
+    ├── Prisma ORM → SQLite (server/prisma/prod.db)
+    └── axios → 飞书开放平台 API
+```
+
+---
+
+## 六、开发规范要求
+
+### 6.1 通用规范
+- **语言**：全项目使用 TypeScript，严格类型检查
+- **包管理**：各子项目独立 `package.json`，各自管理依赖
+- **代码风格**：遵循根目录 `.codebuddy/rules/` 中的编码规范
+- **Git 规范**：主分支为 `main`
+
+### 6.2 client 用户端规范
+- 使用 **Tailwind CSS** 编写样式，优先使用原子类
+- 路由使用 **HashRouter**，适配 H5/移动端场景
+- 需要登录的页面使用 `<AuthGuard>` 组件包裹
+- 登录采用弹窗模式（`<AuthModal>`），非独立页面跳转
+- API 请求统一放在 `src/api/` 目录
+
+### 6.3 admin 管理后台规范
+- 使用 **Ant Design (antd)** 组件库，配置中文语言包
+- 路由使用 **HashRouter**
+- 所有管理页面通过 `<AuthGuard>` + `<AdminLayout>` 包裹
+- API 请求统一放在 `src/api/` 目录
+- 数据导出使用 `xlsx` 库
+
+### 6.4 server 后端规范
+- 遵循分层架构：`routes → controllers → services → prisma`
+- 所有接口使用 `zod` 进行参数校验
+- 统一响应格式：`{ code: number, message: string, data?: T }`
+- 飞书同步采用**异步触发**，不阻塞用户请求
+- 敏感信息通过 `.env` 管理，严禁硬编码
+- 日志使用自定义 `logger` 工具，按 `[模块] 消息` 格式输出
+
+### 6.5 数据库规范
+- 使用 Prisma ORM，所有表结构变更通过 `prisma migrate` 管理
+- 数据库表名使用蛇形命名（`snake_case`）
+- 字段映射使用 `@map()` 和 `@@map()` 装饰器
+- 核心数据表：`users`、`form1_submissions`、`form2_submissions`
+
+---
+
+## 七、环境变量说明
+
+后端服务需要以下环境变量（配置在 `server/.env`）：
+
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `DATABASE_URL` | 数据库连接字符串 | `file:./dev.db` |
+| `JWT_SECRET` | JWT 签名密钥 | 32 位以上随机字符串 |
+| `PORT` | 服务端口 | `3000` |
+| `NODE_ENV` | 运行环境 | `development` / `production` |
+| `FEISHU_APP_ID` | 飞书应用 ID | `cli_xxxxx` |
+| `FEISHU_APP_SECRET` | 飞书应用密钥 | — |
+| `FORM1_APP_TOKEN` | 表单1 飞书表格 Token | — |
+| `FORM1_TABLE_ID` | 表单1 飞书表格 ID | — |
+| `FORM2_APP_TOKEN` | 表单2 飞书表格 Token | — |
+| `FORM2_TABLE_ID` | 表单2 飞书表格 ID | — |
+
+---
+
+## 八、注意事项
+
+1. **三个子项目完全独立**：各有自己的 `package.json`、`tsconfig.json`、`node_modules`，修改一个不影响另一个
+2. **API 地址**：开发时 client 和 admin 通过 Vite 的 proxy 配置代理到本地 server；生产环境通过 EdgeOne 的 rewrites 代理
+3. **构建顺序**：执行根目录 `npm run build` 会先构建 client，再构建 admin，最后运行 `merge-dist.mjs` 合并产物
+4. **数据库迁移**：修改 `prisma/schema.prisma` 后需运行 `npx prisma migrate dev` 生成迁移文件
+5. **飞书同步**：开发环境 `NODE_ENV=development` 时验证码固定为 `123456`
+6. **不要删除** `.codebuddy/` 目录，其中存储项目相关配置数据

@@ -311,9 +311,42 @@ export const formService = {
   },
 
   /**
-   * 保存草稿（创建新的草稿记录）
+   * 保存草稿（查找已有档案则覆盖更新，否则创建新记录）
    */
   async saveDraft(userId: number, formData: Partial<HealthFormData>) {
+    // 先查找用户是否已有档案记录
+    const existing = await prisma.form2Submission.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    if (existing) {
+      // 已有档案：合并数据后原地更新，保持 id 和 orderNo 不变
+      const existingFormData = JSON.parse(existing.formData) as HealthFormData;
+      const mergedFormData = { ...existingFormData, ...formData };
+      const name = mergedFormData.name || existing.name;
+      const phone = mergedFormData.phone || existing.phone;
+
+      const updated = await prisma.form2Submission.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          phone,
+          formData: JSON.stringify(mergedFormData),
+        },
+      });
+
+      logger.info('FORM', `Form2 draft updated: userId=${userId}, id=${updated.id}, orderNo=${updated.orderNo}`);
+
+      return {
+        id: updated.id,
+        orderNo: updated.orderNo,
+        submittedAt: updated.submittedAt.toISOString(),
+        versionNumber: updated.versionNumber,
+      };
+    }
+
+    // 无已有档案：创建新记录
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const versionNumber = await this.getNextVersion(userId, 'form2');
     const orderNo = await generateOrderNo('HA');
@@ -334,7 +367,7 @@ export const formService = {
       },
     });
 
-    logger.info('FORM', `Form2 draft saved: userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, id=${submission.id}`);
+    logger.info('FORM', `Form2 draft created: userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, id=${submission.id}`);
 
     return {
       id: submission.id,
@@ -439,7 +472,7 @@ export const formService = {
   },
 
   /**
-   * 更新档案
+   * 更新档案（原地覆盖更新，保持 id 和 orderNo 不变）
    */
   async updateForm2(userId: number, id: number, data: Partial<HealthFormData>) {
     const original = await prisma.form2Submission.findFirst({
@@ -453,28 +486,21 @@ export const formService = {
     const existingFormData = JSON.parse(original.formData) as HealthFormData;
     const updatedFormData = { ...existingFormData, ...data };
 
-    // 创建新记录（版本号+1）
-    const versionNumber = await this.getNextVersion(userId, 'form2');
-    const orderNo = await generateOrderNo('HA');
-
-    const submission = await prisma.form2Submission.create({
+    // 原地更新记录，保持 id、orderNo、versionNumber 不变
+    const submission = await prisma.form2Submission.update({
+      where: { id },
       data: {
-        userId,
-        orderNo,
         name: updatedFormData.name,
         phone: updatedFormData.phone,
-        submittedBy: original.submittedBy,
         formData: JSON.stringify(updatedFormData),
-        versionNumber,
-        feishuSyncStatus: 'pending',
       },
     });
 
-    logger.info('FORM', `Form2 updated (new record): userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, originalId=${id}`);
+    logger.info('FORM', `Form2 updated (in-place): userId=${userId}, id=${id}, orderNo=${submission.orderNo}`);
 
-    // 异步触发飞书同步
-    feishuService.syncForm2(submission).catch((err) => {
-      logger.error('FEISHU', `Async sync form2 failed: id=${submission.id}`, err);
+    // 异步触发飞书同步（已有飞书记录则更新，否则新建）
+    feishuService.updateForm2(submission).catch((err) => {
+      logger.error('FEISHU', `Async update form2 failed: id=${submission.id}`, err);
     });
 
     return {
@@ -482,7 +508,6 @@ export const formService = {
       orderNo: submission.orderNo,
       submittedAt: submission.submittedAt.toISOString(),
       versionNumber: submission.versionNumber,
-      originalId: id,
     };
   },
 };

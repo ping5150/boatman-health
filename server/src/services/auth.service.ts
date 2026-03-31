@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { signToken } from '../utils/jwt';
 import { logger } from '../utils/logger';
+import { feishuService } from './feishu.service';
 
 // 开发阶段固定验证码
 const DEV_CODE = '123456';
@@ -90,6 +91,11 @@ export const authService = {
     });
 
     logger.info('AUTH', `User registered: userId=${user.id}, phone=${phone}, role=${role}`);
+
+    // 异步触发飞书用户同步（不阻塞响应）
+    feishuService.syncUser(user).catch((err) => {
+      logger.error('FEISHU', `Async sync user failed: userId=${user.id}`, err);
+    });
 
     // 注册成功后自动登录，签发 Token
     const token = signToken({
@@ -253,6 +259,11 @@ export const authService = {
     });
 
     logger.info('AUTH', `User profile updated: userId=${userId}`);
+
+    // 异步触发飞书用户更新（不阻塞响应）
+    feishuService.updateUser(updated).catch((err) => {
+      logger.error('FEISHU', `Async update user failed: userId=${userId}`, err);
+    });
 
     return {
       id: updated.id,
