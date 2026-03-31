@@ -12,6 +12,8 @@ interface BookingListItem {
   name: string;
   phone: string;
   consultationType: string;
+  preferredDate: string;
+  preferredTime: string;
   submittedAt: string;
   updatedAt: string;
   submittedBy: string;
@@ -77,8 +79,8 @@ const BookingListPage: React.FC = () => {
       '姓名': item.name,
       '手机号': item.phone,
       '咨询类型': item.consultationType,
+      '预约时间': item.preferredDate ? `${item.preferredDate} ${item.preferredTime || ''}`.trim() : '-',
       '提交时间': item.submittedAt ? dayjs(item.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-',
-      '更新时间': item.updatedAt ? dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-',
       '提交人': item.submittedBy,
     }));
 
@@ -121,14 +123,18 @@ const BookingListPage: React.FC = () => {
       ),
     },
     {
-      title: '提交时间',
-      dataIndex: 'submittedAt',
+      title: '预约时间',
+      key: 'preferredDateTime',
       width: 170,
-      render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+      render: (_: unknown, record: BookingListItem) => {
+        if (!record.preferredDate) return '-';
+        const time = record.preferredTime || '';
+        return `${record.preferredDate} ${time}`.trim();
+      },
     },
     {
-      title: '更新时间',
-      dataIndex: 'updatedAt',
+      title: '提交时间',
+      dataIndex: 'submittedAt',
       width: 170,
       render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
     },

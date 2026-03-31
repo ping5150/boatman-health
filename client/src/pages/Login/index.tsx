@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/components/Toast';
 import { checkUser, passwordLogin, register } from '@/api/auth.api';
 import { setToken, setUser } from '@/lib/auth';
 
@@ -10,6 +11,7 @@ type Step = 'phone' | 'login' | 'register';
 const Login = () => {
   const navigate = useNavigate();
   const { login: setUserContext } = useUser();
+  const { showToast } = useToast();
 
   // 当前步骤
   const [step, setStep] = useState<Step>('phone');
@@ -35,7 +37,7 @@ const Login = () => {
   // 检查手机号，判断新老用户
   const handleCheckPhone = async () => {
     if (!formData.phone || !/^\d{11}$/.test(formData.phone)) {
-      alert('请输入正确的11位手机号');
+      showToast('请输入正确的11位手机号');
       return;
     }
 
@@ -51,7 +53,7 @@ const Login = () => {
         setStep('register');
       }
     } catch {
-      alert('检查用户失败，请重试');
+      showToast('检查用户失败，请重试');
     } finally {
       setChecking(false);
     }
@@ -60,11 +62,11 @@ const Login = () => {
   // 老用户密码登录
   const handlePasswordLogin = async () => {
     if (!formData.password) {
-      alert('请输入密码');
+      showToast('请输入密码');
       return;
     }
     if (formData.password.length < 6) {
-      alert('密码长度不能少于6位');
+      showToast('密码长度不能少于6位');
       return;
     }
 
@@ -81,7 +83,7 @@ const Login = () => {
       navigate('/');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(error.response?.data?.message || '登录失败，请重试');
+      showToast(error.response?.data?.message || '登录失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -90,23 +92,23 @@ const Login = () => {
   // 新用户注册
   const handleRegister = async () => {
     if (!formData.username) {
-      alert('请输入用户名');
+      showToast('请输入用户名');
       return;
     }
     if (formData.username.length < 2) {
-      alert('用户名长度不能少于2位');
+      showToast('用户名长度不能少于2位');
       return;
     }
     if (!formData.password) {
-      alert('请输入密码');
+      showToast('请输入密码');
       return;
     }
     if (formData.password.length < 6) {
-      alert('密码长度不能少于6位');
+      showToast('密码长度不能少于6位');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert('两次密码不一致');
+      showToast('两次密码不一致');
       return;
     }
 
@@ -121,11 +123,11 @@ const Login = () => {
       setToken(res.token);
       setUser(res.user);
       setUserContext(res.user);
-      alert('注册成功！');
+      showToast('注册成功！', 'success');
       navigate('/');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(error.response?.data?.message || '注册失败，请重试');
+      showToast(error.response?.data?.message || '注册失败，请重试');
     } finally {
       setLoading(false);
     }

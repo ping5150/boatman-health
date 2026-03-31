@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/components/Toast';
 import Icon from '@/components/Icon';
 import { updateProfile } from '@/api/auth.api';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, login } = useUser();
+  const { showToast } = useToast();
   const [showEditModal, setShowEditModal] = useState(false);
   const [editField, setEditField] = useState<'username' | 'phone' | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -34,7 +36,7 @@ const Settings = () => {
       console.error('保存失败:', error);
       const err = error as { response?: { data?: { message?: string } } };
       const message = err.response?.data?.message || '保存失败，请重试';
-      alert(message);
+      showToast(message);
     } finally {
       setSaving(false);
     }

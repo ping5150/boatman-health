@@ -153,11 +153,10 @@ const mapForm1ToFeishu = (submission: {
   '联系电话': submission.phone,
   '咨询类型': submission.consultationType,
   '预约日期': submission.preferredDate,
-  '预约时间': submission.preferredTime,
+  '预约时间': new Date(`${submission.preferredDate} ${submission.preferredTime.split('-')[0]}`).getTime(),
   '简要说明': submission.brief,
   '提交时间': submission.submittedAt.getTime(),
   '版本号': submission.versionNumber,
-  '完整数据': JSON.stringify(submission),
 });
 
 /**
@@ -194,7 +193,6 @@ const mapForm2ToFeishu = (submission: {
     '健康关注点': formData.healthConcerns || '',
     '提交时间': submission.submittedAt.getTime(),
     '版本号': submission.versionNumber,
-    '完整数据': JSON.stringify(formData),
   };
 };
 
@@ -432,6 +430,12 @@ export const feishuService = {
         submission.feishuRecordId,
         fields,
       );
+
+      // 更新同步状态为成功
+      await prisma.form1Submission.update({
+        where: { id: submission.id },
+        data: { feishuSyncStatus: 'success' },
+      });
 
       logger.info('FEISHU', `Update success: table=form1, recordId=${submission.id}, feishuRecordId=${submission.feishuRecordId}`);
     } catch (err) {

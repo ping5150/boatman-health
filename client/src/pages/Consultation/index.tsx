@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/components/Toast';
 import { submitForm1 } from '@/api/form1.api';
 
 interface BookingResult {
@@ -16,6 +17,7 @@ interface BookingResult {
 
 const Consultation = () => {
   const { isAuthenticated, user } = useUser();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -49,27 +51,27 @@ const Consultation = () => {
 
     // 表单验证
     if (!formData.name.trim()) {
-      alert('请输入姓名');
+      showToast('请输入姓名');
       return;
     }
     if (!formData.phone.trim()) {
-      alert('请输入联系电话');
+      showToast('请输入联系电话');
       return;
     }
     if (!formData.consultationType) {
-      alert('请选择咨询需求');
+      showToast('请选择咨询需求');
       return;
     }
     if (!formData.preferredDate) {
-      alert('请选择首选联系日期');
+      showToast('请选择首选联系日期');
       return;
     }
     if (!formData.preferredTime) {
-      alert('请选择首选联系时间');
+      showToast('请选择首选联系时间');
       return;
     }
     if (!formData.brief.trim()) {
-      alert('请填写简要病史');
+      showToast('请填写简要病史');
       return;
     }
 
@@ -96,7 +98,7 @@ const Consultation = () => {
       });
     } catch (error) {
       console.error('提交失败:', error);
-      alert('提交失败，请稍后重试');
+      showToast('提交失败，请稍后重试');
     } finally {
       setIsSubmitting(false);
     }

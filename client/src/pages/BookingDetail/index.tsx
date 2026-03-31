@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
+import { useToast } from '@/components/Toast';
 import { getBookingDetail, updateBooking, cancelBooking, BookingData, ConsultationType } from '@/api/form1.api';
 
 const BookingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,7 +47,7 @@ const BookingDetail = () => {
         });
       } catch (error) {
         console.error('获取预约详情失败:', error);
-        alert('获取预约详情失败');
+        showToast('获取预约详情失败');
         navigate('/account');
       } finally {
         setLoading(false);
@@ -81,10 +83,10 @@ const BookingDetail = () => {
         brief: updatedData.brief,
       });
       setIsEditing(false);
-      alert('预约更新成功！');
+      showToast('预约更新成功！', 'success');
     } catch (error) {
       console.error('更新失败:', error);
-      alert('更新失败，请稍后重试');
+      showToast('更新失败，请稍后重试');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,11 +101,11 @@ const BookingDetail = () => {
     setIsCancelling(true);
     try {
       await cancelBooking(parseInt(id, 10));
-      alert('预约已取消');
+      showToast('预约已取消', 'success');
       navigate('/account');
     } catch (error) {
       console.error('取消预约失败:', error);
-      alert('取消预约失败，请稍后重试');
+      showToast('取消预约失败，请稍后重试');
     } finally {
       setIsCancelling(false);
     }
