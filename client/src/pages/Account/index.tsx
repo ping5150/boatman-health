@@ -19,7 +19,8 @@ const Account = () => {
     const fetchBookings = async () => {
       try {
         const data = await getBookingList();
-        setBookings(data);
+        // 只显示活跃的预约记录（过滤已取消的）
+        setBookings(data.filter((b) => b.status !== 'cancelled'));
       } catch (error) {
         console.error('获取预约列表失败:', error);
       } finally {

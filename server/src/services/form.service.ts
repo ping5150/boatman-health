@@ -104,7 +104,7 @@ export const formService = {
    */
   async getForm1List(userId: number): Promise<BookingListItem[]> {
     const list = await prisma.form1Submission.findMany({
-      where: { userId },
+      where: { userId, status: { not: 'cancelled' } },
       orderBy: { submittedAt: 'desc' },
       select: {
         id: true,
@@ -209,11 +209,11 @@ export const formService = {
   },
 
   /**
-   * 更新预约（新增记录，不覆盖原记录）
+   * 更新预约（原地修改，以订单编号为维度）
    */
   async updateForm1(
     userId: number,
-    originalId: number,
+    id: number,
     data: {
       name?: string;
       phone?: string;
@@ -225,49 +225,48 @@ export const formService = {
   ) {
     // 获取原记录
     const original = await prisma.form1Submission.findFirst({
-      where: { id: originalId, userId },
+      where: { id, userId },
     });
 
     if (!original) {
       throw { code: 404, message: '预约记录不存在' };
     }
 
-    // 创建新记录（版本号+1）
-    const versionNumber = await this.getNextVersion(userId, 'form1');
-    const orderNo = await generateOrderNo('BH');
+    if (original.status === 'cancelled') {
+      throw { code: 400, message: '已取消的预约不可编辑' };
+    }
 
-    const submission = await prisma.form1Submission.create({
-      data: {
-        userId,
-        orderNo,
-        name: data.name ?? original.name,
-        phone: data.phone ?? original.phone,
-        consultationType: data.consultationType ?? original.consultationType,
-        preferredDate: data.preferredDate ?? original.preferredDate,
-        preferredTime: data.preferredTime ?? original.preferredTime,
-        brief: data.brief ?? original.brief,
-        submittedBy: original.submittedBy,
-        versionNumber,
-        feishuSyncStatus: 'pending',
-      },
+    // 构建更新数据（仅更新传入的字段）
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.consultationType !== undefined) updateData.consultationType = data.consultationType;
+    if (data.preferredDate !== undefined) updateData.preferredDate = data.preferredDate;
+    if (data.preferredTime !== undefined) updateData.preferredTime = data.preferredTime;
+    if (data.brief !== undefined) updateData.brief = data.brief;
+
+    // 原地更新记录，保持 id、orderNo、versionNumber 不变
+    const submission = await prisma.form1Submission.update({
+      where: { id },
+      data: updateData,
     });
 
-    logger.info('FORM', `Form1 updated (new record): userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, originalId=${originalId}`);
+    logger.info('FORM', `Form1 updated (in-place): userId=${userId}, orderNo=${original.orderNo}, id=${id}`);
 
-    // 异步触发飞书同步
-    feishuService.syncForm1(submission).catch((err) => {
-      logger.error('FEISHU', `Async sync form1 failed: id=${submission.id}`, err);
+    // 异步触发飞书同步（已有飞书记录则更新，否则新建）
+    feishuService.updateForm1(submission).catch((err) => {
+      logger.error('FEISHU', `Async update form1 failed: id=${submission.id}`, err);
     });
 
     return {
       id: submission.id,
       orderNo: submission.orderNo,
       submittedAt: submission.submittedAt.toISOString(),
+      updatedAt: submission.updatedAt.toISOString(),
       versionNumber: submission.versionNumber,
       consultationType: submission.consultationType,
       preferredDate: submission.preferredDate,
       preferredTime: submission.preferredTime,
-      originalId,
     };
   },
 

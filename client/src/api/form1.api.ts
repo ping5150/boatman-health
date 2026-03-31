@@ -55,6 +55,7 @@ interface BookingSubmitResponse {
     id: number;
     orderNo: string;
     submittedAt: string;
+    updatedAt?: string;
     versionNumber: number;
     consultationType: ConsultationType;
     preferredDate: string;
@@ -102,7 +103,7 @@ export const getBookingDetail = async (id: number): Promise<BookingDetail> => {
 };
 
 /**
- * 更新预约（新增记录）
+ * 更新预约（原地修改）
  */
 export const updateBooking = async (id: number, data: BookingUpdateRequest): Promise<BookingSubmitResponse> => {
   const res = await api.put(`/form1/${id}`, data);
@@ -114,6 +115,7 @@ export const updateBooking = async (id: number, data: BookingUpdateRequest): Pro
       id: result.id,
       orderNo: result.orderNo,
       submittedAt: result.submittedAt,
+      updatedAt: result.updatedAt,
       versionNumber: result.versionNumber,
       consultationType: result.consultationType,
       preferredDate: result.preferredDate,

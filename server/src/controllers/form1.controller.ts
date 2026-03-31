@@ -69,7 +69,7 @@ export const form1Controller = {
   },
 
   /**
-   * 更新预约（新增记录）
+   * 更新预约（原地修改）
    */
   async update(req: Request, res: Response, next: NextFunction) {
     try {
@@ -86,7 +86,7 @@ export const form1Controller = {
         brief,
       });
 
-      sendCreated(res, result, '更新成功');
+      sendSuccess(res, result, '更新成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
         const error = err as { code: number; message: string };

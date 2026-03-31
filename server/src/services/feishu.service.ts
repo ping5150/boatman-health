@@ -47,6 +47,17 @@ interface SyncResult {
 const tokenManager = new FeishuTokenManager();
 
 /**
+ * 检查飞书 API 响应，若 code !== 0 则抛出详细错误
+ */
+const checkFeishuResponse = (response: { data: { code: number; msg: string; data?: unknown } }, context: string) => {
+  const { code, msg } = response.data;
+  if (code !== 0) {
+    const detail = JSON.stringify(response.data);
+    throw new Error(`[Feishu API Error] ${context}: code=${code}, msg=${msg}, detail=${detail}`);
+  }
+};
+
+/**
  * 写入飞书多维表格记录
  */
 const createRecord = async (
@@ -65,6 +76,8 @@ const createRecord = async (
       },
     },
   );
+
+  checkFeishuResponse(response, `createRecord(table=${tableId})`);
   return response.data.data.record.record_id;
 };
 
@@ -78,7 +91,7 @@ const updateRecord = async (
   fields: Record<string, unknown>,
 ): Promise<void> => {
   const token = await tokenManager.getToken();
-  await axios.put(
+  const response = await axios.put(
     `${feishuConfig.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/records/${recordId}`,
     { fields },
     {
@@ -88,6 +101,8 @@ const updateRecord = async (
       },
     },
   );
+
+  checkFeishuResponse(response, `updateRecord(table=${tableId}, record=${recordId})`);
 };
 
 /**
@@ -378,6 +393,54 @@ export const feishuService = {
       });
 
       logger.error('FEISHU', `Sync failed: table=form1, recordId=${submission.id}`, err);
+      throw err;
+    }
+  },
+
+  /**
+   * 更新表单1到飞书（已有 feishuRecordId 时更新，否则新建）
+   */
+  async updateForm1(submission: {
+    id: number;
+    userId: number;
+    orderNo: string;
+    name: string;
+    phone: string;
+    consultationType: string;
+    preferredDate: string;
+    preferredTime: string;
+    brief: string;
+    submittedAt: Date;
+    versionNumber: number;
+    feishuRecordId: string | null;
+  }) {
+    if (!feishuConfig.isEnabled) {
+      logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form1 update');
+      return;
+    }
+
+    // 没有飞书记录ID，走新建流程
+    if (!submission.feishuRecordId) {
+      return this.syncForm1(submission);
+    }
+
+    try {
+      const fields = mapForm1ToFeishu(submission);
+      await updateRecord(
+        feishuConfig.form1.appToken,
+        feishuConfig.form1.tableId,
+        submission.feishuRecordId,
+        fields,
+      );
+
+      logger.info('FEISHU', `Update success: table=form1, recordId=${submission.id}, feishuRecordId=${submission.feishuRecordId}`);
+    } catch (err) {
+      await prisma.form1Submission.update({
+        where: { id: submission.id },
+        data: { feishuSyncStatus: 'failed' },
+      });
+
+      logger.error('FEISHU', `Update failed: table=form1, recordId=${submission.id}`, err);
       throw err;
     }
   },

@@ -35,7 +35,7 @@ router.get('/', authMiddleware, form1Controller.getList);
 // GET /api/form1/:id — 获取单个预约详情
 router.get('/:id', authMiddleware, form1Controller.getDetail);
 
-// PUT /api/form1/:id — 更新预约（新增记录，不覆盖）
+// PUT /api/form1/:id — 更新预约（原地修改）
 router.put('/:id', authMiddleware, validate(form1UpdateSchema), form1Controller.update);
 
 // DELETE /api/form1/:id — 取消预约

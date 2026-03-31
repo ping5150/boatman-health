@@ -60,7 +60,7 @@ const BookingDetail = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await updateBooking(parseInt(id, 10), {
+      await updateBooking(parseInt(id, 10), {
         name: editForm.name,
         phone: editForm.phone,
         consultationType: editForm.consultationType || undefined,
@@ -69,16 +69,19 @@ const BookingDetail = () => {
         brief: editForm.brief,
       });
 
-      alert('预约更新成功！');
-      navigate('/booking-success', {
-        state: {
-          orderNo: result.data.orderNo,
-          submittedAt: result.data.submittedAt,
-          consultationType: result.data.consultationType,
-          preferredDate: result.data.preferredDate,
-          preferredTime: result.data.preferredTime,
-        },
+      // 更新成功后刷新当前数据并切回查看模式
+      const updatedData = await getBookingDetail(parseInt(id, 10));
+      setBooking(updatedData);
+      setEditForm({
+        name: updatedData.name,
+        phone: updatedData.phone,
+        consultationType: updatedData.consultationType,
+        preferredDate: updatedData.preferredDate,
+        preferredTime: updatedData.preferredTime,
+        brief: updatedData.brief,
       });
+      setIsEditing(false);
+      alert('预约更新成功！');
     } catch (error) {
       console.error('更新失败:', error);
       alert('更新失败，请稍后重试');
