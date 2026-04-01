@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
 import { submitForm2, getLatestArchive, saveDraft, updateArchive, HealthFormData } from '@/api/form2.api';
+import { useUser } from '@/contexts/UserContext';
 
 interface UploadedFile {
   id: string;
@@ -61,6 +62,7 @@ const HealthForm = () => {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigate = useNavigate();
+  const { user } = useUser();
 
   // 显示 Toast 提示
   const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
@@ -121,16 +123,31 @@ const HealthForm = () => {
             medications: archive.formData.medications || prev.medications,
           }));
           setArchiveId(archive.id);
+        } else if (user) {
+          // 无已有档案时，从用户信息自动带入姓名和手机号
+          setFormData(prev => ({
+            ...prev,
+            name: prev.name || user.username || '',
+            phone: prev.phone || user.phone || '',
+          }));
         }
       } catch (error) {
         console.error('加载档案失败:', error);
+        // 加载失败也尝试带入用户信息
+        if (user) {
+          setFormData(prev => ({
+            ...prev,
+            name: prev.name || user.username || '',
+            phone: prev.phone || user.phone || '',
+          }));
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadLatestArchive();
-  }, []);
+  }, [user]);
 
   // 显示保存指示器
   const showSaveIndicator = useCallback(() => {
@@ -395,7 +412,7 @@ const HealthForm = () => {
                     value={formData.name}
                     onChange={(e) => updateField('name', e.target.value)}
                     className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.name ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
-                    placeholder="请输入尊称"
+                    placeholder="请输入姓名"
                   />
                   {fieldErrors.name && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.name}</p>}
                 </div>

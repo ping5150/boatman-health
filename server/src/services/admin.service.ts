@@ -14,6 +14,7 @@ import {
   HealthFormData,
 } from '../models/common.types';
 import { logger } from '../utils/logger';
+import { generateUserId } from './auth.service';
 
 // 角色类型定义
 type UserRole = 'user' | 'salesman' | 'admin';
@@ -96,8 +97,10 @@ export const adminService = {
 
     // 创建用户账号
     const passwordHash = await hashPassword(password);
+    const userId = await generateUserId();
     const user = await prisma.user.create({
       data: {
+        id: userId,
         username,
         phone,
         passwordHash,

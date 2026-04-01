@@ -315,7 +315,7 @@ export const adminController = {
         return;
       }
 
-      const result = await adminService.getUserDetail(id);
+      const result = await adminService.getUserDetail(id as string);
       sendSuccess(res, result);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
@@ -349,7 +349,7 @@ export const adminController = {
         return;
       }
 
-      const result = await adminService.updateUser(id, req.body, isAdmin);
+      const result = await adminService.updateUser(id as string, req.body, isAdmin);
       sendSuccess(res, result, '更新成功');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {

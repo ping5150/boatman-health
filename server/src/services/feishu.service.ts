@@ -106,8 +106,8 @@ const updateRecord = async (
 };
 
 /**
- * 日期格式化：统一将 Date 对象转为 "YYYY-MM-DD HH:mm:ss" 字符串
- * 飞书多维表格日期/时间字段统一传字符串，避免类型转换失败
+ * 日期格式化：将 Date 对象转为 "YYYY-MM-DD HH:mm:ss" 字符串
+ * 飞书多维表格中日期相关字段为多行文本类型，需传字符串
  */
 const formatDateStr = (date: Date): string => {
   const y = date.getFullYear();
@@ -117,6 +117,14 @@ const formatDateStr = (date: Date): string => {
   const m = String(date.getMinutes()).padStart(2, '0');
   const s = String(date.getSeconds()).padStart(2, '0');
   return `${y}-${M}-${d} ${h}:${m}:${s}`;
+};
+
+/**
+ * 日期格式化：将 Date 对象转为 Unix 时间戳（毫秒）
+ * 用于飞书多维表格中「日期」类型的字段（预约表的预约时间）
+ */
+const formatDateTs = (date: Date): number => {
+  return date.getTime();
 };
 
 /**
@@ -142,7 +150,16 @@ const mapUserToFeishu = (user: {
     '注册时间': formatDateStr(user.createdAt),
   };
 
-  fields['角色'] = user.role;
+  // 角色映射：英文 → 中文
+  const roleMap: Record<string, string> = {
+    user: '普通用户',
+    admin: '管理员',
+    salesman: '业务员',
+  };
+  fields['角色'] = user.role
+    .split(',')
+    .map(r => roleMap[r.trim()] || r.trim())
+    .join(',');
 
   // 以下字段仅在有值时才同步，避免传空字符串给飞书
   if (user.gender) {
@@ -185,7 +202,7 @@ const mapForm1ToFeishu = (submission: {
   const fields: Record<string, unknown> = {
     '用户ID': submission.userId,
     '提交时间': formatDateStr(submission.submittedAt),
-    '版本号': submission.versionNumber,
+    '版本号': String(submission.versionNumber),
   };
 
   if (submission.orderNo) {
@@ -207,12 +224,12 @@ const mapForm1ToFeishu = (submission: {
     fields['简要说明'] = submission.brief;
   }
 
-  // 预约时间：拼接日期+时间，格式化为字符串，无效时不传
+  // 预约时间：拼接日期+时间，转为时间戳（飞书日期类型），无效时不传
   if (submission.preferredDate && submission.preferredTime) {
     const timeStr = submission.preferredTime.split('-')[0];
     const dateTime = new Date(`${submission.preferredDate} ${timeStr}`);
     if (!isNaN(dateTime.getTime())) {
-      fields['预约时间'] = formatDateStr(dateTime);
+      fields['预约时间'] = formatDateTs(dateTime);
     }
   }
 
@@ -234,7 +251,7 @@ const mapForm2ToFeishu = (submission: {
   const fields: Record<string, unknown> = {
     '用户ID': submission.userId,
     '提交时间': formatDateStr(submission.submittedAt),
-    '版本号': submission.versionNumber,
+    '版本号': String(submission.versionNumber),
   };
 
   const name = formData.name || submission.name;
@@ -329,10 +346,20 @@ export const feishuService = {
     emergencyRelation: string | null;
     emergencyPhone: string | null;
     createdAt: Date;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping user sync');
       return;
+    }
+
+    // 新建前先查数据库最新状态，避免并发导致重复创建
+    const latest = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { feishuRecordId: true },
+    });
+    if (latest?.feishuRecordId) {
+      logger.info('FEISHU', `Skip sync user: id=${user.id} already has feishuRecordId=${latest.feishuRecordId}, use update instead`);
+      return this.updateUser({ ...user, feishuRecordId: latest.feishuRecordId });
     }
 
     try {
@@ -378,7 +405,7 @@ export const feishuService = {
     emergencyPhone: string | null;
     createdAt: Date;
     feishuRecordId: string | null;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping user update');
       return;
@@ -427,7 +454,7 @@ export const feishuService = {
     submittedAt: Date;
     versionNumber: number;
     feishuRecordId: string | null;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form2 update');
       return;
@@ -479,10 +506,20 @@ export const feishuService = {
     brief: string;
     submittedAt: Date;
     versionNumber: number;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form1 sync');
       return;
+    }
+
+    // 新建前先查数据库最新状态，避免并发导致重复创建
+    const latest = await prisma.form1Submission.findUnique({
+      where: { id: submission.id },
+      select: { feishuRecordId: true },
+    });
+    if (latest?.feishuRecordId) {
+      logger.info('FEISHU', `Skip sync form1: id=${submission.id} already has feishuRecordId=${latest.feishuRecordId}, use update instead`);
+      return this.updateForm1({ ...submission, feishuRecordId: latest.feishuRecordId });
     }
 
     try {
@@ -529,7 +566,7 @@ export const feishuService = {
     submittedAt: Date;
     versionNumber: number;
     feishuRecordId: string | null;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form1 update');
       return;
@@ -578,10 +615,20 @@ export const feishuService = {
     formData: string;
     submittedAt: Date;
     versionNumber: number;
-  }) {
+  }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form2 sync');
       return;
+    }
+
+    // 新建前先查数据库最新状态，避免并发导致重复创建
+    const latest = await prisma.form2Submission.findUnique({
+      where: { id: submission.id },
+      select: { feishuRecordId: true },
+    });
+    if (latest?.feishuRecordId) {
+      logger.info('FEISHU', `Skip sync form2: id=${submission.id} already has feishuRecordId=${latest.feishuRecordId}, use update instead`);
+      return this.updateForm2({ ...submission, feishuRecordId: latest.feishuRecordId });
     }
 
     try {
