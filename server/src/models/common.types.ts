@@ -42,7 +42,7 @@ export interface PaginatedResult<T> {
 
 /** 用户列表项 */
 export interface UserListItem {
-  id: number;
+  id: string;
   username: string;
   phone: string;
   role: UserRole;
@@ -104,7 +104,7 @@ export interface BookingListItem {
 
 /** 预约详情 */
 export interface BookingDetail extends BookingListItem {
-  userId: number;
+  userId: string;
   feishuRecordId: string | null;
   cancelledAt: string | null;
 }
@@ -220,7 +220,7 @@ export interface ArchiveListItem {
 
 /** 档案详情 */
 export interface ArchiveDetail extends ArchiveListItem {
-  userId: number;
+  userId: string;
   feishuRecordId: string | null;
   formData: HealthFormData;
 }
@@ -248,7 +248,7 @@ export interface DashboardStats {
 
 /** 同步失败项（用户） */
 export interface SyncFailedUserItem {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -290,7 +290,7 @@ export interface SyncResult {
 /** 同步重试请求 */
 export interface SyncRetryRequest {
   table: 'user' | 'booking' | 'archive';
-  recordId: number;
+  recordId: string | number;
 }
 
 /** 同步重试响应 */

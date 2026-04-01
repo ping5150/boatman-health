@@ -66,7 +66,7 @@ export interface ArchiveListItem {
 
 /** 档案详情 */
 export interface ArchiveDetail extends ArchiveListItem {
-  userId: number;
+  userId: string;
   feishuRecordId: string | null;
   formData: HealthFormData;
 }

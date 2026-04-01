@@ -25,7 +25,7 @@ interface DashboardStats {
 }
 
 interface SyncFailedUserItem {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -111,7 +111,7 @@ export const syncApi = {
   /**
    * 重试飞书同步
    */
-  async retry(table: 'user' | 'booking' | 'archive', recordId: number): Promise<ApiResponse<SyncRetryResult>> {
+  async retry(table: 'user' | 'booking' | 'archive', recordId: string | number): Promise<ApiResponse<SyncRetryResult>> {
     return request.post('/admin/sync/retry', { table, recordId });
   },
 };

@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id                Int               @id @default(autoincrement())
+  id                String            @id
   username          String
   phone             String            @unique
   passwordHash      String            @map("password_hash")
@@ -35,7 +35,7 @@ model User {
 
 model Form1Submission {
   id               Int      @id @default(autoincrement())
-  userId           Int      @map("user_id")
+  userId           String   @map("user_id")
   orderNo          String   @unique @map("order_no")
   name             String
   phone            String
@@ -62,7 +62,7 @@ model Form1Submission {
 
 model Form2Submission {
   id               Int      @id @default(autoincrement())
-  userId           Int      @map("user_id")
+  userId           String   @map("user_id")
   orderNo          String   @unique @map("order_no")
   name             String
   phone            String

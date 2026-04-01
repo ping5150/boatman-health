@@ -309,8 +309,8 @@ export const adminController = {
    */
   async userDetail(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(String(req.params.id), 10);
-      if (isNaN(id)) {
+      const id = req.params.id;
+      if (!id) {
         sendError(res, 400, 'ID 参数无效');
         return;
       }
@@ -333,8 +333,8 @@ export const adminController = {
    */
   async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(String(req.params.id), 10);
-      if (isNaN(id)) {
+      const id = req.params.id;
+      if (!id) {
         sendError(res, 400, 'ID 参数无效');
         return;
       }

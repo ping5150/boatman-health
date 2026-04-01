@@ -29,7 +29,7 @@ interface Form1ListItem {
 interface Form1Detail {
   id: number;
   orderNo: string;
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   consultationType: string;

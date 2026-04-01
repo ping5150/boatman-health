@@ -106,10 +106,24 @@ const updateRecord = async (
 };
 
 /**
+ * 日期格式化：统一将 Date 对象转为 "YYYY-MM-DD HH:mm:ss" 字符串
+ * 飞书多维表格日期/时间字段统一传字符串，避免类型转换失败
+ */
+const formatDateStr = (date: Date): string => {
+  const y = date.getFullYear();
+  const M = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${y}-${M}-${d} ${h}:${m}:${s}`;
+};
+
+/**
  * 用户字段映射：数据库记录 → 飞书表格字段
  */
 const mapUserToFeishu = (user: {
-  id: number;
+  id: string;
   username: string;
   phone: string;
   role: string;
@@ -119,24 +133,45 @@ const mapUserToFeishu = (user: {
   emergencyRelation: string | null;
   emergencyPhone: string | null;
   createdAt: Date;
-}): Record<string, unknown> => ({
-  '用户ID': String(user.id),
-  '用户名': user.username,
-  '手机号': user.phone,
-  '角色': user.role,
-  '性别': user.gender || '',
-  '出生日期': user.birthDate || '',
-  '紧急联系人': user.emergencyName || '',
-  '紧急联系人关系': user.emergencyRelation || '',
-  '紧急联系人电话': user.emergencyPhone || '',
-  '注册时间': user.createdAt.getTime(),
-});
+}): Record<string, unknown> => {
+  // 基础字段：注册时必定有值的字段
+  const fields: Record<string, unknown> = {
+    '用户ID': user.id,
+    '用户名': user.username,
+    '手机号': user.phone,
+    '注册时间': formatDateStr(user.createdAt),
+  };
+
+  fields['角色'] = user.role;
+
+  // 以下字段仅在有值时才同步，避免传空字符串给飞书
+  if (user.gender) {
+    fields['性别'] = user.gender;
+  }
+  if (user.birthDate) {
+    const bd = new Date(user.birthDate);
+    if (!isNaN(bd.getTime())) {
+      fields['出生日期'] = formatDateStr(bd);
+    }
+  }
+  if (user.emergencyName) {
+    fields['紧急联系人'] = user.emergencyName;
+  }
+  if (user.emergencyRelation) {
+    fields['紧急联系人关系'] = user.emergencyRelation;
+  }
+  if (user.emergencyPhone) {
+    fields['紧急联系人电话'] = user.emergencyPhone;
+  }
+
+  return fields;
+};
 
 /**
  * 表单1字段映射：数据库记录 → 飞书表格字段
  */
 const mapForm1ToFeishu = (submission: {
-  userId: number;
+  userId: string;
   orderNo: string;
   name: string;
   phone: string;
@@ -146,24 +181,49 @@ const mapForm1ToFeishu = (submission: {
   brief: string;
   submittedAt: Date;
   versionNumber: number;
-}): Record<string, unknown> => ({
-  '用户ID': String(submission.userId),
-  '订单编号': submission.orderNo,
-  '姓名': submission.name,
-  '联系电话': submission.phone,
-  '咨询类型': submission.consultationType,
-  '预约日期': submission.preferredDate,
-  '预约时间': new Date(`${submission.preferredDate} ${submission.preferredTime.split('-')[0]}`).getTime(),
-  '简要说明': submission.brief,
-  '提交时间': submission.submittedAt.getTime(),
-  '版本号': submission.versionNumber,
-});
+}): Record<string, unknown> => {
+  const fields: Record<string, unknown> = {
+    '用户ID': submission.userId,
+    '提交时间': formatDateStr(submission.submittedAt),
+    '版本号': submission.versionNumber,
+  };
+
+  if (submission.orderNo) {
+    fields['订单编号'] = submission.orderNo;
+  }
+  if (submission.name) {
+    fields['姓名'] = submission.name;
+  }
+  if (submission.phone) {
+    fields['联系电话'] = submission.phone;
+  }
+  if (submission.consultationType) {
+    fields['咨询类型'] = submission.consultationType;
+  }
+  if (submission.preferredDate) {
+    fields['预约日期'] = submission.preferredDate;
+  }
+  if (submission.brief) {
+    fields['简要说明'] = submission.brief;
+  }
+
+  // 预约时间：拼接日期+时间，格式化为字符串，无效时不传
+  if (submission.preferredDate && submission.preferredTime) {
+    const timeStr = submission.preferredTime.split('-')[0];
+    const dateTime = new Date(`${submission.preferredDate} ${timeStr}`);
+    if (!isNaN(dateTime.getTime())) {
+      fields['预约时间'] = formatDateStr(dateTime);
+    }
+  }
+
+  return fields;
+};
 
 /**
  * 表单2字段映射：数据库记录 → 飞书表格字段
  */
 const mapForm2ToFeishu = (submission: {
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   formData: string;
@@ -171,29 +231,87 @@ const mapForm2ToFeishu = (submission: {
   versionNumber: number;
 }): Record<string, unknown> => {
   const formData: HealthFormData = JSON.parse(submission.formData);
-  return {
-    '用户ID': String(submission.userId),
-    '姓名': formData.name || submission.name,
-    '联系电话': formData.phone || submission.phone,
-    '紧急联系人': formData.emergencyName || '',
-    '紧急联系人电话': formData.emergencyPhone || '',
-    '主要疾病': formData.diseases?.map((d) => d.name).join('，') || '',
-    '目前用药': formData.medications?.map((m) => m.name).join('，') || '',
-    '过敏史': formData.allergy?.detail || '无',
-    '手术史': formData.surgery?.detail || '无',
-    '血管评估': formData.vascular?.qualified === 'yes' ? '合格' : '不合格',
-    '家族史': formData.familyHistory?.join('，') || '',
-    '饮食模式': formData.dietModes?.join('，') || '',
-    '运动类型': formData.exerciseTypes?.join('，') || '',
-    '睡眠时长': formData.sleepDuration || '',
-    '睡眠质量': formData.sleepQuality || '',
-    '压力自评': formData.stressLevel || 5,
-    '焦虑频率': formData.anxietyFrequency || '',
-    '脑雾症状': formData.brainFog?.join('，') || '',
-    '健康关注点': formData.healthConcerns || '',
-    '提交时间': submission.submittedAt.getTime(),
+  const fields: Record<string, unknown> = {
+    '用户ID': submission.userId,
+    '提交时间': formatDateStr(submission.submittedAt),
     '版本号': submission.versionNumber,
   };
+
+  const name = formData.name || submission.name;
+  if (name) {
+    fields['姓名'] = name;
+  }
+
+  const phone = formData.phone || submission.phone;
+  if (phone) {
+    fields['联系电话'] = phone;
+  }
+
+  if (formData.emergencyName) {
+    fields['紧急联系人'] = formData.emergencyName;
+  }
+  if (formData.emergencyPhone) {
+    fields['紧急联系人电话'] = formData.emergencyPhone;
+  }
+
+  const diseases = formData.diseases?.map((d) => d.name).join('，');
+  if (diseases) {
+    fields['主要疾病'] = diseases;
+  }
+
+  const medications = formData.medications?.map((m) => m.name).join('，');
+  if (medications) {
+    fields['目前用药'] = medications;
+  }
+
+  if (formData.allergy?.detail) {
+    fields['过敏史'] = formData.allergy.detail;
+  }
+  if (formData.surgery?.detail) {
+    fields['手术史'] = formData.surgery.detail;
+  }
+  if (formData.vascular?.qualified) {
+    fields['血管评估'] = formData.vascular.qualified === 'yes' ? '合格' : '不合格';
+  }
+
+  const familyHistory = formData.familyHistory?.join('，');
+  if (familyHistory) {
+    fields['家族史'] = familyHistory;
+  }
+
+  const dietModes = formData.dietModes?.join('，');
+  if (dietModes) {
+    fields['饮食模式'] = dietModes;
+  }
+
+  const exerciseTypes = formData.exerciseTypes?.join('，');
+  if (exerciseTypes) {
+    fields['运动类型'] = exerciseTypes;
+  }
+
+  if (formData.sleepDuration) {
+    fields['睡眠时长'] = formData.sleepDuration;
+  }
+  if (formData.sleepQuality) {
+    fields['睡眠质量'] = formData.sleepQuality;
+  }
+  if (formData.stressLevel != null) {
+    fields['压力自评'] = formData.stressLevel;
+  }
+  if (formData.anxietyFrequency) {
+    fields['焦虑频率'] = formData.anxietyFrequency;
+  }
+
+  const brainFog = formData.brainFog?.join('，');
+  if (brainFog) {
+    fields['脑雾症状'] = brainFog;
+  }
+
+  if (formData.healthConcerns) {
+    fields['健康关注点'] = formData.healthConcerns;
+  }
+
+  return fields;
 };
 
 export const feishuService = {
@@ -201,7 +319,7 @@ export const feishuService = {
    * 同步用户到飞书
    */
   async syncUser(user: {
-    id: number;
+    id: string;
     username: string;
     phone: string;
     role: string;
@@ -249,7 +367,7 @@ export const feishuService = {
    * 更新用户到飞书（已有 feishuRecordId 时更新，否则新建）
    */
   async updateUser(user: {
-    id: number;
+    id: string;
     username: string;
     phone: string;
     role: string;
@@ -302,7 +420,7 @@ export const feishuService = {
    */
   async updateForm2(submission: {
     id: number;
-    userId: number;
+    userId: string;
     name: string;
     phone: string;
     formData: string;
@@ -351,7 +469,7 @@ export const feishuService = {
    */
   async syncForm1(submission: {
     id: number;
-    userId: number;
+    userId: string;
     orderNo: string;
     name: string;
     phone: string;
@@ -400,7 +518,7 @@ export const feishuService = {
    */
   async updateForm1(submission: {
     id: number;
-    userId: number;
+    userId: string;
     orderNo: string;
     name: string;
     phone: string;
@@ -454,7 +572,7 @@ export const feishuService = {
    */
   async syncForm2(submission: {
     id: number;
-    userId: number;
+    userId: string;
     name: string;
     phone: string;
     formData: string;
@@ -497,20 +615,20 @@ export const feishuService = {
   /**
    * 统一重试同步方法
    */
-  async retrySync(table: 'user' | 'form1' | 'form2', recordId: number) {
+  async retrySync(table: 'user' | 'form1' | 'form2', recordId: string | number) {
     if (table === 'user') {
-      return this.retrySyncUser(recordId);
+      return this.retrySyncUser(recordId as string);
     } else if (table === 'form1') {
-      return this.retrySyncForm1(recordId);
+      return this.retrySyncForm1(recordId as number);
     } else {
-      return this.retrySyncForm2(recordId);
+      return this.retrySyncForm2(recordId as number);
     }
   },
 
   /**
    * 重试同步用户
    */
-  async retrySyncUser(recordId: number) {
+  async retrySyncUser(recordId: string) {
     const user = await prisma.user.findUnique({
       where: { id: recordId },
     });

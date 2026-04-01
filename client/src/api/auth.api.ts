@@ -63,7 +63,7 @@ export interface AuthResponse {
 
 /** 用户信息 */
 export interface UserProfile {
-  id: number;
+  id: string;
   username: string;
   phone: string;
   gender: string;

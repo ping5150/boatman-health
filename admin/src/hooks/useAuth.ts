@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { tokenUtil } from '../utils/token';
 
 interface AuthUser {
-  userId: number;
+  userId: string;
   phone: string;
   role: string; // 逗号分隔的多角色
 }

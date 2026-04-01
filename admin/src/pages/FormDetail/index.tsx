@@ -12,7 +12,7 @@ const { TextArea } = Input;
 interface BookingDetail {
   id: number;
   orderNo: string;
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   consultationType: string;
@@ -30,7 +30,7 @@ interface BookingDetail {
 interface ArchiveDetail {
   id: number;
   orderNo: string;
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   submittedBy: string;

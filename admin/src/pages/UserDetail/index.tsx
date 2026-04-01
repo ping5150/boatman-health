@@ -38,7 +38,7 @@ const UserDetailPage: React.FC = () => {
       
       try {
         setLoading(true);
-        const res = await userApi.getDetail(parseInt(id, 10));
+        const res = await userApi.getDetail(id);
         if (res.code === 0 && res.data) {
           const userData = res.data;
           setProfile(userData);

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 
 export interface JwtPayload {
-  userId: number;
+  userId: string;
   phone: string;
   role: string; // 支持多角色，逗号分隔，如 "user,salesman,admin"
 }

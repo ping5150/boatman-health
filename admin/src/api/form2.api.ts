@@ -60,7 +60,7 @@ interface HealthFormData {
 interface Form2Detail {
   id: number;
   orderNo: string;
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   submittedAt: string;

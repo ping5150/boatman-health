@@ -14,7 +14,7 @@ export const tokenUtil = {
     localStorage.removeItem(TOKEN_KEY);
   },
 
-  getUser(): { userId: number; phone: string; role: string } | null {
+  getUser(): { userId: string; phone: string; role: string } | null {
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) {
       return null;
@@ -26,7 +26,7 @@ export const tokenUtil = {
     }
   },
 
-  setUser(user: { userId: number; phone: string; role: string }): void {
+  setUser(user: { userId: string; phone: string; role: string }): void {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 

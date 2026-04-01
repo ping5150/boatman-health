@@ -28,7 +28,7 @@ export interface BookingListItem {
 
 /** 预约详情 */
 export interface BookingDetail extends BookingListItem {
-  userId: number;
+  userId: string;
   feishuRecordId: string | null;
   status: 'active' | 'cancelled';
   cancelledAt: string | null;

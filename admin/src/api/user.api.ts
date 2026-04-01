@@ -7,7 +7,7 @@ interface ApiResponse<T = unknown> {
 }
 
 interface UserItem {
-  id: number;
+  id: string;
   username: string;
   phone: string;
   role: string; // 逗号分隔的多角色，如 "user,salesman"
@@ -23,7 +23,7 @@ interface UserListResult {
 }
 
 interface UserDetail {
-  id: number;
+  id: string;
   username: string;
   phone: string;
   role: string; // 逗号分隔的多角色
@@ -79,14 +79,14 @@ export const userApi = {
   /**
    * 获取用户详情
    */
-  async getDetail(id: number): Promise<ApiResponse<UserDetail>> {
+  async getDetail(id: string): Promise<ApiResponse<UserDetail>> {
     return request.get(`/admin/users/${id}`);
   },
 
   /**
    * 更新用户信息
    */
-  async update(id: number, data: UserUpdateData): Promise<ApiResponse<UserDetail>> {
+  async update(id: string, data: UserUpdateData): Promise<ApiResponse<UserDetail>> {
     return request.put(`/admin/users/${id}`, data);
   },
 };

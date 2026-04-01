@@ -10,6 +10,20 @@ const DEV_CODE = '123456';
 // 存储验证码（开发阶段使用内存，生产环境替换为 Redis）
 const codeStore = new Map<string, { code: string; expiresAt: number }>();
 
+// 生成用户ID：CF + 日期 + 4位序号
+export async function generateUserId(): Promise<string> {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const count = await prisma.user.count({
+    where: { createdAt: { gte: today } },
+  });
+
+  const seq = String(count + 1).padStart(4, '0');
+  return `CF${dateStr}${seq}`;
+}
+
 export const authService = {
   /**
    * 检查用户是否存在
@@ -79,10 +93,14 @@ export const authService = {
     const userCount = await prisma.user.count();
     const role = userCount === 0 ? 'admin' : 'user';
 
+    // 生成用户 ID
+    const userId = await generateUserId();
+
     // 创建用户
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
+        id: userId,
         username,
         phone,
         passwordHash,
@@ -184,7 +202,7 @@ export const authService = {
   /**
    * 获取用户信息
    */
-  async getProfile(userId: number) {
+  async getProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -222,7 +240,7 @@ export const authService = {
   /**
    * 更新用户信息
    */
-  async updateProfile(userId: number, data: Record<string, unknown>) {
+  async updateProfile(userId: string, data: Record<string, unknown>) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });

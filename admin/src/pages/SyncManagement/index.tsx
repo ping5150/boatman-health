@@ -11,7 +11,7 @@ interface SyncStats {
 }
 
 interface SyncFailedUserItem {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   submittedAt: string;
@@ -103,7 +103,7 @@ const SyncManagementPage: React.FC = () => {
     }
   };
 
-  const handleRetry = async (table: 'user' | 'booking' | 'archive', recordId: number) => {
+  const handleRetry = async (table: 'user' | 'booking' | 'archive', recordId: string | number) => {
     const key = `${table}-${recordId}`;
     setRetryingIds((prev) => new Set(prev).add(key));
 

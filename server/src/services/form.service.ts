@@ -28,7 +28,7 @@ export const formService = {
   /**
    * 获取下一个版本号
    */
-  async getNextVersion(userId: number, formType: 'form1' | 'form2'): Promise<number> {
+  async getNextVersion(userId: string, formType: 'form1' | 'form2'): Promise<number> {
     if (formType === 'form1') {
       const last = await prisma.form1Submission.findFirst({
         where: { userId },
@@ -50,7 +50,7 @@ export const formService = {
    * 提交咨询表单（表单1）
    */
   async submitForm1(
-    userId: number,
+    userId: string,
     data: {
       name: string;
       phone: string;
@@ -102,7 +102,7 @@ export const formService = {
   /**
    * 获取用户预约列表
    */
-  async getForm1List(userId: number): Promise<BookingListItem[]> {
+  async getForm1List(userId: string): Promise<BookingListItem[]> {
     const list = await prisma.form1Submission.findMany({
       where: { userId, status: { not: 'cancelled' } },
       orderBy: { submittedAt: 'desc' },
@@ -145,7 +145,7 @@ export const formService = {
   /**
    * 获取单个预约详情
    */
-  async getForm1Detail(userId: number, id: number): Promise<BookingDetail> {
+  async getForm1Detail(userId: string, id: number): Promise<BookingDetail> {
     const submission = await prisma.form1Submission.findFirst({
       where: { id, userId },
     });
@@ -178,7 +178,7 @@ export const formService = {
   /**
    * 取消预约
    */
-  async cancelForm1(userId: number, id: number): Promise<{ id: number; orderNo: string; status: string }> {
+  async cancelForm1(userId: string, id: number): Promise<{ id: number; orderNo: string; status: string }> {
     const submission = await prisma.form1Submission.findFirst({
       where: { id, userId },
     });
@@ -212,7 +212,7 @@ export const formService = {
    * 更新预约（原地修改，以订单编号为维度）
    */
   async updateForm1(
-    userId: number,
+    userId: string,
     id: number,
     data: {
       name?: string;
@@ -273,7 +273,7 @@ export const formService = {
   /**
    * 提交健康评估表单（表单2）
    */
-  async submitForm2(userId: number, formData: HealthFormData) {
+  async submitForm2(userId: string, formData: HealthFormData) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const versionNumber = await this.getNextVersion(userId, 'form2');
     const orderNo = await generateOrderNo('HA');
@@ -312,7 +312,7 @@ export const formService = {
   /**
    * 保存草稿（查找已有档案则覆盖更新，否则创建新记录）
    */
-  async saveDraft(userId: number, formData: Partial<HealthFormData>) {
+  async saveDraft(userId: string, formData: Partial<HealthFormData>) {
     // 先查找用户是否已有档案记录
     const existing = await prisma.form2Submission.findFirst({
       where: { userId },
@@ -379,7 +379,7 @@ export const formService = {
   /**
    * 获取用户档案列表
    */
-  async getForm2List(userId: number): Promise<ArchiveListItem[]> {
+  async getForm2List(userId: string): Promise<ArchiveListItem[]> {
     const list = await prisma.form2Submission.findMany({
       where: { userId },
       orderBy: { submittedAt: 'desc' },
@@ -412,7 +412,7 @@ export const formService = {
   /**
    * 获取档案详情
    */
-  async getForm2Detail(userId: number, id: number): Promise<ArchiveDetail> {
+  async getForm2Detail(userId: string, id: number): Promise<ArchiveDetail> {
     const submission = await prisma.form2Submission.findFirst({
       where: { id, userId },
     });
@@ -442,7 +442,7 @@ export const formService = {
   /**
    * 获取用户最新档案
    */
-  async getForm2Latest(userId: number): Promise<ArchiveDetail | null> {
+  async getForm2Latest(userId: string): Promise<ArchiveDetail | null> {
     const submission = await prisma.form2Submission.findFirst({
       where: { userId },
       orderBy: { submittedAt: 'desc' },
@@ -473,7 +473,7 @@ export const formService = {
   /**
    * 更新档案（原地覆盖更新，保持 id 和 orderNo 不变）
    */
-  async updateForm2(userId: number, id: number, data: Partial<HealthFormData>) {
+  async updateForm2(userId: string, id: number, data: Partial<HealthFormData>) {
     const original = await prisma.form2Submission.findFirst({
       where: { id, userId },
     });

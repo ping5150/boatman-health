@@ -131,7 +131,7 @@ export const adminService = {
   /**
    * 获取当前管理员信息
    */
-  async getCurrentAdmin(userId: number) {
+  async getCurrentAdmin(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -641,7 +641,7 @@ export const adminService = {
   /**
    * 获取用户详情
    */
-  async getUserDetail(id: number): Promise<UserDetail> {
+  async getUserDetail(id: string): Promise<UserDetail> {
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -682,7 +682,7 @@ export const adminService = {
    * 更新用户（包括角色）
    * 只有管理员才能更新角色字段
    */
-  async updateUser(id: number, data: Record<string, unknown>, isAdmin: boolean = false) {
+  async updateUser(id: string, data: Record<string, unknown>, isAdmin: boolean = false) {
     const user = await prisma.user.findUnique({
       where: { id },
     });

@@ -8,7 +8,7 @@ interface ApiResponse<T = unknown> {
 
 interface LoginResult {
   token: string;
-  userId: number;
+  userId: string;
   phone: string;
   username?: string;
   role: string;
@@ -16,14 +16,14 @@ interface LoginResult {
 
 interface RegisterResult {
   token: string;
-  userId: number;
+  userId: string;
   phone: string;
   username: string;
   role: string;
 }
 
 interface AdminInfo {
-  id: number;
+  id: string;
   phone: string;
   role: string;
 }

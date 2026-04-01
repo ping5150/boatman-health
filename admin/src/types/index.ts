@@ -7,7 +7,7 @@ export interface ApiResponse<T = unknown> {
 
 // 用户信息
 export interface UserInfo {
-  userId: number;
+  userId: string;
   phone: string;
   role: 'user' | 'admin';
   token: string;
@@ -16,7 +16,7 @@ export interface UserInfo {
 // 登录响应
 export interface LoginResult {
   token: string;
-  userId: number;
+  userId: string;
   phone: string;
   role: string;
 }
@@ -52,7 +52,7 @@ export interface Form1ListItem {
 // 表单1详情
 export interface Form1Detail {
   id: number;
-  userId: number;
+  userId: string;
   name: string;
   phone: string;
   consultationType: string;
@@ -78,7 +78,7 @@ export interface Form2ListItem {
 // 表单2详情
 export interface Form2Detail {
   id: number;
-  userId: number;
+  userId: string;
   formData: Record<string, unknown>;
   submittedAt: string;
   versionNumber: number;
