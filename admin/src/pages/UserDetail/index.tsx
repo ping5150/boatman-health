@@ -76,7 +76,7 @@ const UserDetailPage: React.FC = () => {
         emergencyPhone: values.emergencyPhone,
       };
 
-      const res = await userApi.update(parseInt(id!, 10), updateData);
+      const res = await userApi.update(id!, updateData);
       
       if (res.code === 0) {
         message.success('保存成功');

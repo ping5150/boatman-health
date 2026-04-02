@@ -154,12 +154,7 @@ const DashboardPage: React.FC = () => {
     cancelled: { color: 'red', text: '已取消' },
   };
 
-  // 同步状态配置
-  const syncStatusConfig: Record<string, { color: string; text: string }> = {
-    success: { color: 'green', text: '已同步' },
-    pending: { color: 'blue', text: '同步中' },
-    failed: { color: 'red', text: '同步失败' },
-  };
+
 
   // 最新预约表格列配置
   const columns = [

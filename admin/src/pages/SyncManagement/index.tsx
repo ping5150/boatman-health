@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, Button, Table, Tag, message, Popconfirm, Modal, List, Typography } from 'antd';
+import { Card, Row, Col, Statistic, Button, Table, message, Popconfirm, Modal, List, Typography } from 'antd';
 import { SyncOutlined, ReloadOutlined, UserOutlined, CalendarOutlined, FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { syncApi } from '../../api/sync.api';

@@ -12,11 +12,11 @@ interface BookingListItem {
   name: string;
   phone: string;
   consultationType: string;
-  preferredDate: string;
-  preferredTime: string;
   submittedAt: string;
   updatedAt: string;
   submittedBy: string;
+  versionNumber: number;
+  feishuSyncStatus: string;
 }
 
 // 模拟数据（注释保留）
@@ -79,7 +79,6 @@ const BookingListPage: React.FC = () => {
       '姓名': item.name,
       '手机号': item.phone,
       '咨询类型': item.consultationType,
-      '预约时间': item.preferredDate ? `${item.preferredDate} ${item.preferredTime || ''}`.trim() : '-',
       '提交时间': item.submittedAt ? dayjs(item.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-',
       '提交人': item.submittedBy,
     }));
@@ -123,14 +122,9 @@ const BookingListPage: React.FC = () => {
       ),
     },
     {
-      title: '预约时间',
-      key: 'preferredDateTime',
-      width: 170,
-      render: (_: unknown, record: BookingListItem) => {
-        if (!record.preferredDate) return '-';
-        const time = record.preferredTime || '';
-        return `${record.preferredDate} ${time}`.trim();
-      },
+      title: '提交人',
+      dataIndex: 'submittedBy',
+      width: 100,
     },
     {
       title: '提交时间',
