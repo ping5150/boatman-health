@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomNav from '@/components/BottomNav';
 import { submitForm2, getLatestArchive, saveDraft, updateArchive, HealthFormData } from '@/api/form2.api';
+import { uploadFile } from '@/api/upload.api';
 import { useUser } from '@/contexts/UserContext';
 
 interface UploadedFile {
@@ -245,14 +246,14 @@ const HealthForm = () => {
     try {
       const submitData: HealthFormData = {
         ...formData,
-        uploadedFiles: uploadedFiles.map(f => ({
-          name: f.name,
-          size: f.size,
-          url: f.id,
-          type: f.name.endsWith('.pdf') ? 'pdf' :
-                /\.(jpg|jpeg|png|gif)$/i.test(f.name) ? 'image' :
-                /\.(doc|docx)$/i.test(f.name) ? 'doc' : 'other',
-        })),
+        uploadedFiles: uploadedFiles
+          .filter(f => f.status === 'success' && f.url)
+          .map(f => ({
+            name: f.name,
+            size: f.size,
+            url: f.url!,
+            type: f.type || 'other',
+          })),
       };
 
       if (archiveId) {
@@ -310,11 +311,16 @@ const HealthForm = () => {
     if (!files) return;
 
     Array.from(files).forEach((file) => {
+      // 文件大小校验
+      if (file.size > 50 * 1024 * 1024) {
+        showToast(`文件 ${file.name} 超过 50MB 限制`);
+        return;
+      }
+
       const fileId = Date.now().toString() + Math.random().toString(36).slice(2, 11);
       const fileType: UploadedFile['type'] = file.name.endsWith('.pdf') ? 'pdf' :
         /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name) ? 'image' :
         /\.(doc|docx)$/i.test(file.name) ? 'doc' : 'other';
-      const blobUrl = URL.createObjectURL(file);
 
       const newFile: UploadedFile = {
         id: fileId,
@@ -322,27 +328,31 @@ const HealthForm = () => {
         size: file.size,
         progress: 0,
         status: 'uploading',
-        url: blobUrl,
         type: fileType,
       };
 
       setUploadedFiles((prev) => [...prev, newFile]);
 
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 20 + 10;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setUploadedFiles((prev) =>
-            prev.map((f) => (f.id === fileId ? { ...f, progress: 100, status: 'success' } : f))
-          );
-        } else {
-          setUploadedFiles((prev) =>
-            prev.map((f) => (f.id === fileId ? { ...f, progress: Math.min(progress, 99) } : f))
-          );
-        }
-      }, 200);
+      // 调用真实上传 API
+      uploadFile(file, (percent) => {
+        setUploadedFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: Math.min(percent, 99) } : f))
+        );
+      }).then((result) => {
+        setUploadedFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? {
+            ...f,
+            progress: 100,
+            status: 'success' as const,
+            url: result.url,
+          } : f))
+        );
+      }).catch(() => {
+        setUploadedFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: 0, status: 'error' as const } : f))
+        );
+        showToast(`文件 ${file.name} 上传失败`);
+      });
     });
 
     e.target.value = '';
@@ -1081,12 +1091,13 @@ const HealthForm = () => {
                       ref={fileInputRef}
                       type="file"
                       multiple
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx"
                       onChange={handleFileSelect}
                       className="hidden"
                     />
                     <span className="material-symbols-outlined text-3xl text-secondary mb-2">cloud_upload</span>
-                    <p className="text-[10px] text-outline">点击上传 PDF, JPG (最大 50MB)</p>
+                    <p className="text-[10px] text-outline">点击上传体检报告、影像资料等</p>
+                    <p className="text-[9px] text-outline/60 mt-1">支持 PDF / Word / Excel / 图片，单个文件最大 50MB</p>
                   </div>
 
                   {/* 已上传文件列表 */}
@@ -1116,6 +1127,8 @@ const HealthForm = () => {
                           <div className="flex items-center gap-1 flex-shrink-0">
                             {file.status === 'uploading' ? (
                               <span className="text-[10px] text-primary">{file.progress}%</span>
+                            ) : file.status === 'error' ? (
+                              <span className="text-[10px] text-error font-medium">上传失败</span>
                             ) : file.url ? (
                               <button
                                 type="button"
@@ -1159,6 +1172,12 @@ const HealthForm = () => {
                           alt={previewFile.name}
                           className="max-w-[90vw] max-h-[85vh] rounded-2xl object-contain"
                         />
+                      ) : previewFile.type === 'pdf' && previewFile.url ? (
+                        <iframe
+                          src={previewFile.url}
+                          title={previewFile.name}
+                          className="w-[90vw] h-[85vh] rounded-2xl bg-white"
+                        />
                       ) : (
                         <div className="bg-white rounded-2xl p-8 text-center min-w-[280px]">
                           <span className="material-symbols-outlined text-5xl text-secondary mb-3 block">
@@ -1166,7 +1185,19 @@ const HealthForm = () => {
                           </span>
                           <p className="text-sm font-medium mb-1 break-all">{previewFile.name}</p>
                           <p className="text-xs text-outline mb-4">{formatFileSize(previewFile.size)}</p>
-                          <p className="text-xs text-outline">暂不支持在线预览此文件类型</p>
+                          {previewFile.url ? (
+                            <a
+                              href={previewFile.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-secondary font-medium hover:opacity-80"
+                            >
+                              <span className="material-symbols-outlined text-sm">download</span>
+                              下载查看
+                            </a>
+                          ) : (
+                            <p className="text-xs text-outline">暂不支持在线预览此文件类型</p>
+                          )}
                         </div>
                       )}
                     </div>

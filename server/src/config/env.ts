@@ -31,6 +31,13 @@ export const env = {
   FORM2_APP_TOKEN: process.env.FORM2_APP_TOKEN || '',
   FORM2_TABLE_ID: process.env.FORM2_TABLE_ID || '',
 
+  // 火山引擎 TOS 对象存储
+  TOS_ACCESS_KEY_ID: process.env.TOS_ACCESS_KEY_ID || '',
+  TOS_ACCESS_KEY_SECRET: process.env.TOS_ACCESS_KEY_SECRET || '',
+  TOS_REGION: process.env.TOS_REGION || 'cn-guangzhou',
+  TOS_ENDPOINT: process.env.TOS_ENDPOINT || 'tos-cn-guangzhou.volces.com',
+  TOS_BUCKET: process.env.TOS_BUCKET || 'boatman-health',
+
   // 是否为开发模式
   isDev: process.env.NODE_ENV === 'development',
 };

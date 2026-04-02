@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import form1Routes from './routes/form1.routes';
 import form2Routes from './routes/form2.routes';
 import adminRoutes from './routes/admin.routes';
+import uploadRoutes from './routes/upload.routes';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use((req, _res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/form1', form1Routes);
 app.use('/api/form2', form2Routes);
+app.use('/api/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
 
 // 健康检查
