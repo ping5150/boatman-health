@@ -169,11 +169,11 @@ const SyncManagementPage: React.FC = () => {
         dataIndex: 'submittedAt',
         render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
       },
-      {
-        title: '同步状态',
-        dataIndex: 'feishuSyncStatus',
-        render: () => <Tag color="red">同步失败</Tag>,
-      },
+      // {
+      //   title: '同步状态',
+      //   dataIndex: 'feishuSyncStatus',
+      //   render: () => <Tag color="red">同步失败</Tag>,
+      // },
       {
         title: '操作',
         width: 120,
