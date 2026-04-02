@@ -202,7 +202,7 @@ const mapForm1ToFeishu = (submission: {
   const fields: Record<string, unknown> = {
     '用户ID': submission.userId,
     '提交时间': formatDateStr(submission.submittedAt),
-    '版本号': String(submission.versionNumber),
+    '版本号': submission.versionNumber,
   };
 
   if (submission.orderNo) {
@@ -224,12 +224,12 @@ const mapForm1ToFeishu = (submission: {
     fields['简要说明'] = submission.brief;
   }
 
-  // 预约时间：拼接日期+时间，转为时间戳（飞书日期类型），无效时不传
+  // 预约时间：拼接日期+时间，格式化为字符串（飞书多行文本类型）
   if (submission.preferredDate && submission.preferredTime) {
     const timeStr = submission.preferredTime.split('-')[0];
     const dateTime = new Date(`${submission.preferredDate} ${timeStr}`);
     if (!isNaN(dateTime.getTime())) {
-      fields['预约时间'] = formatDateTs(dateTime);
+      fields['预约时间'] = formatDateStr(dateTime);
     }
   }
 
@@ -313,7 +313,7 @@ const mapForm2ToFeishu = (submission: {
     fields['睡眠质量'] = formData.sleepQuality;
   }
   if (formData.stressLevel != null) {
-    fields['压力自评'] = formData.stressLevel;
+    fields['压力自评'] = String(formData.stressLevel);
   }
   if (formData.anxietyFrequency) {
     fields['焦虑频率'] = formData.anxietyFrequency;

@@ -11,6 +11,8 @@ interface UploadedFile {
   size: number;
   progress: number;
   status: 'uploading' | 'success' | 'error';
+  url?: string;
+  type?: 'pdf' | 'image' | 'doc' | 'other';
 }
 
 const TOTAL_STEPS = 7;
@@ -60,6 +62,7 @@ const HealthForm = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
 
   const navigate = useNavigate();
   const { user } = useUser();
@@ -123,6 +126,19 @@ const HealthForm = () => {
             medications: archive.formData.medications || prev.medications,
           }));
           setArchiveId(archive.id);
+
+          // 反显已上传的附件
+          if (archive.formData.uploadedFiles && archive.formData.uploadedFiles.length > 0) {
+            setUploadedFiles(archive.formData.uploadedFiles.map(f => ({
+              id: f.url || Date.now().toString() + Math.random().toString(36).slice(2, 11),
+              name: f.name,
+              size: f.size,
+              progress: 100,
+              status: 'success' as const,
+              url: f.url,
+              type: f.type,
+            })));
+          }
         } else if (user) {
           // 无已有档案时，从用户信息自动带入姓名和手机号
           setFormData(prev => ({
@@ -295,12 +311,19 @@ const HealthForm = () => {
 
     Array.from(files).forEach((file) => {
       const fileId = Date.now().toString() + Math.random().toString(36).slice(2, 11);
+      const fileType: UploadedFile['type'] = file.name.endsWith('.pdf') ? 'pdf' :
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name) ? 'image' :
+        /\.(doc|docx)$/i.test(file.name) ? 'doc' : 'other';
+      const blobUrl = URL.createObjectURL(file);
+
       const newFile: UploadedFile = {
         id: fileId,
         name: file.name,
         size: file.size,
         progress: 0,
         status: 'uploading',
+        url: blobUrl,
+        type: fileType,
       };
 
       setUploadedFiles((prev) => [...prev, newFile]);
@@ -1070,22 +1093,85 @@ const HealthForm = () => {
                   {uploadedFiles.length > 0 && (
                     <div className="mt-4 space-y-2">
                       {uploadedFiles.map((file) => (
-                        <div key={file.id} className="flex items-center gap-2 p-2 bg-surface rounded-xl">
-                          <span className="material-symbols-outlined text-secondary text-lg">description</span>
-                          <span className="flex-1 text-xs truncate">{file.name}</span>
-                          <span className="text-[10px] text-outline">{formatFileSize(file.size)}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(file.id)}
-                            className="p-1 hover:bg-error/10 rounded"
-                          >
-                            <span className="material-symbols-outlined text-on-surface-variant text-sm">close</span>
-                          </button>
+                        <div key={file.id} className="flex items-center gap-3 p-2.5 bg-surface rounded-xl border border-outline-variant/10">
+                          {/* 缩略图/图标 */}
+                          {file.type === 'image' && file.url ? (
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0 cursor-pointer"
+                              onClick={() => setPreviewFile(file)}
+                            />
+                          ) : (
+                            <span className="material-symbols-outlined text-secondary text-2xl flex-shrink-0">
+                              {file.type === 'pdf' ? 'picture_as_pdf' : file.type === 'doc' ? 'article' : 'description'}
+                            </span>
+                          )}
+                          {/* 文件信息 */}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs block truncate">{file.name}</span>
+                            <span className="text-[10px] text-outline">{formatFileSize(file.size)}</span>
+                          </div>
+                          {/* 操作按钮 */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {file.status === 'uploading' ? (
+                              <span className="text-[10px] text-primary">{file.progress}%</span>
+                            ) : file.url ? (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewFile(file)}
+                                className="p-1 hover:bg-primary/10 rounded"
+                              >
+                                <span className="material-symbols-outlined text-primary text-sm">visibility</span>
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => removeFile(file.id)}
+                              className="p-1 hover:bg-error/10 rounded"
+                            >
+                              <span className="material-symbols-outlined text-on-surface-variant text-sm">close</span>
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+
+                {/* 文件预览弹窗 */}
+                {previewFile && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+                    onClick={() => setPreviewFile(null)}
+                  >
+                    <div className="relative max-w-[90vw] max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewFile(null)}
+                        className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg z-10"
+                      >
+                        <span className="material-symbols-outlined text-on-surface text-lg">close</span>
+                      </button>
+                      {previewFile.type === 'image' && previewFile.url ? (
+                        <img
+                          src={previewFile.url}
+                          alt={previewFile.name}
+                          className="max-w-[90vw] max-h-[85vh] rounded-2xl object-contain"
+                        />
+                      ) : (
+                        <div className="bg-white rounded-2xl p-8 text-center min-w-[280px]">
+                          <span className="material-symbols-outlined text-5xl text-secondary mb-3 block">
+                            {previewFile.type === 'pdf' ? 'picture_as_pdf' : 'description'}
+                          </span>
+                          <p className="text-sm font-medium mb-1 break-all">{previewFile.name}</p>
+                          <p className="text-xs text-outline mb-4">{formatFileSize(previewFile.size)}</p>
+                          <p className="text-xs text-outline">暂不支持在线预览此文件类型</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* 隐私承诺卡片 */}
                 <div className="bg-primary p-5 rounded-3xl shadow-editorial flex items-start gap-4 text-white">

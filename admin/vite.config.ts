@@ -18,7 +18,27 @@ export default defineConfig({
         target: 'http://43.139.240.74:3000',
         changeOrigin: true,
       },
-      '/admin': {
+      '/admin/auth': {
+        target: 'http://43.139.240.74:3000',
+        changeOrigin: true,
+      },
+      '/admin/dashboard': {
+        target: 'http://43.139.240.74:3000',
+        changeOrigin: true,
+      },
+      '/admin/form1': {
+        target: 'http://43.139.240.74:3000',
+        changeOrigin: true,
+      },
+      '/admin/form2': {
+        target: 'http://43.139.240.74:3000',
+        changeOrigin: true,
+      },
+      '/admin/users': {
+        target: 'http://43.139.240.74:3000',
+        changeOrigin: true,
+      },
+      '/admin/sync': {
         target: 'http://43.139.240.74:3000',
         changeOrigin: true,
       },

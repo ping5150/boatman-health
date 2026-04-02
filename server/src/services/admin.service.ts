@@ -91,9 +91,8 @@ export const adminService = {
       throw { code: 409, message: '该用户名已被使用' };
     }
 
-    // 判断是否为第一个用户（自动设为管理员）
-    const userCount = await prisma.user.count();
-    const role = userCount === 0 ? 'admin' : 'user';
+    // 管理后台注册的用户直接赋予管理员角色
+    const role = 'admin';
 
     // 创建用户账号
     const passwordHash = await hashPassword(password);
@@ -108,12 +107,7 @@ export const adminService = {
       },
     });
 
-    logger.info('ADMIN', `User registered: userId=${user.id}, phone=${phone}, role=${role}`);
-
-    // 如果是普通用户，不允许登录管理后台
-    if (!hasAdminAccess(role)) {
-      throw { code: 1003, message: '注册成功，但该账号无管理后台访问权限。请联系管理员分配角色。' };
-    }
+    logger.info('ADMIN', `Admin registered: userId=${user.id}, phone=${phone}, role=${role}`);
 
     // 注册成功后自动登录，签发 Token
     const token = signToken({
