@@ -375,12 +375,12 @@ const AuthModal = () => {
         </div>
 
         {/* Privacy Policy */}
-        <p className="text-center text-[10px] text-on-surface-variant/50 mt-4">
+        {/* <p className="text-center text-[10px] text-on-surface-variant/50 mt-4">
           登录即表示同意
           <a href="#" className="text-secondary/80 hover:text-secondary transition-colors">服务条款</a>
           <span className="mx-1">和</span>
           <a href="#" className="text-secondary/80 hover:text-secondary transition-colors">隐私政策</a>
-        </p>
+        </p> */}
         </div>
       </div>
     </div>

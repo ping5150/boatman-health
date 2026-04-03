@@ -101,7 +101,7 @@ const Cases = () => {
                     <p className="text-xs text-white/60 uppercase tracking-widest">覆盖三代</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-4xl font-black text-secondary-container mb-1">24/7</p>
+                    <p className="text-4xl font-black text-secondary-container mb-1">7*12</p>
                     <p className="text-xs text-white/60 uppercase tracking-widest">管家服务</p>
                   </div>
                 </div>

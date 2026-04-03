@@ -300,12 +300,12 @@ const Login = () => {
         </div>
 
         {/* Privacy Policy - Fixed at bottom */}
-        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-on-surface-variant/50 px-6">
+        {/* <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-on-surface-variant/50 px-6">
           登录即表示同意
           <a href="#" className="text-secondary/80 hover:text-secondary transition-colors">服务条款</a>
           <span className="mx-1">和</span>
           <a href="#" className="text-secondary/80 hover:text-secondary transition-colors">隐私政策</a>
-        </p>
+        </p> */}
       </main>
     </div>
   );
