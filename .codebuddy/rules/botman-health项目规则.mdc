@@ -221,7 +221,7 @@ dist/
 3. **server → 飞书**：后端异步将表单数据同步到飞书多维表格
 4. **server → SQLite/PostgreSQL**：通过 Prisma ORM 操作数据库
 5. **scripts → client & admin**：构建脚本合并两个前端项目的产物
-6. **edgeone.json**：前端统一部署到 EdgeOne Pages，`/api/*` 和 `/admin/*` 请求通过 rewrites 代理到后端服务器 `43.139.240.74:3000`
+6. **edgeone.json**：前端统一部署到 EdgeOne Pages，`/api/*` 和 `/admin/*` 请求通过 rewrites 代理到后端服务器 `118.145.239.169:3000`
 7. **api-docs**：供 client 和 admin 开发时参照的接口文档，不参与运行
 8. **client 与 admin 之间无直接依赖**，它们是两个独立的 SPA 应用
 
@@ -270,11 +270,11 @@ npm run preview       # 预览构建产物
 EdgeOne Pages (CDN)
 ├── / → client SPA (用户端)
 ├── /admin/ → admin SPA (管理后台)
-├── /api/* → rewrite 代理 → 43.139.240.74:3000/api/*
-└── /admin/* (API) → rewrite 代理 → 43.139.240.74:3000/admin/*
+├── /api/* → rewrite 代理 → 118.145.239.169:3000/api/*
+└── /admin/* (API) → rewrite 代理 → 118.145.239.169:3000/admin/*
     │
     ▼
-腾讯云轻量服务器 (43.139.240.74)
+腾讯云轻量服务器 (118.145.239.169)
 └── PM2 → Node.js Express (port 3000)
     ├── Prisma ORM → SQLite (server/prisma/prod.db)
     └── axios → 飞书开放平台 API

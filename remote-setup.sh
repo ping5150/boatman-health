@@ -89,5 +89,5 @@ echo ">>> 测试并重启 Nginx..."
 sudo nginx -t && sudo systemctl restart nginx && sudo systemctl enable nginx
 
 echo ">>> 部署成功！"
-echo ">>> 用户端: http://43.139.240.74/"
-echo ">>> 管理后台: http://43.139.240.74/admin/"
+echo ">>> 用户端: http://118.145.239.169/"
+echo ">>> 管理后台: http://118.145.239.169/admin/"

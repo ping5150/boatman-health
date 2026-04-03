@@ -1,8 +1,8 @@
 # deploy-frontend.ps1
-# 前端部署脚本 - 部署 client + admin 到 43.139.240.74
+# 前端部署脚本 - 部署 client + admin 到 118.145.239.169
 # 用法: .\deploy-frontend.ps1
 
-$SERVER = "43.139.240.74"
+$SERVER = "118.145.239.169"
 $USER = "ubuntu"
 
 Write-Host "===== 船夫健康 - 前端部署 =====" -ForegroundColor Cyan

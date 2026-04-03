@@ -14,7 +14,7 @@ api-docs/
 
 ## 基础信息
 
-- **Base URL**: `http://43.139.240.74:3000/api`
+- **Base URL**: `http://118.145.239.169:3000/api`
 - **认证方式**: JWT Bearer Token
 - **Content-Type**: `application/json`
 
