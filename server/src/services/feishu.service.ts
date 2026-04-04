@@ -346,13 +346,6 @@ const mapForm2ToFeishu = (submission: {
   }
 
 
-  // 多附件完整数据
-  if (formData.uploadedFiles && formData.uploadedFiles.length > 1) {
-    fields['完整数据'] = formData.uploadedFiles
-      .map((f: { name: string; url: string }, i: number) => `[文件${i + 1}] ${f.name}: ${f.url}`)
-      .join('\n');
-  }
-
   return fields;
 };
 
