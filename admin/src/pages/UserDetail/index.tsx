@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Spin, Tag, Divider, Form, Input, Select, DatePicker, Space, message, Row, Col } from 'antd';
+import { roleNames, roleColors, UserRole } from '../../api/user.api';
 import { ArrowLeftOutlined, UserOutlined, PhoneOutlined, ContactsOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { userApi, UserDetail } from '../../api/user.api';
@@ -141,9 +142,13 @@ const UserDetailPage: React.FC = () => {
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="用户ID">{profile.id}</Descriptions.Item>
           <Descriptions.Item label="角色">
-            <Tag color={profile.role === 'admin' ? 'gold' : 'blue'}>
-              {profile.role === 'admin' ? '管理员' : '用户'}
-            </Tag>
+            <Space size={4} wrap>
+              {profile.role.split(',').map(r => r.trim()).filter(Boolean).map(r => (
+                <Tag key={r} color={roleColors[r as UserRole] || 'default'}>
+                  {roleNames[r as UserRole] || r}
+                </Tag>
+              ))}
+            </Space>
           </Descriptions.Item>
           <Descriptions.Item label="注册时间">
             {profile.createdAt ? dayjs(profile.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
