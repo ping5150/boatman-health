@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-DEPLOY_DIR="/var/www/chuanfu-health"
+DEPLOY_DIR="/var/www/boatman-health-A4"
 
 echo ">>> 安装 Nginx（如未安装）..."
 if ! command -v nginx &> /dev/null; then
