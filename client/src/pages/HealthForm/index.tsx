@@ -61,6 +61,7 @@ const HealthForm = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileDocRef = useRef<HTMLInputElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
@@ -1083,21 +1084,41 @@ const HealthForm = () => {
                 {/* 上传附件 */}
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5">
                   <label className="text-xs font-headline font-bold text-primary uppercase block mb-3">上传附件 (非必填)</label>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    <span className="material-symbols-outlined text-3xl text-secondary mb-2">cloud_upload</span>
-                    <p className="text-[10px] text-outline">点击上传体检报告、影像资料等</p>
-                    <p className="text-[9px] text-outline/60 mt-1">支持 PDF / Word / Excel / 图片，单个文件最大 50MB</p>
+                  <div className="flex gap-3">
+                    {/* 上传图片 */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center flex-1 h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <span className="material-symbols-outlined text-2xl text-secondary mb-1">image</span>
+                      <p className="text-[10px] text-outline">上传图片</p>
+                      <p className="text-[9px] text-outline/60 mt-0.5">JPG / PNG / WebP</p>
+                    </div>
+                    {/* 上传文件 */}
+                    <div
+                      onClick={() => fileDocRef.current?.click()}
+                      className="flex flex-col items-center justify-center flex-1 h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                    >
+                      <input
+                        ref={fileDocRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <span className="material-symbols-outlined text-2xl text-secondary mb-1">upload_file</span>
+                      <p className="text-[10px] text-outline">上传文件</p>
+                      <p className="text-[9px] text-outline/60 mt-0.5">PDF / Word / Excel</p>
+                    </div>
                   </div>
 
                   {/* 已上传文件列表 */}
