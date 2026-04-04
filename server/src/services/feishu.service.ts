@@ -330,12 +330,12 @@ const mapForm2ToFeishu = (submission: {
     fields['健康关注点'] = formData.healthConcerns;
   }
 
-  // 附件
+  // 附件（最多支持 5 个，对应飞书列：附件1~附件5）
   if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
-    fields['附件'] = {
-      link: formData.uploadedFiles[0].url,
-      text: formData.uploadedFiles.map((f: { name: string }) => f.name).join('，'),
-    };
+    const maxFiles = 5;
+    formData.uploadedFiles.slice(0, maxFiles).forEach((f: { name: string; url: string }, i: number) => {
+      fields[`附件${i + 1}`] = { link: f.url, text: f.name };
+    });
   }
 
   // 饮食限制
