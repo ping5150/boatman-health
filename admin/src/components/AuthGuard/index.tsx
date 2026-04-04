@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { Spin, Result } from 'antd';
+import { Spin } from 'antd';
 import { useAuth } from '../../hooks/useAuth';
 
 interface AuthGuardProps {
@@ -8,7 +8,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,14 +22,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'admin') {
-    return (
-      <Result
-        status="403"
-        title="403"
-        subTitle="无权限访问管理后台"
-      />
-    );
+  const roles = user.role.split(',').map((r: string) => r.trim());
+  if (!roles.includes('admin') && !roles.includes('salesman')) {
+    // 无权限：清除本地 token，跳转登录页
+    logout();
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

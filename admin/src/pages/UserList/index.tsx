@@ -88,11 +88,16 @@ const UserListPage: React.FC = () => {
     setRoleModalVisible(true);
   };
 
-  // 保存角色
+  // 保存角色（user 身份强制保留）
   const handleSaveRoles = async () => {
     if (!editingUser) return;
     
-    if (selectedRoles.length === 0) {
+    // 确保 user 角色始终存在
+    const rolesWithUser = selectedRoles.includes('user')
+      ? selectedRoles
+      : ['user', ...selectedRoles];
+
+    if (rolesWithUser.length === 0) {
       message.warning('请至少选择一个角色');
       return;
     }
@@ -100,7 +105,7 @@ const UserListPage: React.FC = () => {
     setRoleUpdating(true);
     try {
       const res = await userApi.update(editingUser.id, {
-        role: selectedRoles.join(','),
+        role: rolesWithUser.join(','),
       });
       
       if (res.code === 0) {
@@ -261,9 +266,9 @@ const UserListPage: React.FC = () => {
           >
             <Space vertical>
               {allRoles.map((role) => (
-                <Checkbox key={role} value={role}>
+                <Checkbox key={role} value={role} disabled={role === 'user'}>
                   <Tag color={roleColors[role]}>{roleNames[role]}</Tag>
-                  {role === 'user' && <span style={{ color: '#999', marginLeft: 8 }}>基本用户角色</span>}
+                  {role === 'user' && <span style={{ color: '#999', marginLeft: 8 }}>基本用户角色（默认不可移除）</span>}
                   {role === 'salesman' && <span style={{ color: '#999', marginLeft: 8 }}>可登录管理后台</span>}
                   {role === 'admin' && <span style={{ color: '#999', marginLeft: 8 }}>管理员权限，可登录管理后台</span>}
                 </Checkbox>
