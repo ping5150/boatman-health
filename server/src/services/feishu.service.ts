@@ -328,6 +328,53 @@ const mapForm2ToFeishu = (submission: {
     fields['健康关注点'] = formData.healthConcerns;
   }
 
+  // 附件
+  if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
+    fields['附件'] = {
+      link: formData.uploadedFiles[0].url,
+      text: formData.uploadedFiles.map((f: { name: string }) => f.name).join('，'),
+    };
+  }
+
+  // 饮食限制
+  if (formData.dietRestriction) {
+    fields['饮食限制'] = Array.isArray(formData.dietRestriction)
+      ? formData.dietRestriction.join('，')
+      : formData.dietRestriction;
+  }
+
+  // 饮品习惯
+  const drinks = Array.isArray(formData.drinks) ? formData.drinks.join('，') : formData.drinks;
+  if (drinks) {
+    fields['饮品习惯'] = drinks;
+  }
+
+  // 运动频率/时长
+  if (formData.exerciseFrequency) {
+    fields['运动频率'] = formData.exerciseFrequency;
+  }
+  if (formData.exerciseDuration) {
+    fields['运动时长'] = formData.exerciseDuration;
+  }
+
+  // 起床感受
+  if (formData.wakeUpFeeling) {
+    fields['起床感受'] = formData.wakeUpFeeling;
+  }
+
+  // 家族史备注
+  if (formData.familyHistoryNote) {
+    fields['家族史备注'] = formData.familyHistoryNote;
+  }
+
+  // 多附件完整数据
+  if (formData.uploadedFiles && formData.uploadedFiles.length > 1) {
+    fields['完整数据'] = formData.uploadedFiles
+      .map((f: { name: string; url: string }, i: number) => `[文件${i + 1}] ${f.name}: ${f.url}`)
+      .join('
+');
+  }
+
   return fields;
 };
 
