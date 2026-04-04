@@ -337,6 +337,11 @@ export const formService = {
 
       logger.info('FORM', `Form2 draft updated: userId=${userId}, id=${updated.id}, orderNo=${updated.orderNo}`);
 
+      // 异步触发飞书同步（不阻塞响应）
+      feishuService.updateForm2(updated).catch((err) => {
+        logger.error('FEISHU', `Async sync form2 draft failed: id=${updated.id}`, err);
+      });
+
       return {
         id: updated.id,
         orderNo: updated.orderNo,
@@ -367,6 +372,11 @@ export const formService = {
     });
 
     logger.info('FORM', `Form2 draft created: userId=${userId}, orderNo=${orderNo}, version=${versionNumber}, id=${submission.id}`);
+
+    // 异步触发飞书同步（不阻塞响应）
+    feishuService.syncForm2(submission).catch((err) => {
+      logger.error('FEISHU', `Async sync form2 draft failed: id=${submission.id}`, err);
+    });
 
     return {
       id: submission.id,
