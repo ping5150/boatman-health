@@ -1,6 +1,6 @@
 {
   "name": "form-system-server",
-  "version": "1.0.0",
+  "version": "4.1.0",
   "description": "用户表单系统后端服务",
   "main": "dist/app.js",
   "scripts": {
