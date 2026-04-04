@@ -343,29 +343,6 @@ const mapForm2ToFeishu = (submission: {
       : formData.dietRestriction;
   }
 
-  // 饮品习惯
-  const drinks = Array.isArray(formData.drinks) ? formData.drinks.join('，') : formData.drinks;
-  if (drinks) {
-    fields['饮品习惯'] = drinks;
-  }
-
-  // 运动频率/时长
-  if (formData.exerciseFrequency) {
-    fields['运动频率'] = formData.exerciseFrequency;
-  }
-  if (formData.exerciseDuration) {
-    fields['运动时长'] = formData.exerciseDuration;
-  }
-
-  // 起床感受
-  if (formData.wakeUpFeeling) {
-    fields['起床感受'] = formData.wakeUpFeeling;
-  }
-
-  // 家族史备注
-  if (formData.familyHistoryNote) {
-    fields['家族史备注'] = formData.familyHistoryNote;
-  }
 
   // 多附件完整数据
   if (formData.uploadedFiles && formData.uploadedFiles.length > 1) {
