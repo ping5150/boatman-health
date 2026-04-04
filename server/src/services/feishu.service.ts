@@ -348,8 +348,7 @@ const mapForm2ToFeishu = (submission: {
   if (formData.uploadedFiles && formData.uploadedFiles.length > 1) {
     fields['完整数据'] = formData.uploadedFiles
       .map((f: { name: string; url: string }, i: number) => `[文件${i + 1}] ${f.name}: ${f.url}`)
-      .join('
-');
+      .join('\n');
   }
 
   return fields;
