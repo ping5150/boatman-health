@@ -241,6 +241,7 @@ const mapForm1ToFeishu = (submission: {
  */
 const mapForm2ToFeishu = (submission: {
   userId: string;
+  orderNo: string;
   name: string;
   phone: string;
   formData: string;
@@ -250,6 +251,7 @@ const mapForm2ToFeishu = (submission: {
   const formData: HealthFormData = JSON.parse(submission.formData);
   const fields: Record<string, unknown> = {
     '用户ID': submission.userId,
+    '档案编号': submission.orderNo,
     '提交时间': formatDateStr(submission.submittedAt),
     '版本号': String(submission.versionNumber),
   };
@@ -471,6 +473,7 @@ export const feishuService = {
   async updateForm2(submission: {
     id: number;
     userId: string;
+    orderNo: string;
     name: string;
     phone: string;
     formData: string;
@@ -655,6 +658,7 @@ export const feishuService = {
   async syncForm2(submission: {
     id: number;
     userId: string;
+    orderNo: string;
     name: string;
     phone: string;
     formData: string;
