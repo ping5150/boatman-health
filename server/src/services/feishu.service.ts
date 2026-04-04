@@ -504,6 +504,17 @@ export const feishuService = {
 
       logger.info('FEISHU', `Update success: table=form2, recordId=${submission.id}, feishuRecordId=${submission.feishuRecordId}`);
     } catch (err) {
+      // 飞书记录已被删除，降级为新建
+      if (err instanceof Error && err.message.includes('code=1254043')) {
+        logger.warn('FEISHU', `Record not found in feishu, fallback to create: table=form2, id=${submission.id}, oldRecordId=${submission.feishuRecordId}`);
+        await prisma.form2Submission.update({
+          where: { id: submission.id },
+          data: { feishuRecordId: null },
+        });
+        const { feishuRecordId: _removed2, ...rest2 } = submission;
+        return this.syncForm2(rest2);
+      }
+
       await prisma.form2Submission.update({
         where: { id: submission.id },
         data: { feishuSyncStatus: 'failed' },
@@ -617,6 +628,17 @@ export const feishuService = {
 
       logger.info('FEISHU', `Update success: table=form1, recordId=${submission.id}, feishuRecordId=${submission.feishuRecordId}`);
     } catch (err) {
+      // 飞书记录已被删除，降级为新建
+      if (err instanceof Error && err.message.includes('code=1254043')) {
+        logger.warn('FEISHU', `Record not found in feishu, fallback to create: table=form1, id=${submission.id}, oldRecordId=${submission.feishuRecordId}`);
+        await prisma.form1Submission.update({
+          where: { id: submission.id },
+          data: { feishuRecordId: null },
+        });
+        const { feishuRecordId: _removed1, ...rest1 } = submission;
+        return this.syncForm1(rest1);
+      }
+
       await prisma.form1Submission.update({
         where: { id: submission.id },
         data: { feishuSyncStatus: 'failed' },
