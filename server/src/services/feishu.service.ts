@@ -246,105 +246,81 @@ const mapForm2ToFeishu = (submission: {
   phone: string;
   formData: string;
   submittedAt: Date;
-  versionNumber: number;
+  updatedAt: Date;
 }): Record<string, unknown> => {
   const formData: HealthFormData = JSON.parse(submission.formData);
   const fields: Record<string, unknown> = {
     '用户ID': submission.userId,
     '档案编号': submission.orderNo,
     '提交时间': formatDateStr(submission.submittedAt),
-    '版本号': String(submission.versionNumber),
+    '最近更新时间': formatDateStr(submission.updatedAt),  // ① 替换版本号
   };
 
   const name = formData.name || submission.name;
-  if (name) {
-    fields['姓名'] = name;
-  }
+  if (name) fields['姓名'] = name;
 
   const phone = formData.phone || submission.phone;
-  if (phone) {
-    fields['联系电话'] = phone;
+  if (phone) fields['联系电话'] = phone;
+
+  if (formData.emergencyName) fields['紧急联系人'] = formData.emergencyName;
+  if (formData.emergencyPhone) fields['紧急联系人电话'] = formData.emergencyPhone;
+
+  // ② 当前疾病（原主要疾病）+ ⑥ 确诊时间
+  if (formData.diseases && formData.diseases.length > 0) {
+    fields['当前疾病'] = formData.diseases.map((d) => d.name).filter(Boolean).join('，');
+    const diagnosedDates = formData.diseases.map((d) => d.date).filter(Boolean).join('，');
+    if (diagnosedDates) fields['确诊时间'] = diagnosedDates;
   }
 
-  if (formData.emergencyName) {
-    fields['紧急联系人'] = formData.emergencyName;
-  }
-  if (formData.emergencyPhone) {
-    fields['紧急联系人电话'] = formData.emergencyPhone;
-  }
+  const medications = formData.medications?.map((m) => m.name).filter(Boolean).join('，');
+  if (medications) fields['目前用药'] = medications;
 
-  const diseases = formData.diseases?.map((d) => d.name).join('，');
-  if (diseases) {
-    fields['主要疾病'] = diseases;
-  }
-
-  const medications = formData.medications?.map((m) => m.name).join('，');
-  if (medications) {
-    fields['目前用药'] = medications;
-  }
-
-  if (formData.allergy?.detail) {
-    fields['过敏史'] = formData.allergy.detail;
-  }
-  if (formData.surgery?.detail) {
-    fields['手术史'] = formData.surgery.detail;
-  }
+  if (formData.allergy?.detail) fields['过敏史'] = formData.allergy.detail;
+  if (formData.surgery?.detail) fields['手术史'] = formData.surgery.detail;
   if (formData.vascular?.qualified) {
     fields['血管评估'] = formData.vascular.qualified === 'yes' ? '合格' : '不合格';
   }
 
   const familyHistory = formData.familyHistory?.join('，');
-  if (familyHistory) {
-    fields['家族史'] = familyHistory;
-  }
+  if (familyHistory) fields['家族史'] = familyHistory;
 
+  // ③ 饮食偏好（原饮食模式）
   const dietModes = formData.dietModes?.join('，');
-  if (dietModes) {
-    fields['饮食模式'] = dietModes;
-  }
+  if (dietModes) fields['饮食偏好'] = dietModes;
 
-  const exerciseTypes = formData.exerciseTypes?.join('，');
-  if (exerciseTypes) {
-    fields['运动类型'] = exerciseTypes;
-  }
+  // ④ 常饮饮品（原饮品习惯，之前未写入）
+  const drinks = formData.drinks?.join('，');
+  if (drinks) fields['常饮饮品'] = drinks;
 
-  if (formData.sleepDuration) {
-    fields['睡眠时长'] = formData.sleepDuration;
-  }
-  if (formData.sleepQuality) {
-    fields['睡眠质量'] = formData.sleepQuality;
-  }
-  if (formData.stressLevel != null) {
-    fields['压力自评'] = String(formData.stressLevel);
-  }
-  if (formData.anxietyFrequency) {
-    fields['焦虑频率'] = formData.anxietyFrequency;
-  }
-
-  const brainFog = formData.brainFog?.join('，');
-  if (brainFog) {
-    fields['脑雾症状'] = brainFog;
-  }
-
-  if (formData.healthConcerns) {
-    fields['健康关注点'] = formData.healthConcerns;
-  }
-
-  // 附件（最多支持 5 个，对应飞书列：附件1~附件5）
-  if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
-    const maxFiles = 5;
-    formData.uploadedFiles.slice(0, maxFiles).forEach((f: { name: string; url: string }, i: number) => {
-      fields[`附件${i + 1}`] = { link: f.url, text: f.name };
-    });
-  }
-
-  // 饮食限制
   if (formData.dietRestriction) {
     fields['饮食限制'] = Array.isArray(formData.dietRestriction)
       ? formData.dietRestriction.join('，')
       : formData.dietRestriction;
   }
 
+  const exerciseTypes = formData.exerciseTypes?.join('，');
+  if (exerciseTypes) fields['运动类型'] = exerciseTypes;
+
+  // ⑤ 运动频率、运动时长（之前未写入）
+  if (formData.exerciseFrequency) fields['运动频率'] = formData.exerciseFrequency;
+  if (formData.exerciseDuration) fields['运动时长'] = formData.exerciseDuration;
+
+  if (formData.sleepDuration) fields['睡眠时长'] = formData.sleepDuration;
+  if (formData.sleepQuality) fields['睡眠质量'] = formData.sleepQuality;
+  if (formData.stressLevel != null) fields['压力自评'] = String(formData.stressLevel);
+  if (formData.anxietyFrequency) fields['焦虑频率'] = formData.anxietyFrequency;
+
+  const brainFog = formData.brainFog?.join('，');
+  if (brainFog) fields['脑雾症状'] = brainFog;
+
+  if (formData.healthConcerns) fields['健康关注点'] = formData.healthConcerns;
+
+  // 附件（最多支持 5 个，对应飞书列：附件1~附件5）
+  if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
+    formData.uploadedFiles.slice(0, 5).forEach((f: { name: string; url: string }, i: number) => {
+      fields[`附件${i + 1}`] = { link: f.url, text: f.name };
+    });
+  }
 
   return fields;
 };
@@ -471,7 +447,7 @@ export const feishuService = {
     phone: string;
     formData: string;
     submittedAt: Date;
-    versionNumber: number;
+    updatedAt: Date;
     feishuRecordId: string | null;
   }): Promise<void> {
     if (!feishuConfig.isEnabled) {
@@ -656,7 +632,7 @@ export const feishuService = {
     phone: string;
     formData: string;
     submittedAt: Date;
-    versionNumber: number;
+    updatedAt: Date;
   }): Promise<void> {
     if (!feishuConfig.isEnabled) {
       logger.warn('FEISHU', 'Feishu sync disabled (missing config), skipping form2 sync');
