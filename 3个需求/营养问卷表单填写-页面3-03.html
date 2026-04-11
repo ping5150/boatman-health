@@ -1,0 +1,196 @@
+<!DOCTYPE html><html class="light" lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>营养调研问卷 - 船夫健康</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Work_Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f7f9fc",
+                    "background": "#f7f9fc",
+                    "secondary": "#075fab",
+                    "on-surface-variant": "#43474f",
+                    "on-tertiary-fixed-variant": "#35485e",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#0a2033",
+                    "surface-variant": "#e0e3e6",
+                    "surface-container-high": "#e6e8eb",
+                    "primary-container": "#003366",
+                    "on-tertiary-container": "#8a9eb6",
+                    "on-error": "#ffffff",
+                    "surface-container": "#eceef1",
+                    "primary": "#001e40",
+                    "on-primary-container": "#799dd6",
+                    "on-tertiary-fixed": "#071d30",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#a7c8ff",
+                    "tertiary-fixed": "#d0e4ff",
+                    "tertiary-container": "#21354a",
+                    "surface-container-highest": "#e0e3e6",
+                    "inverse-surface": "#2d3133",
+                    "inverse-on-surface": "#eff1f4",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#004884",
+                    "surface-container-low": "#f2f4f7",
+                    "secondary-container": "#70aeff",
+                    "on-background": "#191c1e",
+                    "outline-variant": "#c3c6d1",
+                    "on-primary-fixed": "#001b3c",
+                    "surface-tint": "#3a5f94",
+                    "outline": "#737780",
+                    "on-secondary-container": "#004077",
+                    "on-primary-fixed-variant": "#1f477b",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-secondary-fixed": "#001c39",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "primary-fixed": "#d5e3ff",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#d8dadd",
+                    "tertiary-fixed-dim": "#b4c8e2",
+                    "on-surface": "#191c1e",
+                    "surface-bright": "#f7f9fc",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Work Sans"],
+                    "label": ["Work Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        body { font-family: 'Work Sans', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .editorial-shadow { box-shadow: 0 4px 16px rgba(0, 30, 64, 0.04); }
+    </style>
+</head>
+<body class="bg-surface text-on-background min-h-screen pb-44 selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar (Strictly matches Screen 21 & Screen 5) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl flex items-center justify-center px-6 py-3 border-none transition-all duration-500">
+<span class="text-base font-extrabold text-primary tracking-widest font-headline uppercase" style="">船夫健康</span>
+<!-- Progress Bar (30% for Step 03) -->
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-surface-container-high">
+<div class="h-full bg-secondary w-[30%] transition-all duration-500"></div>
+</div>
+</header>
+<main class="pt-14 px-6 max-w-screen-md mx-auto">
+<!-- Editorial Header (Compact style) -->
+<section class="mb-5 mt-4">
+<span class="text-secondary font-headline font-bold tracking-tight text-xs block mb-0.5 uppercase" style=""><br></span>
+<h1 class="font-headline font-extrabold text-2xl text-primary leading-tight tracking-tight" style="">03 饮食习惯 (2/4)</h1>
+<p class="text-on-surface-variant mt-1 text-xs max-w-prose opacity-80 leading-relaxed" style=""><br></p>
+</section>
+<div class="space-y-5">
+<!-- Question 6: Textarea -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">6</span>
+<h2 class="text-lg font-bold text-primary leading-snug" style="">您是否有不喜欢或避免的食物？请说明原因。</h2>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all editorial-shadow outline-none" placeholder="例如：海鲜（过敏）、香菜（味道）、深加工食品（健康考虑）..." rows="2"></textarea>
+</div>
+</section>
+<!-- Question 7: Selection List (Compact Radio) -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">7</span>
+<h2 class="text-lg font-bold text-primary leading-snug" style="">您是否遵循特定的饮食计划？</h2>
+</div>
+<div class="grid grid-cols-1 gap-1">
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all" name="diet_plan" type="radio">
+<span class="ml-3 text-sm font-bold text-primary" style="">生酮饮食</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all" name="diet_plan" type="radio">
+<span class="ml-3 text-sm font-bold text-primary" style="">间歇性禁食</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all" name="diet_plan" type="radio">
+<span class="ml-3 text-sm font-bold text-primary" style="">素食主义</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all" name="diet_plan" type="radio">
+<span class="ml-3 text-sm font-bold text-primary" style="">无麸质饮食</span>
+</label><label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all" name="diet_plan" type="radio">
+<span class="ml-3 text-sm font-bold text-primary" style="">无特定饮食计划</span>
+</label>
+</div>
+</section>
+<!-- Question 8: Upload + Textarea -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">8</span>
+<h2 class="text-lg font-bold text-primary leading-snug" style="">您典型的一天饮食是什么样的？</h2>
+</div>
+<p class="text-on-surface-variant text-[11px] leading-tight opacity-70 mb-2" style="">请上传2天的饮食记录，包括早餐、午餐、晚餐及任何小吃。支持文字或图片。工作日和周末各一天。</p>
+<div class="grid grid-cols-2 gap-3">
+<!-- Upload Card 1 -->
+<div class="relative group aspect-[16/9] rounded-xl bg-surface-container-low border-2 border-dashed border-outline-variant/30 hover:border-secondary transition-colors cursor-pointer flex flex-col items-center justify-center gap-1 editorial-shadow">
+<span class="material-symbols-outlined text-xl text-outline-variant group-hover:text-secondary transition-colors" style="">add_a_photo</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest" style="">上传工作日</span>
+</div>
+<!-- Upload Card 2 -->
+<div class="relative group aspect-[16/9] rounded-xl bg-surface-container-low border-2 border-dashed border-outline-variant/30 hover:border-secondary transition-colors cursor-pointer flex flex-col items-center justify-center gap-1 editorial-shadow">
+<span class="material-symbols-outlined text-xl text-outline-variant group-hover:text-secondary transition-colors" style="">cloud_upload</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest" style="">上传周末</span>
+</div>
+</div>
+<div class="mt-3">
+<textarea class="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all editorial-shadow outline-none" placeholder="或在此手动输入您的饮食记录..." rows="3"></textarea>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Strictly matches Screen 21 & Screen 5) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-slate-50/90 backdrop-blur-2xl rounded-t-[24px] shadow-[0_-4px_16px_rgba(0,30,64,0.04)] px-6 py-6 flex flex-col items-center max-w-screen-xl mx-auto left-1/2 -translate-x-1/2">
+<div class="w-full flex flex-col items-center gap-4">
+<!-- Progress Indicators (10 dots, dot 3 active) -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-4 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(0,30,64,0.2)]"></div> <!-- Dot 3 Active -->
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+</div>
+<span class="ml-2 font-body text-[10px] font-semibold uppercase tracking-widest text-primary/60" style="">进度 03/10</span>
+</div>
+<!-- Action Button -->
+<button class="w-full flex items-center justify-center bg-primary text-white rounded-full px-8 py-4 shadow-md hover:brightness-110 active:scale-95 transition-all gap-2 group" style="">
+<span class="font-body text-xs font-semibold uppercase tracking-widest" style="">下一模块：生活方式</span>
+<span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform" style="">arrow_forward</span>
+</button>
+</div>
+</nav>
+<!-- Visual Texture Overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.02] mix-blend-multiply -z-10" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBFaxylqm6DsRkva8f_O8Gokcu7XVZCeTga6kpfarUo19hQxoTHywG0BB-nK9MZqwVbSVhNtWRWW53rGjVYobVpCt2JkEPyLhx4KHw999beq0o0S_sWNleND-8ZVRB1HZ_H1BswIfhr70Uujht631rNXamFCxFYUNx2rAoCZD7kdhvDVHFXY0W_0hK75NzI74snxXToLKwrsCbLi-HNNGIn7FSlCtnoqNyGAd8UBCp4VupGx9kyoC8aSzgHU5ww-rUW2iIHQ5GyqtUo&quot;);"></div>
+</body></html>

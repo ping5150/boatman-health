@@ -26,6 +26,8 @@ model User {
   updatedAt         DateTime          @updatedAt @map("updated_at")
   form1Submissions  Form1Submission[]
   form2Submissions  Form2Submission[]
+  sleepSurveys      SleepSurvey[]
+  nutritionSurveys  NutritionSurvey[]
 
   @@index([phone])
   @@index([role])
@@ -80,4 +82,167 @@ model Form2Submission {
   @@index([submittedAt])
   @@index([orderNo])
   @@map("form2_submissions")
+}
+
+// ==================== 睡眠问卷 ====================
+model SleepSurvey {
+  id                     Int       @id @default(autoincrement())
+  userId                 String    @map("user_id")
+  orderNo                String    @unique @map("order_no")
+  name                   String
+  phone                  String
+  submittedBy            String    @map("submitted_by")
+  // 基础睡眠模式
+  bedtime                String?   @map("bedtime")                 // 上床睡觉时间 HH:MM
+  sleepLatency           String?   @map("sleep_latency")           // 入睡所需时长
+  wakeTime               String?   @map("wake_time")               // 起床时间 HH:MM
+  sleepDurationHours     Int?      @map("sleep_duration_hours")    // 睡眠时长（小时）
+  sleepDurationMinutes   Int?      @map("sleep_duration_minutes")  // 睡眠时长（分钟）
+  // 入睡与夜间干扰 (A-J)
+  cantFallAsleep30min    String?   @map("cant_fall_asleep_30min")  // 不能在30min内入睡
+  wakeUpEarly            String?   @map("wake_up_early")           // 早醒
+  getUpToilet            String?   @map("get_up_toilet")           // 起床上洗手间
+  breathingDiscomfort    String?   @map("breathing_discomfort")    // 不舒服的呼吸
+  coughSnore             String?   @map("cough_snore")             // 大声咳嗽或打鼾
+  feelCold               String?   @map("feel_cold")               // 感到寒冷
+  feelHot                String?   @map("feel_hot")                // 感到太热
+  nightmares             String?   @map("nightmares")              // 做噩梦
+  pain                   String?   @map("pain")                    // 出现疼痛
+  otherSleepIssues       String?   @map("other_sleep_issues")      // 其他影响睡眠的事情
+  // 梦境与整体评估
+  sleepQualityRating     String?   @map("sleep_quality_rating")    // 睡眠质量评分
+  // 药物与日间影响
+  sleepMedication        String?   @map("sleep_medication")        // 使用催眠药物
+  stayAwakeDifficulty    String?   @map("stay_awake_difficulty")   // 难以保持清醒
+  taskCompletionDifficulty String? @map("task_completion_difficulty") // 完成事情困难
+  // 睡眠质量观察
+  sleepPartner           String?   @map("sleep_partner")           // 是否与人同睡
+  snoring                String?   @map("snoring")                 // 打鼾声
+  breathingPause         String?   @map("breathing_pause")         // 呼吸停顿
+  legTwitch              String?   @map("leg_twitch")              // 腿部抽动
+  disorientation         String?   @map("disorientation")          // 不能辨认方向
+  otherRestlessSleep     String?   @map("other_restless_sleep")    // 其他睡不安宁
+  // 系统字段
+  submittedAt            DateTime  @default(now()) @map("submitted_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  versionNumber          Int       @map("version_number")
+  feishuRecordId         String?   @map("feishu_record_id")
+  feishuSyncStatus       String    @default("pending") @map("feishu_sync_status")
+  user                   User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([feishuSyncStatus])
+  @@index([submittedAt])
+  @@index([orderNo])
+  @@map("sleep_surveys")
+}
+
+// ==================== 营养问卷 ====================
+model NutritionSurvey {
+  id                        Int       @id @default(autoincrement())
+  userId                    String    @map("user_id")
+  orderNo                   String    @unique @map("order_no")
+  name                      String
+  phone                     String
+  submittedBy               String    @map("submitted_by")
+  // 01 健康信息
+  consultationReason        String?   @map("consultation_reason")        // 咨询主要原因
+  nutritionistSupportGoals  String?   @map("nutritionist_support_goals") // 希望营养师支持领域
+  height                    Float?    @map("height")                     // 身高
+  weight                    Float?    @map("weight")                     // 体重
+  weightChange              String?   @map("weight_change")              // 体重变化
+  chronicDiseases           String?   @map("chronic_diseases")           // 慢性疾病
+  medicationsSupplements    String?   @map("medications_supplements")    // 药物或补充剂
+  // 02 饮食习惯（1/4）
+  dailyMeals                String?   @map("daily_meals")                // 每天主餐数量
+  breakfastHabit            String?   @map("breakfast_habit")            // 固定早餐习惯
+  commonSnacks              String?   @map("common_snacks")              // 常吃零食
+  foodSources               String?   @map("food_sources")               // 食物来源
+  foodAllergies             String?   @map("food_allergies")             // 食物过敏
+  // 03 饮食习惯（2/4）
+  dislikedFoods             String?   @map("disliked_foods")             // 不喜欢食物
+  dietPlanType              String?   @map("diet_plan_type")             // 特定饮食计划
+  typicalDietWorkday        String?   @map("typical_diet_workday")       // 工作日饮食图片URL
+  typicalDietWeekend        String?   @map("typical_diet_weekend")       // 周末饮食图片URL
+  typicalDietDescription    String?   @map("typical_diet_description")   // 典型饮食描述
+  // 03 饮食习惯（3/4）- 饮品频率
+  drinkWater                String?   @map("drink_water")                // 水
+  drinkCoffee               String?   @map("drink_coffee")               // 咖啡
+  drinkTea                  String?   @map("drink_tea")                  // 茶
+  drinkMilk                 String?   @map("drink_milk")                 // 牛奶
+  drinkPlantMilk            String?   @map("drink_plant_milk")           // 植物奶
+  drinkMilkTea              String?   @map("drink_milk_tea")             // 奶茶
+  drinkSugarFree            String?   @map("drink_sugar_free")           // 无糖饮料
+  drinkSugary               String?   @map("drink_sugary")               // 含糖饮料
+  drinkEnergy               String?   @map("drink_energy")               // 能量饮料
+  drinkOther                String?   @map("drink_other")                // 其他饮品
+  // 03 饮食习惯（4/4）
+  highSaltSweat             String?   @map("high_salt_sweat")            // 出汗含盐量高
+  dietSatisfaction          String?   @map("diet_satisfaction")          // 饮食满意度
+  // 04 运动习惯（1/2）
+  exerciseLevel             String?   @map("exercise_level")             // 运动水平
+  exerciseTypes             String?   @map("exercise_types")             // 运动类型
+  exerciseDuration          String?   @map("exercise_duration")          // 每次运动时长
+  exerciseFrequency         String?   @map("exercise_frequency")         // 每周运动频率
+  exerciseTime              String?   @map("exercise_time")              // 运动时间段
+  exerciseMotivation        String?   @map("exercise_motivation")        // 运动激励因素
+  // 04 运动习惯（2/2）
+  exerciseChallenges        String?   @map("exercise_challenges")        // 运动挑战
+  exerciseGoals             String?   @map("exercise_goals")             // 运动目标
+  hasExercisePartner        String?   @map("has_exercise_partner")       // 是否与他人运动
+  exercisePartnerDetail     String?   @map("exercise_partner_detail")    // 和谁运动
+  // 05 生活方式（1/2）
+  stressLevel               String?   @map("stress_level")               // 压力水平
+  isSmoker                  String?   @map("is_smoker")                  // 是否吸烟
+  smokingDetail             String?   @map("smoking_detail")             // 吸烟详情
+  isDrinker                 String?   @map("is_drinker")                 // 是否饮酒
+  drinkingDetail            String?   @map("drinking_detail")            // 饮酒详情
+  weekdayWakeTime           String?   @map("weekday_wake_time")          // 工作日起床时间
+  weekdaySleepTime          String?   @map("weekday_sleep_time")         // 工作日睡觉时间
+  morningState              String?   @map("morning_state")              // 起床精神状态
+  screenTimeTv              String?   @map("screen_time_tv")             // 看电视时间
+  screenTimeReading         String?   @map("screen_time_reading")        // 阅读时间
+  screenTimeElectronics     String?   @map("screen_time_electronics")    // 电子屏幕时间
+  // 05 生活方式（2/2）
+  socialActivities          String?   @map("social_activities")          // 社交活动
+  socialActivitiesOther     String?   @map("social_activities_other")    // 其他社交活动
+  otherFeedback             String?   @map("other_feedback")             // 其他反馈
+  // 06 饮食频率（1/3）- 谷薯与水果
+  freqRice                  String?   @map("freq_rice")                  // 米饭
+  freqNoodlesBread          String?   @map("freq_noodles_bread")         // 面条面包
+  freqWholeGrains           String?   @map("freq_whole_grains")          // 全谷物
+  freqFreshFruit            String?   @map("freq_fresh_fruit")           // 新鲜水果
+  freqFruitJuice            String?   @map("freq_fruit_juice")           // 果汁
+  freqDriedFruit            String?   @map("freq_dried_fruit")           // 果干
+  // 06 饮食频率（2/3）- 蔬菜与蛋白质
+  freqLeafyVegetables       String?   @map("freq_leafy_vegetables")      // 绿叶蔬菜
+  freqStarchyVegetables     String?   @map("freq_starchy_vegetables")    // 淀粉类蔬菜
+  freqOtherVegetables       String?   @map("freq_other_vegetables")      // 其他蔬菜
+  freqEggs                  String?   @map("freq_eggs")                  // 鸡蛋
+  freqPoultry               String?   @map("freq_poultry")               // 家禽
+  freqFishSeafood           String?   @map("freq_fish_seafood")          // 鱼类海鲜
+  freqBeansSoy              String?   @map("freq_beans_soy")             // 豆类大豆
+  freqRedMeat               String?   @map("freq_red_meat")              // 红肉
+  // 06 饮食频率（3/3）- 乳制品与零食
+  freqMilkDairy             String?   @map("freq_milk_dairy")            // 牛奶
+  freqYogurt                String?   @map("freq_yogurt")                // 酸奶
+  freqCheese                String?   @map("freq_cheese")                // 奶酪
+  freqNonDairyAlternatives  String?   @map("freq_non_dairy_alternatives") // 非乳制品替代
+  freqNutsSeeds             String?   @map("freq_nuts_seeds")            // 坚果种子
+  freqCookiesCake           String?   @map("freq_cookies_cake")          // 饼干蛋糕
+  freqChocolateCandy        String?   @map("freq_chocolate_candy")       // 巧克力糖果
+  freqSaltySnacks           String?   @map("freq_salty_snacks")          // 咸味小吃
+  // 系统字段
+  submittedAt               DateTime  @default(now()) @map("submitted_at")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
+  versionNumber             Int       @map("version_number")
+  feishuRecordId            String?   @map("feishu_record_id")
+  feishuSyncStatus          String    @default("pending") @map("feishu_sync_status")
+  user                      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([feishuSyncStatus])
+  @@index([submittedAt])
+  @@index([orderNo])
+  @@map("nutrition_surveys")
 }

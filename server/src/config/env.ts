@@ -31,6 +31,14 @@ export const env = {
   FORM2_APP_TOKEN: process.env.FORM2_APP_TOKEN || '',
   FORM2_TABLE_ID: process.env.FORM2_TABLE_ID || '',
 
+  // 睡眠问卷 飞书表格
+  SLEEP_SURVEY_APP_TOKEN: process.env.SLEEP_SURVEY_APP_TOKEN || '',
+  SLEEP_SURVEY_TABLE_ID: process.env.SLEEP_SURVEY_TABLE_ID || '',
+
+  // 营养问卷 飞书表格
+  NUTRITION_SURVEY_APP_TOKEN: process.env.NUTRITION_SURVEY_APP_TOKEN || '',
+  NUTRITION_SURVEY_TABLE_ID: process.env.NUTRITION_SURVEY_TABLE_ID || '',
+
   // 火山引擎 TOS 对象存储
   TOS_ACCESS_KEY_ID: process.env.TOS_ACCESS_KEY_ID || '',
   TOS_ACCESS_KEY_SECRET: process.env.TOS_ACCESS_KEY_SECRET || '',

@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>营养调研问卷 - 步骤 09</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#35485e",
+                        "surface-tint": "#3a5f94",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#b4c8e2",
+                        "on-surface-variant": "#43474f",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-fixed": "#d0e4ff",
+                        "on-secondary-container": "#004077",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface-container-low": "#f2f4f7",
+                        "surface-container-high": "#e6e8eb",
+                        "inverse-surface": "#2d3133",
+                        "background": "#f7f9fc",
+                        "on-tertiary-fixed": "#071d30",
+                        "primary": "#001e40",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-primary-container": "#799dd6",
+                        "secondary-container": "#70aeff",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d8dadd",
+                        "on-tertiary-container": "#8a9eb6",
+                        "surface-variant": "#e0e3e6",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#c3c6d1",
+                        "on-secondary-fixed": "#001c39",
+                        "tertiary": "#0a2033",
+                        "inverse-primary": "#a7c8ff",
+                        "on-secondary-fixed-variant": "#004884",
+                        "outline": "#737780",
+                        "on-background": "#191c1e",
+                        "on-surface": "#191c1e",
+                        "tertiary-container": "#21354a",
+                        "secondary": "#075fab",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#1f477b",
+                        "surface-bright": "#f7f9fc",
+                        "surface-container": "#eceef1",
+                        "primary-fixed": "#d5e3ff",
+                        "secondary-fixed": "#d4e3ff",
+                        "inverse-on-surface": "#eff1f4",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#003366",
+                        "error": "#ba1a1a",
+                        "surface": "#f7f9fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Work Sans"],
+                        "label": ["Work Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0 8px 24px rgba(0, 30, 64, 0.04);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e0e3e6;
+            border-radius: 10px;
+        }
+        body {
+            min-height: max(780px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f7f9fc]/80 dark:bg-[#001e40]/80 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] flex items-center px-6 py-4">
+<div class="flex items-center gap-4 w-full max-w-2xl mx-auto">
+<span class="material-symbols-outlined text-[#001e40] dark:text-[#f7f9fc] cursor-pointer active:scale-95 transition-transform" data-icon="arrow_back" style="">arrow_back</span>
+<h1 class="font-headline text-xl font-bold tracking-tight text-[#001e40] dark:text-[#70aeff]" style="">船夫健康</h1>
+</div>
+</header>
+<!-- Progress Indicator -->
+<div class="fixed top-[64px] w-full z-40 bg-surface">
+<div class="w-full h-1 bg-surface-container">
+<div class="h-full bg-secondary transition-all duration-500" style="width: 90%;"></div>
+</div>
+<div class="max-w-2xl mx-auto px-6 py-1.5 flex justify-end">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-[0.15em]" style=""><br></span>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-28 px-6 overflow-y-auto custom-scrollbar">
+<div class="max-auto max-w-2xl mx-auto">
+<!-- Section Header -->
+<div class="mb-6">
+<span class="font-headline text-4xl font-extrabold text-primary-container opacity-10 block mb-0 leading-none" style=""><br></span>
+<h2 class="font-headline text-2xl font-bold text-primary mb-2" style="">05 生活方式（2/2）</h2>
+<p class="text-on-surface-variant text-sm leading-relaxed" style="">您日常参与哪些社交活动？请勾选所有适用项并举例说明:</p>
+</div>
+<!-- Questionnaire Options -->
+<div class="space-y-2 mb-8">
+<!-- Option 1 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input checked="" class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm mb-0.5" style="">朋友聚会</span>
+<span class="text-xs text-on-surface-variant leading-tight" style="">例如: 定期的晚餐、咖啡或娱乐活动</span>
+</div>
+</label>
+<!-- Option 2 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm" style="">家庭聚餐或家庭活动</span>
+</div>
+</label>
+<!-- Option 3 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm mb-0.5" style="">体育活动</span>
+<span class="text-xs text-on-surface-variant leading-tight" style="">例如: 健身、足球、篮球、瑜伽等</span>
+</div>
+</label>
+<!-- Option 4 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm" style="">社区活动或志愿者服务</span>
+</div>
+</label>
+<!-- Option 5 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm mb-0.5" style="">兴趣小组或俱乐部</span>
+<span class="text-xs text-on-surface-variant leading-tight" style="">例如: 读书会、摄影俱乐部等</span>
+</div>
+</label>
+<!-- Option 6 -->
+<label class="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<div class="flex-grow">
+<span class="font-semibold text-primary block text-sm mb-0.5" style="">公司或职业社交活动</span>
+<span class="text-xs text-on-surface-variant leading-tight" style="">例如: 商务聚餐、团队建设活动</span>
+</div>
+</label>
+<!-- Option 7 (Other) -->
+<div class="group flex flex-col gap-2 p-3.5 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high">
+<label class="flex items-start gap-3 cursor-pointer" style="">
+<div class="relative flex items-center mt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors" type="checkbox">
+</div>
+<span class="font-semibold text-primary text-sm" style="">其他 (请说明)</span>
+</label>
+<input class="ml-8 bg-surface-container-lowest border-none rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-secondary-container placeholder-on-surface-variant/30" placeholder="请输入具体活动内容..." type="text">
+</div>
+</div>
+<!-- Feedback Section -->
+<section class="mb-8">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-1 h-5 bg-secondary-container rounded-full"></div>
+<h3 class="font-headline text-lg font-bold text-primary" style="">其他反馈</h3>
+</div>
+<div class="rounded-xl bg-surface-container-low p-0.5 editorial-shadow transition-all focus-within:ring-2 focus-within:ring-secondary-container/20">
+<textarea class="w-full bg-surface-container-lowest border-none rounded-[10px] p-4 text-sm text-on-surface leading-relaxed resize-none focus:ring-0 placeholder-on-surface-variant/30" placeholder="您还有其他想与营养师分享的信息或反馈吗？" rows="3"></textarea>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#f7f9fc]/95 dark:bg-[#001e40]/95 backdrop-blur-xl flex justify-between items-center px-8 py-5 rounded-t-[1.5rem] shadow-[0_-4px_24px_rgba(0,30,64,0.06)]">
+<!-- Progress Dots -->
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+<div class="w-5 h-2 rounded-full bg-[#003366]"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container/20"></div>
+</div>
+<!-- Action Button -->
+<button class="bg-[#003366] text-white px-7 py-3.5 rounded-full font-semibold text-sm flex items-center gap-2 shadow-lg active:scale-95 transition-all hover:bg-[#075fab]" style="">
+<span class="" style="">下一步</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward" style="">arrow_forward</span>
+</button>
+</nav>
+</body></html>

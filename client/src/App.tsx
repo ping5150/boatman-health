@@ -22,6 +22,9 @@ import Settings from '@/pages/Settings';
 import Logout from '@/pages/Logout';
 import Contact from '@/pages/Contact';
 import ArchiveSuccess from '@/pages/ArchiveSuccess';
+import SleepSurvey from '@/pages/SleepSurvey';
+import NutritionSurvey from '@/pages/NutritionSurvey';
+import SurveySuccess from '@/pages/SurveySuccess';
 
 const App = () => {
   return (
@@ -70,6 +73,23 @@ const App = () => {
           <Route path="/booking-success" element={<BookingSuccess />} />
           <Route path="/booking/:id" element={<BookingDetail />} />
           <Route path="/archive-success" element={<ArchiveSuccess />} />
+          <Route
+            path="/sleep-survey"
+            element={
+              <AuthGuard>
+                <SleepSurvey />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/nutrition-survey"
+            element={
+              <AuthGuard>
+                <NutritionSurvey />
+              </AuthGuard>
+            }
+          />
+          <Route path="/survey-success" element={<SurveySuccess />} />
         </Route>
       </Routes>
       {/* 登录/注册弹窗 */}

@@ -1,0 +1,288 @@
+<!DOCTYPE html><html class="light" lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>营养调研问卷 - 船夫健康</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Work_Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f7f9fc",
+                    "background": "#f7f9fc",
+                    "secondary": "#075fab",
+                    "on-surface-variant": "#43474f",
+                    "on-tertiary-fixed-variant": "#35485e",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#0a2033",
+                    "surface-variant": "#e0e3e6",
+                    "surface-container-high": "#e6e8eb",
+                    "primary-container": "#003366",
+                    "on-tertiary-container": "#8a9eb6",
+                    "on-error": "#ffffff",
+                    "surface-container": "#eceef1",
+                    "primary": "#001e40",
+                    "on-primary-container": "#799dd6",
+                    "on-tertiary-fixed": "#071d30",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#a7c8ff",
+                    "tertiary-fixed": "#d0e4ff",
+                    "tertiary-container": "#21354a",
+                    "surface-container-highest": "#e0e3e6",
+                    "inverse-surface": "#2d3133",
+                    "inverse-on-surface": "#eff1f4",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#004884",
+                    "surface-container-low": "#f2f4f7",
+                    "secondary-container": "#70aeff",
+                    "on-background": "#191c1e",
+                    "outline-variant": "#c3c6d1",
+                    "on-primary-fixed": "#001b3c",
+                    "surface-tint": "#3a5f94",
+                    "outline": "#737780",
+                    "on-secondary-container": "#004077",
+                    "on-primary-fixed-variant": "#1f477b",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-secondary-fixed": "#001c39",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "primary-fixed": "#d5e3ff",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#d8dadd",
+                    "tertiary-fixed-dim": "#b4c8e2",
+                    "on-surface": "#191c1e",
+                    "surface-bright": "#f7f9fc",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Work Sans"],
+                    "label": ["Work Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #00336633; border-radius: 10px; }
+        .editorial-shadow { box-shadow: 0 4px 16px rgba(0, 30, 64, 0.04); }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl flex items-center justify-between px-6 py-3 border-none after:content-[''] after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-secondary after:w-[20%] transition-all duration-500">
+<div class="flex items-center gap-3">
+<button class="text-primary active:scale-95 transition-transform" style="">
+<span class="material-symbols-outlined text-2xl" style="">arrow_back</span>
+</button>
+<span class="text-base font-extrabold text-primary tracking-widest font-headline uppercase" style="">船夫健康</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-primary/60 tracking-tighter" style="">20%</span>
+</div>
+</header>
+<main class="pt-16 pb-48 px-6 max-w-2xl mx-auto min-h-screen">
+<!-- Section Header -->
+<div class="mb-6">
+<span class="text-secondary font-headline font-bold tracking-tight text-xs block mb-1 uppercase" style=""><br></span>
+<h2 class="font-headline text-2xl font-extrabold text-primary leading-tight tracking-tight" style="">02 饮食习惯 (1/4)</h2>
+<p class="text-on-surface-variant mt-2 text-sm leading-relaxed max-w-md opacity-80" style=""><br></p>
+</div>
+<div class="space-y-6">
+<!-- Question 1: Single Choice -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">1</span>
+<h3 class="text-lg font-bold text-primary leading-snug" style="">您通常每天的主餐有几餐？</h3>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<label class="group cursor-pointer" style="">
+<input class="sr-only peer" name="meals" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low editorial-shadow peer-checked:ring-2 peer-checked:ring-primary peer-checked:bg-primary/5 transition-all duration-200">
+<p class="font-bold text-primary text-sm" style="">1餐</p>
+</div>
+</label>
+<label class="group cursor-pointer" style="">
+<input class="sr-only peer" name="meals" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low editorial-shadow peer-checked:ring-2 peer-checked:ring-primary peer-checked:bg-primary/5 transition-all duration-200">
+<p class="font-bold text-primary text-sm" style="">2餐</p>
+</div>
+</label>
+<label class="group cursor-pointer" style="">
+<input checked="" class="sr-only peer" name="meals" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low editorial-shadow peer-checked:ring-2 peer-checked:ring-primary peer-checked:bg-primary/5 transition-all duration-200">
+<p class="font-bold text-primary text-sm" style="">3餐</p>
+</div>
+</label>
+<label class="group cursor-pointer" style="">
+<input class="sr-only peer" name="meals" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low editorial-shadow peer-checked:ring-2 peer-checked:ring-primary peer-checked:bg-primary/5 transition-all duration-200">
+<p class="font-bold text-primary text-sm" style="">其他</p>
+</div>
+</label>
+</div>
+</section>
+<!-- Question 2: Yes/No -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">2</span>
+<h3 class="text-lg font-bold text-primary" style="">您是否有固定的早餐习惯？</h3>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<label class="group cursor-pointer" style="">
+<input class="sr-only peer" name="breakfast" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low text-center editorial-shadow peer-checked:ring-2 peer-checked:ring-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="font-bold text-primary text-sm uppercase tracking-widest" style="">是</span>
+</div>
+</label>
+<label class="group cursor-pointer" style="">
+<input class="sr-only peer" name="breakfast" type="radio">
+<div class="p-3 rounded-xl bg-surface-container-low text-center editorial-shadow peer-checked:ring-2 peer-checked:ring-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="font-bold text-primary text-sm uppercase tracking-widest" style="">否</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Question 3: Multi Choice -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">3</span>
+<h3 class="text-lg font-bold text-primary" style="">您在一天中常吃的零食有哪些？<span class="text-xs font-normal text-on-surface-variant inline ml-2" style="">(可多选)</span></h3>
+</div>
+<div class="flex flex-wrap gap-2">
+<label class="cursor-pointer" style="">
+<input class="sr-only peer" type="checkbox">
+<div class="px-4 py-2 rounded-full bg-surface-container-low editorial-shadow border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="text-xs font-bold text-primary" style="">水果</span>
+</div>
+</label>
+<label class="cursor-pointer" style="">
+<input class="sr-only peer" type="checkbox">
+<div class="px-4 py-2 rounded-full bg-surface-container-low editorial-shadow border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="text-xs font-bold text-primary" style="">坚果</span>
+</div>
+</label>
+<label class="cursor-pointer" style="">
+<input class="sr-only peer" type="checkbox">
+<div class="px-4 py-2 rounded-full bg-surface-container-low editorial-shadow border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="text-xs font-bold text-primary" style="">薯片</span>
+</div>
+</label>
+<label class="cursor-pointer" style="">
+<input class="sr-only peer" type="checkbox">
+<div class="px-4 py-2 rounded-full bg-surface-container-low editorial-shadow border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="text-xs font-bold text-primary" style="">巧克力</span>
+</div>
+</label>
+<label class="cursor-pointer" style="">
+<input class="sr-only peer" type="checkbox">
+<div class="px-4 py-2 rounded-full bg-surface-container-low editorial-shadow border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+<span class="text-xs font-bold text-primary" style="">其他</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Question 4: Source Checklist -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">4</span>
+<h3 class="text-lg font-bold text-primary" style="">请列出您食物的前三个来源：</h3>
+</div>
+<div class="grid grid-cols-1 gap-1">
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">食堂</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">餐馆</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">外卖</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">超市购买的现成食品</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">家人做饭</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">自己做饭</span>
+</label>
+<label class="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer" style="">
+<input class="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all" type="checkbox">
+<span class="ml-3 text-sm font-bold text-primary" style="">其他</span>
+</label>
+</div>
+</section>
+<!-- Question 5: Text Input -->
+<section class="space-y-3">
+<div class="flex items-baseline gap-3">
+<span class="text-primary/10 font-headline text-2xl font-bold" style="">5</span>
+<h3 class="text-lg font-bold text-primary" style="">您是否有任何已知的食物过敏或不耐受？</h3>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-low border-none rounded-xl p-4 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all editorial-shadow" placeholder="如果有，请简要说明..." rows="2"></textarea>
+</div>
+</section>
+<!-- Decorative Illustration Element -->
+<div class="mt-8 py-6 px-6 rounded-2xl bg-primary-container text-on-primary-container relative overflow-hidden group">
+<div class="relative z-10">
+<h4 class="font-headline text-lg font-bold mb-1" style="">专业见解</h4>
+<p class="text-xs text-on-primary-container opacity-80 leading-relaxed max-w-[75%]" style="">您的饮食习惯直接影响代谢效率。我们接下来的分析将重点关注宏量营养素的配比均衡。</p>
+</div>
+<div class="absolute -right-8 -bottom-8 w-32 h-32 bg-secondary-container/20 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 text-on-primary-container/10">
+<span class="material-symbols-outlined text-6xl" style="font-variation-settings: &quot;FILL&quot; 1;">restaurant</span>
+</div>
+</div>
+</div></main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-slate-50/90 backdrop-blur-2xl rounded-t-[24px] shadow-[0_-4px_16px_rgba(0,30,64,0.04)] px-6 py-6 flex flex-col items-center max-w-screen-xl mx-auto left-1/2 -translate-x-1/2">
+<div class="w-full flex flex-col items-center justify-between gap-4">
+<!-- Progress Indicators -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1">
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-4 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(0,30,64,0.2)]"></div> <!-- Active Module 2 -->
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+<div class="w-1 h-1 rounded-full bg-primary/20"></div>
+</div>
+<span class="ml-2 font-body text-[10px] font-semibold uppercase tracking-widest text-primary/60" style="">进度 02/10</span>
+</div>
+<!-- Action Button -->
+<button class="w-full flex items-center justify-center bg-primary text-white rounded-full px-8 py-4 shadow-md hover:brightness-110 active:scale-95 transition-all gap-2 group" style="">
+<span class="font-body text-xs font-semibold uppercase tracking-widest" style="">下一模块</span>
+<span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform" style="">arrow_forward</span>
+</button>
+</div>
+</nav>
+<!-- Visual Texture Overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.02] mix-blend-multiply -z-10" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBFaxylqm6DsRkva8f_O8Gokcu7XVZCeTga6kpfarUo19hQxoTHywG0BB-nK9MZqwVbSVhNtWRWW53rGjVYobVpCt2JkEPyLhx4KHw999beq0o0S_sWNleND-8ZVRB1HZ_H1BswIfhr70Uujht631rNXamFCxFYUNx2rAoCZD7kdhvDVHFXY0W_0hK75NzI74snxXToLKwrsCbLi-HNNGIn7FSlCtnoqNyGAd8UBCp4VupGx9kyoC8aSzgHU5ww-rUW2iIHQ5GyqtUo&quot;);"></div>
+</body></html>

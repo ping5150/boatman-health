@@ -1,0 +1,253 @@
+<!DOCTYPE html><html class="light" lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Boatman Health - PSQI Survey Step 4</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Work_Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f7f9fc",
+                        "outline": "#737780",
+                        "on-secondary-container": "#004077",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#1f477b",
+                        "surface": "#f7f9fc",
+                        "surface-container": "#eceef1",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#35485e",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d5e3ff",
+                        "on-secondary-fixed-variant": "#004884",
+                        "inverse-primary": "#a7c8ff",
+                        "inverse-on-surface": "#eff1f4",
+                        "tertiary": "#0a2033",
+                        "on-primary-fixed": "#001b3c",
+                        "primary": "#001e40",
+                        "surface-container-high": "#e6e8eb",
+                        "surface-container-low": "#f2f4f7",
+                        "primary-container": "#003366",
+                        "background": "#f7f9fc",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#075fab",
+                        "on-tertiary-container": "#8a9eb6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#071d30",
+                        "on-surface-variant": "#43474f",
+                        "on-secondary-fixed": "#001c39",
+                        "outline-variant": "#c3c6d1",
+                        "surface-variant": "#e0e3e6",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#b4c8e2",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#d4e3ff",
+                        "on-background": "#191c1e",
+                        "surface-container-highest": "#e0e3e6",
+                        "secondary-container": "#70aeff",
+                        "on-surface": "#191c1e",
+                        "inverse-surface": "#2d3133",
+                        "surface-tint": "#3a5f94",
+                        "on-primary-container": "#799dd6",
+                        "tertiary-container": "#21354a",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#d0e4ff",
+                        "surface-dim": "#d8dadd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Work Sans"],
+                        "label": ["Work Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Work Sans', sans-serif; background-color: #f7f9fc; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        /* Custom hide scrollbar */
+        ::-webkit-scrollbar { display: none; }
+        .no-line { border: none !important; box-shadow: none !important; outline: none !important; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl fixed top-0 w-full z-50 flex items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4 w-full">
+<button class="text-blue-900 dark:text-blue-200 hover:bg-blue-50/50 p-2 rounded-full transition-colors active:scale-95" style="">
+<span class="material-symbols-outlined" data-icon="arrow_back" style="">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] font-bold text-lg tracking-tight text-blue-900 dark:text-blue-200 flex-grow" style="">睡眠调研问卷</h1>
+<div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 80%;"></div>
+</div>
+</div>
+</header>
+<main class="mt-20 px-6 max-w-2xl mx-auto">
+<!-- Headline Section -->
+<section class="mt-12 mb-10">
+<span class="text-secondary font-bold tracking-[0.2em] text-xs uppercase mb-2 block" style=""><br></span>
+<h2 class="text-4xl font-extrabold text-primary tracking-tight leading-tight" style="">03 梦境与整体评估</h2>
+<p class="text-on-surface-variant mt-4 text-lg font-light leading-relaxed" style=""><br></p>
+</section>
+<!-- Form Section -->
+<div class="space-y-12">
+<!-- Question H: Dreams -->
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<span class="bg-secondary-container/30 text-on-secondary-container px-3 py-1 rounded-lg font-bold text-sm" style="">H</span>
+<h3 class="text-xl font-bold text-primary" style="">做噩梦</h3>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="dreams" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">过去1个月没有</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="dreams" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周不足1晚</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="dreams" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周1-2晚</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="dreams" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周3晚或更多</span>
+</label>
+</div>
+</div>
+<!-- Question I: Pain -->
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<span class="bg-secondary-container/30 text-on-secondary-container px-3 py-1 rounded-lg font-bold text-sm" style="">I</span>
+<h3 class="text-xl font-bold text-primary" style="">出现疼痛</h3>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="pain" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">过去1个月没有</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="pain" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周不足1晚</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="pain" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周1-2晚</span>
+</label>
+<label class="group relative flex items-center p-5 bg-surface-container-lowest rounded-full cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="pain" type="radio">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-secondary peer-checked:bg-secondary flex items-center justify-center transition-all">
+<div class="w-2 h-2 bg-white rounded-full"></div>
+</div>
+<span class="ml-4 text-on-surface font-medium" style="">每周3晚或更多</span>
+</label>
+</div>
+</div>
+<!-- Question J: Others -->
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<span class="bg-secondary-container/30 text-on-secondary-container px-3 py-1 rounded-lg font-bold text-sm" style="">J</span>
+<h3 class="text-xl font-bold text-primary" style="">其他影响睡眠的事情</h3>
+</div>
+<div class="relative">
+<textarea class="w-full min-h-[160px] p-6 bg-surface-container-highest/50 rounded-[2rem] border-none focus:ring-2 focus:ring-secondary/20 transition-all text-on-surface placeholder:text-outline/50" placeholder="请输入具体情况..."></textarea>
+</div>
+</div>
+<!-- Question 6: Overall Rating -->
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<span class="bg-primary text-white px-3 py-1 rounded-lg font-bold text-sm" style="">6</span>
+<h3 class="text-xl font-bold text-primary" style="">对过去一个月睡眠质量评分</h3>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<label class="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-[2rem] cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="overall" type="radio">
+<span class="material-symbols-outlined text-4xl mb-2 text-outline peer-checked:text-secondary" data-icon="sentiment_very_satisfied" style="">sentiment_very_satisfied</span>
+<span class="font-bold text-primary" style="">非常好</span>
+</label>
+<label class="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-[2rem] cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="overall" type="radio">
+<span class="material-symbols-outlined text-4xl mb-2 text-outline peer-checked:text-secondary" data-icon="sentiment_satisfied" style="">sentiment_satisfied</span>
+<span class="font-bold text-primary" style="">尚好</span>
+</label>
+<label class="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-[2rem] cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="overall" type="radio">
+<span class="material-symbols-outlined text-4xl mb-2 text-outline peer-checked:text-secondary" data-icon="sentiment_dissatisfied" style="">sentiment_dissatisfied</span>
+<span class="font-bold text-primary" style="">不好</span>
+</label>
+<label class="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-[2rem] cursor-pointer hover:bg-secondary/5 transition-all" style="">
+<input class="hidden peer" name="overall" type="radio">
+<span class="material-symbols-outlined text-4xl mb-2 text-outline peer-checked:text-secondary" data-icon="sentiment_very_dissatisfied" style="">sentiment_very_dissatisfied</span>
+<span class="font-bold text-primary" style="">非常差</span>
+</label>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<footer class="fixed bottom-0 left-0 w-full px-8 py-6 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,30,64,0.06)]">
+<!-- Previous Button -->
+<button class="flex items-center justify-center text-blue-300 dark:text-blue-700 p-3 hover:opacity-90 transition-opacity active:scale-95" style="">
+<span class="material-symbols-outlined text-3xl" data-icon="arrow_back" style="">arrow_back</span>
+</button>
+<!-- Progress Dots -->
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+<div class="w-5 h-2 rounded-full bg-secondary"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+</div>
+<!-- Next Module Button -->
+<button class="flex items-center justify-center bg-blue-900 text-white dark:bg-blue-600 dark:text-white rounded-xl px-6 py-3 font-bold hover:opacity-90 transition-opacity active:scale-[0.98]" style="">
+<span class="mr-2 font-['Work_Sans'] text-sm uppercase tracking-widest" style="">下一模块</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward" style="">arrow_forward</span>
+</button>
+</footer>
+</body></html>

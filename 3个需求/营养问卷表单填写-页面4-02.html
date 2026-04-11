@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Work+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#21354a",
+                        "secondary-container": "#70aeff",
+                        "background": "#f7f9fc",
+                        "surface-tint": "#3a5f94",
+                        "outline-variant": "#c3c6d1",
+                        "primary-fixed": "#d5e3ff",
+                        "on-secondary-container": "#004077",
+                        "surface-variant": "#e0e3e6",
+                        "tertiary": "#0a2033",
+                        "secondary": "#075fab",
+                        "on-background": "#191c1e",
+                        "on-tertiary-fixed-variant": "#35485e",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "on-surface-variant": "#43474f",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#001c39",
+                        "tertiary-fixed-dim": "#b4c8e2",
+                        "primary": "#001e40",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#a7c8ff",
+                        "surface-container-low": "#f2f4f7",
+                        "on-primary-fixed": "#001b3c",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface": "#f7f9fc",
+                        "primary-container": "#003366",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e6e8eb",
+                        "on-tertiary-fixed": "#071d30",
+                        "tertiary-fixed": "#d0e4ff",
+                        "error-container": "#ffdad6",
+                        "outline": "#737780",
+                        "secondary-fixed": "#d4e3ff",
+                        "inverse-on-surface": "#eff1f4",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "on-primary-container": "#799dd6",
+                        "surface-container": "#eceef1",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#d8dadd",
+                        "surface-bright": "#f7f9fc",
+                        "on-secondary-fixed-variant": "#004884",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "on-tertiary-container": "#8a9eb6",
+                        "on-primary-fixed-variant": "#1f477b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Work Sans"],
+                        "label": ["Work Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+            font-size: 20px;
+        }
+        .editorial-shadow {
+            box-shadow: 0 8px 24px rgba(0, 30, 64, 0.06);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface leading-tight overflow-x-hidden">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-md shadow-sm flex items-center justify-between px-6 py-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">arrow_back</span>
+<h1 class="text-xl font-bold font-headline text-blue-900 tracking-tight">船夫健康</h1>
+</div>
+<div class="text-sm font-bold font-headline text-blue-950">4/10</div>
+</header>
+<main class="pt-20 pb-28 px-5 max-w-xl mx-auto space-y-4">
+<!-- Progress Indicator -->
+<div class="w-full bg-surface-container-high h-1 rounded-full overflow-hidden mb-6">
+<div class="bg-secondary h-full w-[40%] transition-all duration-500"></div>
+</div>
+<!-- Section: Question 2 -->
+<div class="px-2 mb-2">
+<span class="font-manrope font-bold text-secondary text-xs uppercase tracking-wider">04 运动习惯（1/2）</span>
+</div><section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<h2 class="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5"></span>
+<span>2. 您通常进行哪些类型的运动？(请勾选所有适用项)</span>
+</h2>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest hover:bg-white transition-colors cursor-pointer">
+<input class="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary" type="checkbox"/>
+<span class="text-xs font-medium">有氧运动（例如：跑步、游泳、骑自行车等）</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest hover:bg-white transition-colors cursor-pointer">
+<input class="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary" type="checkbox"/>
+<span class="text-xs font-medium">力量训练（例如：举重、阻力训练等）</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest hover:bg-white transition-colors cursor-pointer">
+<input class="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary" type="checkbox"/>
+<span class="text-xs font-medium">柔韧性训练（例如：瑜伽、普拉提等）</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest hover:bg-white transition-colors cursor-pointer">
+<input class="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary" type="checkbox"/>
+<span class="text-xs font-medium">团队运动（例如：足球、篮球、羽毛球等）</span>
+</label>
+<div class="pt-1">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest">
+<input class="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary" type="checkbox"/>
+<span class="text-xs font-medium shrink-0">其他（请说明:</span>
+<input class="w-full text-xs bg-transparent border-b border-outline-variant focus:border-secondary transition-all outline-none px-1" type="text"/>
+<span class="text-xs font-medium">)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Question 3 -->
+<section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<h2 class="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5"></span>
+<span>3. 您每次运动的时长通常是多少？</span>
+</h2>
+<div class="space-y-2">
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest cursor-pointer group">
+<span class="text-xs font-medium">少于 30 分钟</span>
+<input class="w-4 h-4 text-secondary border-none bg-surface-container-highest focus:ring-secondary" name="duration" type="radio"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest cursor-pointer group">
+<span class="text-xs font-medium">30 分钟至 1 小时</span>
+<input class="w-4 h-4 text-secondary border-none bg-surface-container-highest focus:ring-secondary" name="duration" type="radio"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest cursor-pointer group">
+<span class="text-xs font-medium">1 至 2 小时</span>
+<input class="w-4 h-4 text-secondary border-none bg-surface-container-highest focus:ring-secondary" name="duration" type="radio"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest cursor-pointer group">
+<span class="text-xs font-medium">2 小时以上</span>
+<input class="w-4 h-4 text-secondary border-none bg-surface-container-highest focus:ring-secondary" name="duration" type="radio"/>
+</label>
+</div>
+</section>
+<!-- Section: Question 4 -->
+<section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<h2 class="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5"></span>
+<span>4. 您每周运动的频率大概是多少？</span>
+</h2>
+<div class="flex gap-2">
+<label class="flex-1 text-center py-3 px-1 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:border-secondary has-[:checked]:bg-blue-50 transition-all">
+<input class="hidden" name="frequency" type="radio"/>
+<span class="text-xs font-semibold block">每周 1-2 次</span>
+</label>
+<label class="flex-1 text-center py-3 px-1 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:border-secondary has-[:checked]:bg-blue-50 transition-all">
+<input class="hidden" name="frequency" type="radio"/>
+<span class="text-xs font-semibold block">每周 3-4 次</span>
+</label>
+<label class="flex-1 text-center py-3 px-1 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:border-secondary has-[:checked]:bg-blue-50 transition-all">
+<input class="hidden" name="frequency" type="radio"/>
+<span class="text-xs font-semibold block">每周 5 次或以上</span>
+</label>
+</div>
+</section>
+<!-- Section: Question 5 -->
+<section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<h2 class="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5"></span>
+<span>5. 您主要在什么时间段进行运动？</span>
+</h2>
+<div class="grid grid-cols-3 gap-2">
+<label class="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:bg-blue-50 has-[:checked]:border-secondary transition-all">
+<input class="hidden" name="time" type="radio"/>
+<span class="material-symbols-outlined text-secondary">light_mode</span>
+<span class="text-xs font-bold">早上</span>
+</label>
+<label class="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:bg-blue-50 has-[:checked]:border-secondary transition-all">
+<input class="hidden" name="time" type="radio"/>
+<span class="material-symbols-outlined text-secondary">wb_sunny</span>
+<span class="text-xs font-bold">下午</span>
+</label>
+<label class="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:bg-blue-50 has-[:checked]:border-secondary transition-all">
+<input class="hidden" name="time" type="radio"/>
+<span class="material-symbols-outlined text-secondary">dark_mode</span>
+<span class="text-xs font-bold">晚上</span>
+</label>
+</div>
+</section>
+<!-- Section: Question 6 -->
+<section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<h2 class="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5"></span>
+<span>6. 是什么激励您保持运动？</span>
+</h2>
+<textarea class="w-full text-xs p-4 bg-surface-container-lowest border-none rounded-xl focus:ring-1 focus:ring-secondary/30 transition-all outline-none resize-none" placeholder="请在此输入您的激励因素..." rows="4"></textarea>
+</section>
+</main>
+<!-- Bottom Navigation Anchor -->
+<nav class="fixed bottom-0 left-0 w-full h-24 bg-slate-50/90 backdrop-blur-xl flex justify-between items-center px-6 pb-6 z-50 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,30,64,0.06)]">
+<button class="flex flex-col items-center justify-center text-blue-800/60 px-4 py-2 hover:opacity-90">
+<span class="material-symbols-outlined">chevron_left</span>
+<span class="text-[10px] font-bold tracking-tight uppercase">上一步</span>
+</button>
+<!-- Pagination Dots (10 dots, 4th active) -->
+<div class="flex gap-1.5 items-center">
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-4 h-1.5 rounded-full bg-blue-900"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
+</div>
+<button class="flex flex-col items-center justify-center bg-blue-900 text-white rounded-xl px-4 py-2 hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-weight="fill">keyboard_double_arrow_right</span>
+<span class="text-[10px] font-bold tracking-tight uppercase">进入下一模块</span>
+</button>
+</nav>
+</body></html>

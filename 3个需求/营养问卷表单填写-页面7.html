@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>船夫健康 - 营养与运动评估</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Work+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#f7f9fc",
+                        "tertiary": "#0a2033",
+                        "on-secondary-fixed": "#001c39",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#21354a",
+                        "surface-variant": "#e0e3e6",
+                        "on-primary-fixed-variant": "#1f477b",
+                        "on-secondary-container": "#004077",
+                        "on-surface-variant": "#43474f",
+                        "surface-container-high": "#e6e8eb",
+                        "on-tertiary-fixed": "#071d30",
+                        "on-tertiary-fixed-variant": "#35485e",
+                        "surface": "#f7f9fc",
+                        "primary-fixed": "#d5e3ff",
+                        "on-background": "#191c1e",
+                        "on-surface": "#191c1e",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#001b3c",
+                        "secondary-container": "#70aeff",
+                        "surface-container-highest": "#e0e3e6",
+                        "primary-container": "#003366",
+                        "surface-bright": "#f7f9fc",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "outline-variant": "#c3c6d1",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#b4c8e2",
+                        "secondary": "#075fab",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a7c8ff",
+                        "outline": "#737780",
+                        "tertiary-fixed": "#d0e4ff",
+                        "surface-dim": "#d8dadd",
+                        "surface-container-low": "#f2f4f7",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "inverse-on-surface": "#eff1f4",
+                        "on-primary-container": "#799dd6",
+                        "secondary-fixed": "#d4e3ff",
+                        "on-secondary-fixed-variant": "#004884",
+                        "on-tertiary-container": "#8a9eb6",
+                        "surface-container": "#eceef1",
+                        "primary": "#001e40",
+                        "surface-tint": "#3a5f94",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Work Sans"],
+                        "label": ["Work Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Work Sans', sans-serif; background-color: #f7f9fc; }
+        .font-manrope { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        /* Editorial Shadow Custom */
+        .editorial-shadow { box-shadow: 0 8px 24px rgba(0, 30, 64, 0.06); }
+        /* Hide default radio but keep accessible */
+        .custom-radio { appearance: none; width: 1.25rem; height: 1.25rem; border-radius: 50%; background-color: #e0e3e6; transition: all 0.2s ease; position: relative; cursor: pointer; }
+        .custom-radio:checked { background-color: #075fab; }
+        .custom-radio:checked::after { content: ''; position: absolute; width: 0.5rem; height: 0.5rem; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        /* Compact scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e0e3e6; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="text-on-background antialiased flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-[#f7f9fc] sticky top-0 z-40 w-full flex flex-col">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:opacity-80 transition-opacity">close</span>
+<h1 class="font-manrope font-black text-[#001e40] text-lg tracking-tight">船夫健康</h1>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:opacity-80 transition-opacity">more_horiz</span>
+</div>
+<div class="px-6 pb-2 flex items-center gap-4">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 70%"></div>
+</div>
+<span class="font-manrope font-bold text-secondary text-xs">70%</span>
+</div>
+<div class="h-1 w-full bg-gradient-to-b from-black/5 to-transparent"></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-4 py-2 space-y-3 overflow-y-auto">
+<!-- Question 10 -->
+<div class="px-2 mb-2">
+<span class="font-manrope font-bold text-secondary text-xs uppercase tracking-wider">03 饮食习惯（4/4）</span>
+</div><section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<div class="flex items-start gap-3">
+<span class="font-manrope font-extrabold text-primary/20 text-2xl leading-none">10</span>
+<div class="space-y-2">
+<h2 class="font-headline font-bold text-primary text-base leading-snug">您觉得自己是出汗含盐量高的人吗？</h2>
+<p class="text-on-surface-variant text-xs leading-relaxed opacity-80">*通常，如果您的皮肤在出汗后感觉有粘性，或者汗干后留下白色的盐渍痕迹，这可能表明您出汗的含盐量较高。</p>
+<div class="flex gap-4 pt-1">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="custom-radio" name="q10" type="radio"/>
+<span class="text-sm font-medium text-on-surface group-hover:text-secondary transition-colors">是</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="custom-radio" name="q10" type="radio"/>
+<span class="text-sm font-medium text-on-surface group-hover:text-secondary transition-colors">否</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Question 11 -->
+<section class="bg-surface-container-low rounded-xl p-4 editorial-shadow">
+<div class="flex items-start gap-3">
+<span class="font-manrope font-extrabold text-primary/20 text-2xl leading-none">11</span>
+<div class="space-y-3 w-full">
+<h2 class="font-headline font-bold text-primary text-base leading-snug">您对目前的饮食习惯满意吗？</h2>
+<div class="space-y-1.5">
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<input class="custom-radio" name="q11" type="radio"/>
+<span class="text-sm text-on-surface">非常满意</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<input class="custom-radio" name="q11" type="radio"/>
+<span class="text-sm text-on-surface">比较满意</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<input class="custom-radio" name="q11" type="radio"/>
+<span class="text-sm text-on-surface">中立</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<input class="custom-radio" name="q11" type="radio"/>
+<span class="text-sm text-on-surface">不太满意</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<input class="custom-radio" name="q11" type="radio"/>
+<span class="text-sm text-on-surface">完全不满意</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Exercise Habits Section -->
+<section class="bg-primary-container rounded-xl p-4 editorial-shadow relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl text-on-primary-container">directions_run</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">开始</span>
+<h3 class="text-on-primary-container font-headline font-bold text-xs">运动习惯评估</h3>
+</div>
+<div class="flex items-start gap-3">
+<span class="font-manrope font-extrabold text-on-primary-container/30 text-2xl leading-none">01</span>
+<div class="space-y-3 w-full">
+<h2 class="font-headline font-bold text-on-primary-container text-base leading-snug">请评估您当前的运动水平：</h2>
+<div class="space-y-2">
+<!-- Option 1 -->
+<label class="block cursor-pointer group">
+<div class="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+<input class="custom-radio mt-1 flex-shrink-0" name="exercise_lvl" type="radio"/>
+<div class="space-y-0.5">
+<p class="text-sm font-bold text-white">高活动量</p>
+<p class="text-[11px] text-on-primary-container/80 leading-relaxed">每天进行高强度的体育活动或参与竞技类运动，运动强度和持续时间较长。</p>
+</div>
+</div>
+</label>
+<!-- Option 2 -->
+<label class="block cursor-pointer group">
+<div class="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+<input class="custom-radio mt-1 flex-shrink-0" name="exercise_lvl" type="radio"/>
+<div class="space-y-0.5">
+<p class="text-sm font-bold text-white">中高活动量</p>
+<p class="text-[11px] text-on-primary-container/80 leading-relaxed">每周至少进行三次高强度的身体活动，例如跑步、快速骑行或高强度有氧运动。</p>
+</div>
+</div>
+</label>
+<!-- Option 3 -->
+<label class="block cursor-pointer group">
+<div class="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+<input class="custom-radio mt-1 flex-shrink-0" name="exercise_lvl" type="radio"/>
+<div class="space-y-0.5">
+<p class="text-sm font-bold text-white">中等活动量</p>
+<p class="text-[11px] text-on-primary-container/80 leading-relaxed">每周进行一次或多次中等强度的运动，例如快步走、适度骑行等。</p>
+</div>
+</div>
+</label>
+<!-- Option 4 -->
+<label class="block cursor-pointer group">
+<div class="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+<input class="custom-radio mt-1 flex-shrink-0" name="exercise_lvl" type="radio"/>
+<div class="space-y-0.5">
+<p class="text-sm font-bold text-white">轻度活动量</p>
+<p class="text-[11px] text-on-primary-container/80 leading-relaxed">偶尔进行轻度的运动，例如散步、轻度园艺工作或缓和的瑜伽。</p>
+</div>
+</div>
+</label>
+<!-- Option 5 -->
+<label class="block cursor-pointer group">
+<div class="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+<input class="custom-radio mt-1 flex-shrink-0" name="exercise_lvl" type="radio"/>
+<div class="space-y-0.5">
+<p class="text-sm font-bold text-white">日常活动量</p>
+<p class="text-[11px] text-on-primary-container/80 leading-relaxed">主要进行日常生活中的活动，未进行专门的身体锻炼。</p>
+</div>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Spacer for footer -->
+<div class="h-16"></div>
+</main>
+<!-- BottomNavBar / Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-50 bg-[#ffffff]/80 backdrop-blur-xl flex justify-between items-center px-10 py-6 pb-8 shadow-[0_-8px_24px_rgba(0,30,64,0.06)]">
+<!-- Progress Dots -->
+<div class="flex gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<!-- 7th Dot Active -->
+<div class="w-4 h-1.5 rounded-full bg-secondary shadow-sm shadow-secondary/40"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+</div>
+<!-- Next Module Button -->
+<button class="flex items-center gap-3 bg-primary text-white px-5 py-2.5 rounded-full active:scale-95 duration-150 transition-all shadow-lg shadow-primary/20">
+<span class="font-manrope text-[10px] uppercase tracking-widest font-bold">Next</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</footer>
+</body></html>

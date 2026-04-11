@@ -15,6 +15,14 @@ export const feishuConfig = {
     appToken: env.FORM2_APP_TOKEN,
     tableId: env.FORM2_TABLE_ID,
   },
+  sleepSurvey: {
+    appToken: env.SLEEP_SURVEY_APP_TOKEN,
+    tableId: env.SLEEP_SURVEY_TABLE_ID,
+  },
+  nutritionSurvey: {
+    appToken: env.NUTRITION_SURVEY_APP_TOKEN,
+    tableId: env.NUTRITION_SURVEY_TABLE_ID,
+  },
   // 飞书 API 基础地址
   baseUrl: 'https://open.feishu.cn/open-apis',
 

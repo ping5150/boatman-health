@@ -6,8 +6,10 @@ import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
 import form1Routes from './routes/form1.routes';
 import form2Routes from './routes/form2.routes';
+// import sleepSurveyRoutes from './routes/sleep-survey.routes'; // TODO: 稍后启用
+// import nutritionSurveyRoutes from './routes/nutrition-survey.routes'; // TODO: 稍后启用
 import adminRoutes from './routes/admin.routes';
-import uploadRoutes from './routes/upload.routes';
+// import uploadRoutes from './routes/upload.routes'; // TODO: 稍后启用
 
 const app = express();
 
@@ -26,7 +28,9 @@ app.use((req, _res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/form1', form1Routes);
 app.use('/api/form2', form2Routes);
-app.use('/api/upload', uploadRoutes);
+// app.use('/api/sleep-survey', sleepSurveyRoutes); // TODO: 稍后启用
+// app.use('/api/nutrition-survey', nutritionSurveyRoutes); // TODO: 稍后启用
+// app.use('/api/upload', uploadRoutes); // TODO: 稍后启用
 app.use('/admin', adminRoutes);
 
 // 健康检查
