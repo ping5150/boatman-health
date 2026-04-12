@@ -1,15 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   submitNutritionSurvey,
   getLatestNutritionSurvey,
-  saveDraft,
+  saveNutritionDraft,
   updateNutritionSurvey,
   NutritionSurveyData,
 } from '@/api/nutrition-survey.api';
 import { useUser } from '@/contexts/UserContext';
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 10;
+const LOCAL_STORAGE_KEY = 'nutrition_survey_draft';
 
 // 频率选项
 const FREQ_OPTIONS = ['每天', '每周3-6次', '每周1-2次', '每月1-3次', '几乎不', '从不'];
@@ -106,10 +107,18 @@ const NutritionSurvey = () => {
   const [surveyId, setSurveyId] = useState<number | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useUser();
+  
+  // 检测是否为预览模式
+  const isPreviewMode = location.pathname.includes('/preview/');
 
   const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -119,7 +128,31 @@ const NutritionSurvey = () => {
 
   useEffect(() => {
     const loadLatest = async () => {
+      // 预览模式：直接加载本地存储数据，不调用 API
+      if (isPreviewMode) {
+        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          setFormData({ ...initialFormData, ...parsed.formData });
+          if (parsed.surveyId) setSurveyId(parsed.surveyId);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // 正常模式：尝试加载已有数据
       try {
+        // 先尝试从localStorage加载
+        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          setFormData({ ...initialFormData, ...parsed.formData });
+          if (parsed.surveyId) setSurveyId(parsed.surveyId);
+          setLoading(false);
+          return;
+        }
+
+        // 如果localStorage没有，从服务器加载
         const survey = await getLatestNutritionSurvey();
         if (survey?.formData) {
           setFormData({ ...initialFormData, ...survey.formData });
@@ -137,6 +170,16 @@ const NutritionSurvey = () => {
     loadLatest();
   }, [user]);
 
+  // localStorage实时自动保存
+  useEffect(() => {
+    const dataToSave = {
+      formData,
+      surveyId,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [formData, surveyId]);
+
   const showSaveIndicator = useCallback(() => { setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); }, []);
 
   const updateField = (field: keyof NutritionSurveyData, value: string | number | string[]) => {
@@ -150,6 +193,32 @@ const NutritionSurvey = () => {
     updateField(field, updated);
   };
 
+  // 手势滑动处理
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = async () => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+
+    if (Math.abs(diff) < threshold || isTransitioning) return;
+
+    if (diff > 0 && currentStep < TOTAL_STEPS - 1) {
+      setIsTransitioning(true);
+      await handleNextStep();
+      setTimeout(() => setIsTransitioning(false), 300);
+    } else if (diff < 0 && currentStep > 0) {
+      setIsTransitioning(true);
+      handlePrevStep();
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
+  };
+
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
     if (!formData.name?.trim()) errors.name = '请输入姓名';
@@ -161,10 +230,16 @@ const NutritionSurvey = () => {
   };
 
   const handleSaveStep = async () => {
+    // 预览模式：只保存到本地存储，不调用 API
+    if (isPreviewMode) {
+      showSaveIndicator();
+      return;
+    }
+
     setSaving(true);
     try {
       if (surveyId) await updateNutritionSurvey(surveyId, formData);
-      else { const result = await saveDraft(formData); setSurveyId(result.data.id); }
+      else { const result = await saveNutritionDraft(formData); setSurveyId(result.data.id); }
       showSaveIndicator();
     } catch (error) {
       console.error('保存失败:', error);
@@ -193,6 +268,12 @@ const NutritionSurvey = () => {
   };
 
   const handleFinalSubmit = async () => {
+    // 预览模式：显示提示
+    if (isPreviewMode) {
+      showToast('预览模式：数据已保存到本地存储', 'success');
+      return;
+    }
+
     setSaving(true);
     try {
       if (surveyId) await updateNutritionSurvey(surveyId, formData);
@@ -252,46 +333,109 @@ const NutritionSurvey = () => {
   );
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
-      {/* 顶部导航 */}
-      <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl">
+    <div className="flex flex-col h-screen bg-surface">
+      {/* 顶部导航 & 进度条 */}
+      <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shrink-0">
         <div className="grid grid-cols-3 items-center w-full px-4 py-3">
           <div className="flex justify-start">
-            <button onClick={() => navigate(-1)} className="text-primary"><span className="material-symbols-outlined">arrow_back</span></button>
+            {currentStep > 0 ? (
+              <button onClick={handlePrevStep} className="text-primary hover:opacity-70 transition-opacity">
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+            ) : (
+              <button onClick={() => navigate(-1)} className="text-primary hover:opacity-70 transition-opacity">
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+            )}
           </div>
           <div className="flex justify-center">
-            <h1 className="font-headline font-bold text-lg text-primary">营养调研问卷</h1>
+            <h1 className="font-headline font-bold tracking-tight text-lg text-primary">船夫健康</h1>
           </div>
-          <div className="flex justify-end">
-            <span className={`text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full transition-opacity ${saveIndicator ? 'opacity-100' : 'opacity-0'}`}>已保存</span>
+          <div className="flex justify-end items-center gap-2">
+            <span id="save-indicator" className={`text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full transition-opacity duration-300 ${saveIndicator ? 'opacity-100' : 'opacity-0'}`}>
+              已保存
+            </span>
+            <span className="material-symbols-outlined text-primary text-xl">account_circle</span>
           </div>
         </div>
+
+        {/* 进度条 */}
         <div className="w-full px-4 pb-2">
           <div className="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
-            <div className="h-full bg-secondary transition-all duration-500 rounded-full" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-secondary transition-all duration-500 ease-out rounded-full" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </header>
 
-      {/* 主体内容 */}
-      <main className="pt-20 pb-28 px-4">
-        <div className="max-w-md mx-auto space-y-6">
-          {/* 步骤 1: 基本信息 */}
+      {/* 主体内容区域 */}
+      <main 
+        ref={mainRef}
+        className="relative pb-28"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          
+          {/* ================= 步骤 1: 基本信息 ================= */}
           {currentStep === 0 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 1 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">基本信息</h2></div>
-              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-primary/60 uppercase">姓名 *</label>
-                  <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} className={`w-full bg-surface border rounded-xl p-3 mt-1 text-sm ${fieldErrors.name ? 'border-error' : 'border-transparent'}`} placeholder="请输入姓名" />
+            <div className="px-4 pb-4">
+              <div className="max-w-md mx-auto pt-2">
+                <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                  Step 1 of {TOTAL_STEPS}
+                </span>
+                <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">基本信息</h2>
+                <p className="text-on-surface-variant text-sm mb-8">开启您的私人管家级营养健康管理。</p>
+
+                <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                      姓名 <span className="text-error">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={formData.name} 
+                      onChange={e => updateField('name', e.target.value)} 
+                      className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.name ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
+                      placeholder="请输入姓名" 
+                    />
+                    {fieldErrors.name && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.name}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                      联系电话 <span className="text-error">*</span>
+                    </label>
+                    <input 
+                      type="tel" 
+                      value={formData.phone} 
+                      onChange={e => updateField('phone', e.target.value)} 
+                      className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.phone ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
+                      placeholder="请输入手机号" 
+                    />
+                    {fieldErrors.phone && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.phone}</p>}
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-primary/60 uppercase">联系电话 *</label>
-                  <input type="tel" value={formData.phone} onChange={e => updateField('phone', e.target.value)} className={`w-full bg-surface border rounded-xl p-3 mt-1 text-sm ${fieldErrors.phone ? 'border-error' : 'border-transparent'}`} placeholder="请输入手机号" />
+
+                {/* 步骤底部按钮 */}
+                <div className="flex gap-3 mt-6 pb-10">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                  >
+                    返回
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    disabled={saving}
+                    className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? '保存中...' : '下一步'}
+                  </button>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* 步骤 2: 健康信息 */}
@@ -302,20 +446,20 @@ const NutritionSurvey = () => {
               <div className="space-y-4">
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">咨询主要原因或关注点</label>
-                  <textarea value={formData.consultationReason || ''} onChange={e => updateField('consultationReason', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={3} placeholder="请描述..." />
+                  <textarea value={formData.consultationReason || ''} onChange={e => updateField('consultationReason', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={3} placeholder="请描述..." />
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">希望营养师支持的领域</label>
-                  <textarea value={formData.nutritionistSupportGoals || ''} onChange={e => updateField('nutritionistSupportGoals', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} placeholder="请描述..." />
+                  <textarea value={formData.nutritionistSupportGoals || ''} onChange={e => updateField('nutritionistSupportGoals', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                     <label className="text-xs font-bold text-primary/60 uppercase">身高 (cm)</label>
-                    <input type="number" value={formData.height || ''} onChange={e => updateField('height', parseFloat(e.target.value) || 0)} className="w-full bg-surface border border-transparent rounded-xl p-3 mt-1 text-sm" />
+                    <input type="number" value={formData.height || ''} onChange={e => updateField('height', parseFloat(e.target.value) || 0)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
                   </div>
                   <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                     <label className="text-xs font-bold text-primary/60 uppercase">体重 (kg)</label>
-                    <input type="number" value={formData.weight || ''} onChange={e => updateField('weight', parseFloat(e.target.value) || 0)} className="w-full bg-surface border border-transparent rounded-xl p-3 mt-1 text-sm" />
+                    <input type="number" value={formData.weight || ''} onChange={e => updateField('weight', parseFloat(e.target.value) || 0)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
                   </div>
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
@@ -324,11 +468,11 @@ const NutritionSurvey = () => {
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">慢性疾病或健康问题</label>
-                  <textarea value={formData.chronicDiseases || ''} onChange={e => updateField('chronicDiseases', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} placeholder="请描述..." />
+                  <textarea value={formData.chronicDiseases || ''} onChange={e => updateField('chronicDiseases', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">目前服用的药物或补充剂</label>
-                  <textarea value={formData.medicationsSupplements || ''} onChange={e => updateField('medicationsSupplements', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} placeholder="请描述..." />
+                  <textarea value={formData.medicationsSupplements || ''} onChange={e => updateField('medicationsSupplements', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
                 </div>
               </div>
             </>
@@ -358,16 +502,43 @@ const NutritionSurvey = () => {
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">食物过敏或不耐受</label>
-                  <textarea value={formData.foodAllergies || ''} onChange={e => updateField('foodAllergies', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} placeholder="请描述..." />
+                  <textarea value={formData.foodAllergies || ''} onChange={e => updateField('foodAllergies', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
                 </div>
               </div>
             </>
           )}
 
-          {/* 步骤 4: 饮品频率 */}
+          {/* 步骤 4: 典型饮食模式 */}
           {currentStep === 3 && (
             <>
               <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 4 of {TOTAL_STEPS}</span>
+                <h2 className="font-headline text-2xl font-bold text-primary mt-2">典型饮食模式</h2>
+                <p className="text-on-surface-variant text-sm mt-1">请描述您的典型饮食习惯</p></div>
+              <div className="space-y-4">
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">您的饮食类型？</label>
+                  {renderRadioGroup('dietPlanType', ['普通饮食', '素食', '低碳水饮食', '生酮饮食', '其他'])}
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">工作日典型饮食安排</label>
+                  <textarea value={formData.typicalDietWorkday || ''} onChange={e => updateField('typicalDietWorkday', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="请描述您工作日一天的典型饮食安排..." />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">周末典型饮食安排</label>
+                  <textarea value={formData.typicalDietWeekend || ''} onChange={e => updateField('typicalDietWeekend', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="请描述您周末一天的典型饮食安排..." />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">其他饮食说明</label>
+                  <textarea value={formData.typicalDietDescription || ''} onChange={e => updateField('typicalDietDescription', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={3} placeholder="如有其他需要说明的饮食习惯..." />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 步骤 5: 饮品习惯 */}
+          {currentStep === 4 && (
+            <>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 5 of {TOTAL_STEPS}</span>
                 <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮品习惯</h2>
                 <p className="text-on-surface-variant text-sm mt-1">请选择您饮用以下饮品的频率</p></div>
               <div className="space-y-3">
@@ -382,22 +553,40 @@ const NutritionSurvey = () => {
                 {renderFreqSelector('drinkEnergy', '能量饮料')}
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">其他饮品</label>
-                  <input type="text" value={formData.drinkOther || ''} onChange={e => updateField('drinkOther', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm" placeholder="请输入..." />
+                  <input type="text" value={formData.drinkOther || ''} onChange={e => updateField('drinkOther', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请输入..." />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">您在高温或高强度运动时是否出汗较多？</label>
+                  {renderRadioGroup('highSaltSweat', YES_NO)}
                 </div>
               </div>
             </>
           )}
 
-          {/* 步骤 5: 运动习惯 */}
-          {currentStep === 4 && (
+          {/* 步骤 6: 饮食满意度与运动水平 */}
+          {currentStep === 5 && (
             <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 5 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">运动习惯</h2></div>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 6 of {TOTAL_STEPS}</span>
+                <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮食满意度与运动水平</h2></div>
               <div className="space-y-4">
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">您对当前饮食的满意度？</label>
+                  {renderRadioGroup('dietSatisfaction', ['非常满意', '比较满意', '一般', '不太满意', '非常不满意'])}
+                </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">您当前的运动水平？</label>
                   {renderRadioGroup('exerciseLevel', ['高活动量', '中高活动量', '中等活动量', '轻度活动量', '日常活动量'])}
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* 步骤 7: 运动习惯详细 */}
+          {currentStep === 6 && (
+            <>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 7 of {TOTAL_STEPS}</span>
+                <h2 className="font-headline text-2xl font-bold text-primary mt-2">运动习惯详细</h2></div>
+              <div className="space-y-4">
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">您常做的运动类型？</label>
                   {renderCheckboxGroup('exerciseTypes', ['有氧运动', '力量训练', '柔韧性训练', '团队运动', '其他'])}
@@ -418,16 +607,31 @@ const NutritionSurvey = () => {
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">运动激励因素</label>
-                  <textarea value={formData.exerciseMotivation || ''} onChange={e => updateField('exerciseMotivation', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} />
+                  <textarea value={formData.exerciseMotivation || ''} onChange={e => updateField('exerciseMotivation', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">运动挑战</label>
+                  <textarea value={formData.exerciseChallenges || ''} onChange={e => updateField('exerciseChallenges', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述您在运动中遇到的困难或挑战..." />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">运动目标</label>
+                  <textarea value={formData.exerciseGoals || ''} onChange={e => updateField('exerciseGoals', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述您的运动目标..." />
+                </div>
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">是否有运动伙伴？</label>
+                  {renderRadioGroup('hasExercisePartner', YES_NO)}
+                  {formData.hasExercisePartner === '是' && (
+                    <input type="text" value={formData.exercisePartnerDetail || ''} onChange={e => updateField('exercisePartnerDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请描述..." />
+                  )}
                 </div>
               </div>
             </>
           )}
 
-          {/* 步骤 6: 生活方式 */}
-          {currentStep === 5 && (
+          {/* 步骤 8: 生活方式 */}
+          {currentStep === 7 && (
             <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 6 of {TOTAL_STEPS}</span>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 8 of {TOTAL_STEPS}</span>
                 <h2 className="font-headline text-2xl font-bold text-primary mt-2">生活方式</h2></div>
               <div className="space-y-4">
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
@@ -439,44 +643,81 @@ const NutritionSurvey = () => {
                     <label className="text-sm font-medium mb-2 block">是否吸烟？</label>
                     {renderRadioGroup('isSmoker', YES_NO)}
                     {formData.isSmoker === '是' && (
-                      <input type="text" value={formData.smokingDetail || ''} onChange={e => updateField('smokingDetail', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-2 mt-2 text-sm" placeholder="支/天，年数" />
+                      <input type="text" value={formData.smokingDetail || ''} onChange={e => updateField('smokingDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="支/天，年数" />
                     )}
                   </div>
                   <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                     <label className="text-sm font-medium mb-2 block">是否饮酒？</label>
                     {renderRadioGroup('isDrinker', YES_NO)}
                     {formData.isDrinker === '是' && (
-                      <input type="text" value={formData.drinkingDetail || ''} onChange={e => updateField('drinkingDetail', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-2 mt-2 text-sm" placeholder="频率/种类" />
+                      <input type="text" value={formData.drinkingDetail || ''} onChange={e => updateField('drinkingDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="频率/种类" />
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                     <label className="text-xs font-bold text-primary/60 uppercase">工作日起床时间</label>
-                    <input type="time" value={formData.weekdayWakeTime || ''} onChange={e => updateField('weekdayWakeTime', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 mt-1 text-sm" />
+                    <input type="time" value={formData.weekdayWakeTime || ''} onChange={e => updateField('weekdayWakeTime', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
                   </div>
                   <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                     <label className="text-xs font-bold text-primary/60 uppercase">工作日睡觉时间</label>
-                    <input type="time" value={formData.weekdaySleepTime || ''} onChange={e => updateField('weekdaySleepTime', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 mt-1 text-sm" />
+                    <input type="time" value={formData.weekdaySleepTime || ''} onChange={e => updateField('weekdaySleepTime', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
                   </div>
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
                   <label className="text-sm font-medium mb-2 block">起床时的精神状态</label>
-                  <textarea value={formData.morningState || ''} onChange={e => updateField('morningState', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={2} />
+                  <textarea value={formData.morningState || ''} onChange={e => updateField('morningState', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} />
                 </div>
                 <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">社交活动</label>
-                  {renderCheckboxGroup('socialActivities', ['朋友聚会', '家庭聚餐', '体育活动', '社区活动', '兴趣小组', '公司活动', '其他'])}
+                  <label className="text-xs font-bold text-primary/60 uppercase">日常屏幕使用时间</label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="bg-surface-container-highest rounded-xl p-2">
+                      <label className="text-[10px] font-bold text-primary/60 uppercase">电视</label>
+                      <input type="text" value={formData.screenTimeTv || ''} onChange={e => updateField('screenTimeTv', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
+                    </div>
+                    <div className="bg-surface-container-highest rounded-xl p-2">
+                      <label className="text-[10px] font-bold text-primary/60 uppercase">阅读</label>
+                      <input type="text" value={formData.screenTimeReading || ''} onChange={e => updateField('screenTimeReading', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
+                    </div>
+                    <div className="bg-surface-container-highest rounded-xl p-2">
+                      <label className="text-[10px] font-bold text-primary/60 uppercase">电子设备</label>
+                      <input type="text" value={formData.screenTimeElectronics || ''} onChange={e => updateField('screenTimeElectronics', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
           )}
 
-          {/* 步骤 7: 饮食频率 */}
-          {currentStep === 6 && (
+          {/* 步骤 9: 社交活动与其他反馈 */}
+          {currentStep === 8 && (
             <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 7 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮食频率</h2>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 9 of {TOTAL_STEPS}</span>
+                <h2 className="font-headline text-2xl font-bold text-primary mt-2">社交活动与其他反馈</h2></div>
+              <div className="space-y-4">
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">您常参与的社交活动？</label>
+                  {renderCheckboxGroup('socialActivities', ['朋友聚会', '家庭聚餐', '体育活动', '社区活动', '兴趣小组', '公司活动', '其他'])}
+                </div>
+                {((formData.socialActivities as string[]) || []).includes('其他') && (
+                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                    <label className="text-sm font-medium mb-2 block">其他社交活动</label>
+                    <input type="text" value={formData.socialActivitiesOther || ''} onChange={e => updateField('socialActivitiesOther', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请描述..." />
+                  </div>
+                )}
+                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
+                  <label className="text-sm font-medium mb-2 block">其他反馈或建议</label>
+                  <textarea value={formData.otherFeedback || ''} onChange={e => updateField('otherFeedback', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="如有其他补充请在此填写..." />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 步骤 10: 食物频率 */}
+          {currentStep === 9 && (
+            <>
+              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 10 of {TOTAL_STEPS}</span>
+                <h2 className="font-headline text-2xl font-bold text-primary mt-2">食物频率</h2>
                 <p className="text-on-surface-variant text-sm mt-1">请选择您食用以下食物的频率</p></div>
               <div className="space-y-2">
                 <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">谷薯与水果</p>
@@ -484,33 +725,35 @@ const NutritionSurvey = () => {
                 {renderFreqSelector('freqNoodlesBread', '面条、面包')}
                 {renderFreqSelector('freqWholeGrains', '全谷物制品')}
                 {renderFreqSelector('freqFreshFruit', '新鲜水果')}
+                {renderFreqSelector('freqFruitJuice', '果汁')}
+                {renderFreqSelector('freqDriedFruit', '干果')}
                 
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">蔬菜与蛋白质</p>
+                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">蔬菜</p>
                 {renderFreqSelector('freqLeafyVegetables', '绿叶蔬菜')}
+                {renderFreqSelector('freqStarchyVegetables', '淀粉类蔬菜')}
+                {renderFreqSelector('freqOtherVegetables', '其他蔬菜')}
+                
+                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">蛋白质</p>
                 {renderFreqSelector('freqEggs', '鸡蛋')}
                 {renderFreqSelector('freqPoultry', '家禽')}
                 {renderFreqSelector('freqFishSeafood', '鱼类和海鲜')}
+                {renderFreqSelector('freqBeansSoy', '豆类和豆制品')}
                 {renderFreqSelector('freqRedMeat', '红肉')}
                 
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">乳制品与零食</p>
+                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">乳制品</p>
                 {renderFreqSelector('freqMilkDairy', '牛奶')}
                 {renderFreqSelector('freqYogurt', '酸奶')}
+                {renderFreqSelector('freqCheese', '奶酪')}
+                {renderFreqSelector('freqNonDairyAlternatives', '非乳制品替代品')}
+                
+                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">零食</p>
                 {renderFreqSelector('freqNutsSeeds', '坚果和种子')}
                 {renderFreqSelector('freqCookiesCake', '饼干、蛋糕')}
+                {renderFreqSelector('freqChocolateCandy', '巧克力、糖果')}
+                {renderFreqSelector('freqSaltySnacks', '咸味零食')}
               </div>
-            </>
-          )}
-
-          {/* 步骤 8: 确认提交 */}
-          {currentStep === 7 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 8 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">确认提交</h2></div>
-              <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                <label className="text-sm font-medium mb-2 block">其他反馈或建议</label>
-                <textarea value={formData.otherFeedback || ''} onChange={e => updateField('otherFeedback', e.target.value)} className="w-full bg-surface border border-transparent rounded-xl p-3 text-sm resize-none" rows={3} placeholder="如有其他补充请在此填写..." />
-              </div>
-              <div className="bg-primary p-5 rounded-3xl text-white">
+              
+              <div className="bg-primary p-5 rounded-3xl text-white mt-6">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-secondary-container text-2xl" style={{ fontVariationSettings: '"FILL" 1' }}>security</span>
                   <div>
@@ -535,17 +778,6 @@ const NutritionSurvey = () => {
           </div>
         </div>
       </main>
-
-      {/* 底部步骤指示器 */}
-      <footer className="fixed bottom-0 w-full bg-surface/90 backdrop-blur-xl border-t border-outline-variant/10">
-        <div className="px-4 py-3 flex items-center justify-center">
-          <div className="flex gap-2">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <button key={i} onClick={() => goToStep(i)} className={`transition-all duration-300 cursor-pointer ${i === currentStep ? 'w-4 h-2 rounded-full bg-primary' : 'w-2 h-2 rounded-full bg-outline-variant/40'}`} />
-            ))}
-          </div>
-        </div>
-      </footer>
 
       {/* Toast */}
       {toast && (

@@ -96,6 +96,32 @@ const Account = () => {
               </div>
               <button className="px-4 py-2 text-xs font-bold text-secondary bg-secondary/5 rounded-full hover:bg-secondary/10 transition-colors">查看/修改</button>
             </Link>
+
+            <Link to="/sleep-survey" className="p-6 rounded-[1.5rem] bg-surface-container-low flex justify-between items-center group transition-all duration-300 hover:bg-surface-container">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">bedtime</span>
+                </div>
+                <div>
+                  <p className="font-headline font-bold text-primary">睡眠调研问卷</p>
+                  <p className="text-xs text-on-surface-variant">评估睡眠质量与习惯</p>
+                </div>
+              </div>
+              <button className="px-4 py-2 text-xs font-bold text-secondary bg-secondary/5 rounded-full hover:bg-secondary/10 transition-colors">填写问卷</button>
+            </Link>
+
+            <Link to="/nutrition-survey" className="p-6 rounded-[1.5rem] bg-surface-container-low flex justify-between items-center group transition-all duration-300 hover:bg-surface-container">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">restaurant</span>
+                </div>
+                <div>
+                  <p className="font-headline font-bold text-primary">营养调研问卷</p>
+                  <p className="text-xs text-on-surface-variant">饮食与营养状况评估</p>
+                </div>
+              </div>
+              <button className="px-4 py-2 text-xs font-bold text-secondary bg-secondary/5 rounded-full hover:bg-secondary/10 transition-colors">填写问卷</button>
+            </Link>
           </div>
         </section>
 

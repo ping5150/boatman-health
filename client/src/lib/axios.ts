@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// 生产环境通过 EdgeOne 反向代理，开发环境通过 vite proxy 代理
-const baseURL = '/api';
+// 开发环境通过 Vite proxy 代理
+// 预览/生产环境直接连接测试环境Nginx（端口3002）
+const baseURL = import.meta.env.DEV 
+  ? '/api' 
+  : 'http://118.145.239.169:3002/api';
 
 const api = axios.create({
   baseURL,

@@ -1192,8 +1192,8 @@ export const feishuService = {
     }
 
     if (!submission.feishuRecordId) {
-      const { feishuRecordId, ...rest } = submission;
-      return this.syncNutritionSurvey(rest);
+      const { feishuRecordId: _feishuRecordId, ...rest } = submission;
+      return this.syncNutritionSurvey(rest as any);
     }
 
     try {
@@ -1218,8 +1218,8 @@ export const feishuService = {
           where: { id: submission.id },
           data: { feishuRecordId: null },
         });
-        const { feishuRecordId, ...rest } = submission;
-        return this.syncNutritionSurvey(rest);
+        const { feishuRecordId: _feishuRecordId, ...rest } = submission;
+        return this.syncNutritionSurvey(rest as any);
       }
 
       await prisma.nutritionSurvey.update({

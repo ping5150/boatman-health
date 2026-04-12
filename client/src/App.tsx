@@ -91,6 +91,10 @@ const App = () => {
           />
           <Route path="/survey-success" element={<SurveySuccess />} />
         </Route>
+
+        {/* 预览路由 - 无需登录 */}
+        <Route path="/preview/sleep-survey" element={<SleepSurvey />} />
+        <Route path="/preview/nutrition-survey" element={<NutritionSurvey />} />
       </Routes>
       {/* 登录/注册弹窗 */}
       <AuthModal />
