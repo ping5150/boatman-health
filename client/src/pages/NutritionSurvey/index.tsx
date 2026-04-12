@@ -269,7 +269,21 @@ const NutritionSurvey = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    // 检查已上传文件数量，最多10个
+    const currentCount = uploadedDietFiles.filter(f => f.status !== 'error').length;
+    const availableSlots = 10 - currentCount;
+    if (availableSlots <= 0) {
+      showToast('最多只能上传10个附件');
+      e.target.value = '';
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      showToast(`最多还能上传${availableSlots}个文件，已自动选择前${availableSlots}个`);
+    }
+
+    filesToUpload.forEach((file) => {
       // 限制文件大小 50MB
       if (file.size > 50 * 1024 * 1024) {
         showToast(`文件 ${file.name} 超过 50MB 限制`);
@@ -385,7 +399,7 @@ const NutritionSurvey = () => {
 
   // 步骤变化时自动滚动到顶部
   useEffect(() => {
-    // 使用多种方式确保滚动到顶部，兼容不同浏览器和场景
+    // 使用双重 requestAnimationFrame 确保在页面渲染完成后再滚动
     const scrollToTop = () => {
       // 方式1: 直接设置 scrollTop（最可靠）
       document.documentElement.scrollTop = 0;
@@ -394,13 +408,21 @@ const NutritionSurvey = () => {
       window.scrollTo(0, 0);
     };
 
-    // 立即执行一次
-    scrollToTop();
+    // 使用双重 requestAnimationFrame 确保在 React 渲染完成后执行
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToTop();
+      });
+    });
 
-    // 在下一个事件循环再执行一次，确保 DOM 完全渲染
-    const timer = setTimeout(scrollToTop, 0);
+    // 延迟执行作为备用方案
+    const timer1 = setTimeout(scrollToTop, 50);
+    const timer2 = setTimeout(scrollToTop, 150);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, [currentStep]);
 
   // 判断是否跳过步骤6、7（运动习惯详情）
@@ -408,11 +430,6 @@ const NutritionSurvey = () => {
 
   // 判断是否跳过步骤10、11、12（饮食频率详情）
   const shouldSkipDietFrequency = !!(formData.typicalDietDescription && formData.typicalDietDescription.trim());
-
-  // 切换步骤后滚动到顶部
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const handleNextStep = async () => {
     if (currentStep === 0 && !validateStep1()) return;
@@ -432,7 +449,6 @@ const NutritionSurvey = () => {
         }
 
         setCurrentStep(nextStep);
-        scrollToTop();
       }
     } catch {}
   };
@@ -452,7 +468,6 @@ const NutritionSurvey = () => {
       }
 
       setCurrentStep(prevStep);
-      scrollToTop();
     }
   };
 
@@ -536,7 +551,7 @@ const NutritionSurvey = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-surface overflow-x-hidden">
+    <div className="flex flex-col h-screen bg-surface">
       {/* 顶部导航 & 进度条 */}
       <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shrink-0">
         <div className="grid grid-cols-3 items-center w-full px-4 py-3">
@@ -970,7 +985,7 @@ const NutritionSurvey = () => {
                   />
                   <span className="material-symbols-outlined text-2xl text-secondary mb-1">upload</span>
                   <p className="text-[11px] text-outline font-medium">点击上传饮食记录</p>
-                  <p className="text-[10px] text-outline/60 mt-0.5">图片 / PDF / Word，单个文件最大 50MB</p>
+                  <p className="text-[10px] text-outline/60 mt-0.5">图片 / PDF / Word，单个文件最大 50MB，最多10个</p>
                 </div>
 
                 {/* 已上传文件列表 */}

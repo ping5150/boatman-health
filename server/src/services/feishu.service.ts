@@ -1233,7 +1233,7 @@ export const feishuService = {
   },
 
   /**
-   * 营养问卷字段映射
+   * 营养问卷字段映射（合并优化版）
    */
   mapNutritionSurveyToFeishu(submission: Record<string, unknown>): Record<string, unknown> {
     const fields: Record<string, unknown> = {
@@ -1247,104 +1247,172 @@ export const feishuService = {
     if (submission.phone) fields['联系电话'] = submission.phone;
 
     // 01 健康信息
-    if (submission.consultationReason) fields['咨询主要原因'] = submission.consultationReason;
-    if (submission.nutritionistSupportGoals) fields['希望营养师支持领域'] = submission.nutritionistSupportGoals;
-    if (submission.height != null) fields['身高'] = String(submission.height);
-    if (submission.weight != null) fields['体重'] = String(submission.weight);
+    if (submission.consultationReason) fields['咨询原因'] = submission.consultationReason;
+    if (submission.nutritionistSupportGoals) fields['营养师支持目标'] = submission.nutritionistSupportGoals;
+    if (submission.height != null && submission.weight != null) {
+      fields['身高体重'] = `${submission.height}cm / ${submission.weight}kg`;
+    } else if (submission.height != null) {
+      fields['身高体重'] = `${submission.height}cm`;
+    } else if (submission.weight != null) {
+      fields['身高体重'] = `${submission.weight}kg`;
+    }
     if (submission.weightChange) fields['体重变化'] = submission.weightChange;
     if (submission.chronicDiseases) fields['慢性疾病'] = submission.chronicDiseases;
-    if (submission.medicationsSupplements) fields['药物或补充剂'] = submission.medicationsSupplements;
+    if (submission.medicationsSupplements) fields['用药情况'] = submission.medicationsSupplements;
 
-    // 02 饮食习惯（1/4）
-    if (submission.dailyMeals) fields['每天主餐数量'] = submission.dailyMeals;
-    if (submission.breakfastHabit) fields['固定早餐习惯'] = submission.breakfastHabit;
-    if (submission.commonSnacks) fields['常吃零食'] = submission.commonSnacks;
-    if (submission.foodSources) fields['食物来源'] = submission.foodSources;
+    // 02 饮食习惯（合并）
+    const dietHabits: string[] = [];
+    if (submission.dailyMeals) dietHabits.push(`每日${submission.dailyMeals}餐`);
+    if (submission.breakfastHabit) dietHabits.push(`早餐: ${submission.breakfastHabit}`);
+    if (dietHabits.length > 0) fields['饮食习惯'] = dietHabits.join('；');
+
+    if (submission.commonSnacks) fields['常吃零食'] = this.formatArray(submission.commonSnacks);
+    if (submission.foodSources) fields['食物来源'] = this.formatArray(submission.foodSources);
     if (submission.foodAllergies) fields['食物过敏'] = submission.foodAllergies;
+    if (submission.dislikedFoods) fields['不喜欢的食物'] = submission.dislikedFoods;
+    if (submission.dietPlanType) fields['特殊饮食'] = submission.dietPlanType;
 
-    // 03 饮食习惯（2/4）
-    if (submission.dislikedFoods) fields['不喜欢食物'] = submission.dislikedFoods;
-    if (submission.dietPlanType) fields['特定饮食计划'] = submission.dietPlanType;
-    if (submission.typicalDietWorkday) fields['工作日饮食安排'] = submission.typicalDietWorkday;
-    if (submission.typicalDietWeekend) fields['周末饮食安排'] = submission.typicalDietWeekend;
-    if (submission.typicalDietDescription) fields['典型饮食描述'] = submission.typicalDietDescription;
+    // 典型饮食描述（合并工作日+周末）
+    const typicalDiet: string[] = [];
+    if (submission.typicalDietWorkday) typicalDiet.push(`工作日: ${submission.typicalDietWorkday}`);
+    if (submission.typicalDietWeekend) typicalDiet.push(`周末: ${submission.typicalDietWeekend}`);
+    if (submission.typicalDietDescription) typicalDiet.push(submission.typicalDietDescription as string);
+    if (typicalDiet.length > 0) fields['典型饮食'] = typicalDiet.join('；');
 
-    // 03 饮食习惯（3/4）- 饮品频率
-    if (submission.drinkWater) fields['水'] = submission.drinkWater;
-    if (submission.drinkCoffee) fields['咖啡'] = submission.drinkCoffee;
-    if (submission.drinkTea) fields['茶'] = submission.drinkTea;
-    if (submission.drinkMilk) fields['牛奶'] = submission.drinkMilk;
-    if (submission.drinkPlantMilk) fields['植物奶'] = submission.drinkPlantMilk;
-    if (submission.drinkMilkTea) fields['奶茶'] = submission.drinkMilkTea;
-    if (submission.drinkSugarFree) fields['无糖饮料'] = submission.drinkSugarFree;
-    if (submission.drinkSugary) fields['含糖饮料'] = submission.drinkSugary;
-    if (submission.drinkEnergy) fields['能量饮料'] = submission.drinkEnergy;
-    if (submission.drinkOther) fields['其他饮品'] = submission.drinkOther;
+    // 饮品频率（合并）
+    const drinks: string[] = [];
+    if (submission.drinkWater) drinks.push(`水: ${submission.drinkWater}`);
+    if (submission.drinkCoffee) drinks.push(`咖啡: ${submission.drinkCoffee}`);
+    if (submission.drinkTea) drinks.push(`茶: ${submission.drinkTea}`);
+    if (submission.drinkMilk) drinks.push(`牛奶: ${submission.drinkMilk}`);
+    if (submission.drinkPlantMilk) drinks.push(`植物奶: ${submission.drinkPlantMilk}`);
+    if (submission.drinkMilkTea) drinks.push(`奶茶: ${submission.drinkMilkTea}`);
+    if (submission.drinkSugarFree) drinks.push(`无糖饮料: ${submission.drinkSugarFree}`);
+    if (submission.drinkSugary) drinks.push(`含糖饮料: ${submission.drinkSugary}`);
+    if (submission.drinkEnergy) drinks.push(`能量饮料: ${submission.drinkEnergy}`);
+    if (submission.drinkOther) drinks.push(`其他: ${submission.drinkOther}`);
+    if (drinks.length > 0) fields['饮品摄入'] = drinks.join('；');
 
-    // 03 饮食习惯（4/4）
-    if (submission.highSaltSweat) fields['出汗含盐量高'] = submission.highSaltSweat;
+    if (submission.highSaltSweat) fields['出汗含盐高'] = submission.highSaltSweat;
     if (submission.dietSatisfaction) fields['饮食满意度'] = submission.dietSatisfaction;
 
-    // 04 运动习惯（1/2）
-    if (submission.exerciseLevel) fields['运动水平'] = submission.exerciseLevel;
-    if (submission.exerciseTypes) fields['运动类型'] = submission.exerciseTypes;
-    if (submission.exerciseDuration) fields['每次运动时长'] = submission.exerciseDuration;
-    if (submission.exerciseFrequency) fields['每周运动频率'] = submission.exerciseFrequency;
-    if (submission.exerciseTime) fields['运动时间段'] = submission.exerciseTime;
-    if (submission.exerciseMotivation) fields['运动激励因素'] = submission.exerciseMotivation;
+    // 运动习惯（合并）
+    const exercise: string[] = [];
+    if (submission.exerciseLevel) exercise.push(`水平: ${submission.exerciseLevel}`);
+    if (submission.exerciseTypes) exercise.push(`类型: ${this.formatArray(submission.exerciseTypes)}`);
+    if (submission.exerciseDuration) exercise.push(`时长: ${submission.exerciseDuration}`);
+    if (submission.exerciseFrequency) exercise.push(`频率: ${submission.exerciseFrequency}`);
+    if (submission.exerciseTime) exercise.push(`时间: ${submission.exerciseTime}`);
+    if (exercise.length > 0) fields['运动习惯'] = exercise.join('；');
 
-    // 04 运动习惯（2/2）
+    if (submission.exerciseMotivation) fields['运动激励因素'] = submission.exerciseMotivation;
     if (submission.exerciseChallenges) fields['运动挑战'] = submission.exerciseChallenges;
     if (submission.exerciseGoals) fields['运动目标'] = submission.exerciseGoals;
-    if (submission.hasExercisePartner) fields['是否与他人运动'] = submission.hasExercisePartner;
-    if (submission.exercisePartnerDetail) fields['和谁运动'] = submission.exercisePartnerDetail;
 
-    // 05 生活方式（1/2）
-    if (submission.stressLevel) fields['压力水平'] = submission.stressLevel;
-    if (submission.isSmoker) fields['是否吸烟'] = submission.isSmoker;
+    if (submission.hasExercisePartner) {
+      const partner = submission.hasExercisePartner === 'yes' ? '是' : '否';
+      if (submission.exercisePartnerDetail) {
+        fields['运动伙伴'] = `${partner}（${submission.exercisePartnerDetail}）`;
+      } else {
+        fields['运动伙伴'] = partner;
+      }
+    }
+
+    // 生活方式（合并）
+    const lifestyle: string[] = [];
+    if (submission.stressLevel) lifestyle.push(`压力: ${submission.stressLevel}`);
+    if (submission.isSmoker) lifestyle.push(`吸烟: ${submission.isSmoker}`);
+    if (submission.isDrinker) lifestyle.push(`饮酒: ${submission.isDrinker}`);
+    if (lifestyle.length > 0) fields['生活方式'] = lifestyle.join('；');
+
     if (submission.smokingDetail) fields['吸烟详情'] = submission.smokingDetail;
-    if (submission.isDrinker) fields['是否饮酒'] = submission.isDrinker;
     if (submission.drinkingDetail) fields['饮酒详情'] = submission.drinkingDetail;
-    if (submission.weekdayWakeTime) fields['工作日起床时间'] = submission.weekdayWakeTime;
-    if (submission.weekdaySleepTime) fields['工作日睡觉时间'] = submission.weekdaySleepTime;
-    if (submission.morningState) fields['起床精神状态'] = submission.morningState;
-    if (submission.screenTimeTv) fields['看电视时间'] = submission.screenTimeTv;
-    if (submission.screenTimeReading) fields['阅读时间'] = submission.screenTimeReading;
-    if (submission.screenTimeElectronics) fields['电子屏幕时间'] = submission.screenTimeElectronics;
 
-    // 05 生活方式（2/2）
-    if (submission.socialActivities) fields['社交活动'] = submission.socialActivities;
-    if (submission.socialActivitiesOther) fields['其他社交活动'] = submission.socialActivitiesOther;
+    // 作息时间（合并）
+    const sleepSchedule: string[] = [];
+    if (submission.weekdayWakeTime) sleepSchedule.push(`起床: ${submission.weekdayWakeTime}`);
+    if (submission.weekdaySleepTime) sleepSchedule.push(`睡觉: ${submission.weekdaySleepTime}`);
+    if (sleepSchedule.length > 0) fields['作息时间'] = sleepSchedule.join('；');
+
+    if (submission.morningState) fields['起床状态'] = submission.morningState;
+
+    // 屏幕时间（合并）
+    const screenTime: string[] = [];
+    if (submission.screenTimeTv) screenTime.push(`电视: ${submission.screenTimeTv}`);
+    if (submission.screenTimeReading) screenTime.push(`阅读: ${submission.screenTimeReading}`);
+    if (submission.screenTimeElectronics) screenTime.push(`电子设备: ${submission.screenTimeElectronics}`);
+    if (screenTime.length > 0) fields['屏幕时间'] = screenTime.join('；');
+
+    if (submission.socialActivities) fields['社交活动'] = this.formatArray(submission.socialActivities);
+    if (submission.socialActivitiesOther) fields['其他社交'] = submission.socialActivitiesOther;
     if (submission.otherFeedback) fields['其他反馈'] = submission.otherFeedback;
 
-    // 06 饮食频率（1/3）- 谷薯与水果
-    if (submission.freqRice) fields['米饭'] = submission.freqRice;
-    if (submission.freqNoodlesBread) fields['面条面包'] = submission.freqNoodlesBread;
-    if (submission.freqWholeGrains) fields['全谷物'] = submission.freqWholeGrains;
-    if (submission.freqFreshFruit) fields['新鲜水果'] = submission.freqFreshFruit;
-    if (submission.freqFruitJuice) fields['果汁'] = submission.freqFruitJuice;
-    if (submission.freqDriedFruit) fields['果干'] = submission.freqDriedFruit;
+    // 饮食频率（合并为3个字段）
+    // 谷薯与水果
+    const grainFruit: string[] = [];
+    if (submission.freqRice) grainFruit.push(`米饭: ${submission.freqRice}`);
+    if (submission.freqNoodlesBread) grainFruit.push(`面食: ${submission.freqNoodlesBread}`);
+    if (submission.freqWholeGrains) grainFruit.push(`全谷物: ${submission.freqWholeGrains}`);
+    if (submission.freqFreshFruit) grainFruit.push(`水果: ${submission.freqFreshFruit}`);
+    if (submission.freqFruitJuice) grainFruit.push(`果汁: ${submission.freqFruitJuice}`);
+    if (submission.freqDriedFruit) grainFruit.push(`果干: ${submission.freqDriedFruit}`);
+    if (grainFruit.length > 0) fields['谷薯水果'] = grainFruit.join('；');
 
-    // 06 饮食频率（2/3）- 蔬菜与蛋白质
-    if (submission.freqLeafyVegetables) fields['绿叶蔬菜'] = submission.freqLeafyVegetables;
-    if (submission.freqStarchyVegetables) fields['淀粉类蔬菜'] = submission.freqStarchyVegetables;
-    if (submission.freqOtherVegetables) fields['其他蔬菜'] = submission.freqOtherVegetables;
-    if (submission.freqEggs) fields['鸡蛋'] = submission.freqEggs;
-    if (submission.freqPoultry) fields['家禽'] = submission.freqPoultry;
-    if (submission.freqFishSeafood) fields['鱼类海鲜'] = submission.freqFishSeafood;
-    if (submission.freqBeansSoy) fields['豆类大豆'] = submission.freqBeansSoy;
-    if (submission.freqRedMeat) fields['红肉'] = submission.freqRedMeat;
+    // 蔬菜与蛋白质
+    const vegProtein: string[] = [];
+    if (submission.freqLeafyVegetables) vegProtein.push(`绿叶菜: ${submission.freqLeafyVegetables}`);
+    if (submission.freqStarchyVegetables) vegProtein.push(`淀粉菜: ${submission.freqStarchyVegetables}`);
+    if (submission.freqOtherVegetables) vegProtein.push(`其他菜: ${submission.freqOtherVegetables}`);
+    if (submission.freqEggs) vegProtein.push(`鸡蛋: ${submission.freqEggs}`);
+    if (submission.freqPoultry) vegProtein.push(`家禽: ${submission.freqPoultry}`);
+    if (submission.freqFishSeafood) vegProtein.push(`鱼虾: ${submission.freqFishSeafood}`);
+    if (submission.freqBeansSoy) vegProtein.push(`豆类: ${submission.freqBeansSoy}`);
+    if (submission.freqRedMeat) vegProtein.push(`红肉: ${submission.freqRedMeat}`);
+    if (vegProtein.length > 0) fields['蔬菜蛋白'] = vegProtein.join('；');
 
-    // 06 饮食频率（3/3）- 乳制品与零食
-    if (submission.freqMilkDairy) fields['牛奶频率'] = submission.freqMilkDairy;
-    if (submission.freqYogurt) fields['酸奶'] = submission.freqYogurt;
-    if (submission.freqCheese) fields['奶酪'] = submission.freqCheese;
-    if (submission.freqNonDairyAlternatives) fields['非乳制品替代'] = submission.freqNonDairyAlternatives;
-    if (submission.freqNutsSeeds) fields['坚果种子'] = submission.freqNutsSeeds;
-    if (submission.freqCookiesCake) fields['饼干蛋糕'] = submission.freqCookiesCake;
-    if (submission.freqChocolateCandy) fields['巧克力糖果'] = submission.freqChocolateCandy;
-    if (submission.freqSaltySnacks) fields['咸味小吃'] = submission.freqSaltySnacks;
+    // 乳制品与零食
+    const dairySnacks: string[] = [];
+    if (submission.freqMilkDairy) dairySnacks.push(`牛奶: ${submission.freqMilkDairy}`);
+    if (submission.freqYogurt) dairySnacks.push(`酸奶: ${submission.freqYogurt}`);
+    if (submission.freqCheese) dairySnacks.push(`奶酪: ${submission.freqCheese}`);
+    if (submission.freqNonDairyAlternatives) dairySnacks.push(`非乳制品: ${submission.freqNonDairyAlternatives}`);
+    if (submission.freqNutsSeeds) dairySnacks.push(`坚果: ${submission.freqNutsSeeds}`);
+    if (submission.freqCookiesCake) dairySnacks.push(`糕点: ${submission.freqCookiesCake}`);
+    if (submission.freqChocolateCandy) dairySnacks.push(`糖果: ${submission.freqChocolateCandy}`);
+    if (submission.freqSaltySnacks) dairySnacks.push(`咸零食: ${submission.freqSaltySnacks}`);
+    if (dairySnacks.length > 0) fields['乳制品零食'] = dairySnacks.join('；');
+
+    // 附件（饮食习惯中上传的文件，最多支持 10 个）
+    if (submission.uploadedDietFiles) {
+      // 解析 JSON 字符串（数据库存储为字符串）
+      let files: Array<{ name: string; url: string }> = [];
+      if (typeof submission.uploadedDietFiles === 'string') {
+        try {
+          files = JSON.parse(submission.uploadedDietFiles);
+        } catch {
+          files = [];
+        }
+      } else if (Array.isArray(submission.uploadedDietFiles)) {
+        files = submission.uploadedDietFiles;
+      }
+      // 同步到飞书
+      files.slice(0, 10).forEach((f, i) => {
+        if (f.url && f.name) {
+          fields[`附件${i + 1}`] = { link: f.url, text: f.name };
+        }
+      });
+    }
 
     return fields;
+  },
+
+  /**
+   * 格式化数组为字符串
+   */
+  formatArray(value: unknown): string {
+    if (Array.isArray(value)) {
+      return value.join('、');
+    }
+    return String(value);
   },
 };

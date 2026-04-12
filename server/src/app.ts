@@ -9,7 +9,7 @@ import form2Routes from './routes/form2.routes';
 import sleepSurveyRoutes from './routes/sleep-survey.routes';
 import nutritionSurveyRoutes from './routes/nutrition-survey.routes';
 import adminRoutes from './routes/admin.routes';
-// import uploadRoutes from './routes/upload.routes'; // TODO: 稍后启用
+import uploadRoutes from './routes/upload.routes';
 
 const app = express();
 
@@ -30,7 +30,7 @@ app.use('/api/form1', form1Routes);
 app.use('/api/form2', form2Routes);
 app.use('/api/sleep-survey', sleepSurveyRoutes);
 app.use('/api/nutrition-survey', nutritionSurveyRoutes);
-// app.use('/api/upload', uploadRoutes); // TODO: 稍后启用
+app.use('/api/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
 
 // 健康检查
