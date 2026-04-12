@@ -232,6 +232,8 @@ model NutritionSurvey {
   freqCookiesCake           String?   @map("freq_cookies_cake")          // 饼干蛋糕
   freqChocolateCandy        String?   @map("freq_chocolate_candy")       // 巧克力糖果
   freqSaltySnacks           String?   @map("freq_salty_snacks")          // 咸味小吃
+  // 07 上传的饮食记录文件
+  uploadedDietFiles         String?   @map("uploaded_diet_files")        // 上传的饮食记录文件（JSON 字符串）
   // 系统字段
   submittedAt               DateTime  @default(now()) @map("submitted_at")
   updatedAt                 DateTime  @updatedAt @map("updated_at")

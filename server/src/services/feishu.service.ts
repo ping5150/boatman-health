@@ -956,8 +956,8 @@ export const feishuService = {
       if (submission.bedtime) fields['上床睡觉时间'] = submission.bedtime;
       if (submission.sleepLatency) fields['入睡所需时长'] = submission.sleepLatency;
       if (submission.wakeTime) fields['起床时间'] = submission.wakeTime;
-      if (submission.sleepDurationHours != null) fields['睡眠时长（小时）'] = submission.sleepDurationHours;
-      if (submission.sleepDurationMinutes != null) fields['睡眠时长（分钟）'] = submission.sleepDurationMinutes;
+      if (submission.sleepDurationHours != null) fields['睡眠时长（小时）'] = String(submission.sleepDurationHours);
+      if (submission.sleepDurationMinutes != null) fields['睡眠时长（分钟）'] = String(submission.sleepDurationMinutes);
       if (submission.cantFallAsleep30min) fields['不能在30min内入睡'] = submission.cantFallAsleep30min;
       if (submission.wakeUpEarly) fields['早醒'] = submission.wakeUpEarly;
       if (submission.getUpToilet) fields['起床上洗手间'] = submission.getUpToilet;
@@ -1064,8 +1064,8 @@ export const feishuService = {
       if (submission.bedtime) fields['上床睡觉时间'] = submission.bedtime;
       if (submission.sleepLatency) fields['入睡所需时长'] = submission.sleepLatency;
       if (submission.wakeTime) fields['起床时间'] = submission.wakeTime;
-      if (submission.sleepDurationHours != null) fields['睡眠时长（小时）'] = submission.sleepDurationHours;
-      if (submission.sleepDurationMinutes != null) fields['睡眠时长（分钟）'] = submission.sleepDurationMinutes;
+      if (submission.sleepDurationHours != null) fields['睡眠时长（小时）'] = String(submission.sleepDurationHours);
+      if (submission.sleepDurationMinutes != null) fields['睡眠时长（分钟）'] = String(submission.sleepDurationMinutes);
       if (submission.cantFallAsleep30min) fields['不能在30min内入睡'] = submission.cantFallAsleep30min;
       if (submission.wakeUpEarly) fields['早醒'] = submission.wakeUpEarly;
       if (submission.getUpToilet) fields['起床上洗手间'] = submission.getUpToilet;
@@ -1249,8 +1249,8 @@ export const feishuService = {
     // 01 健康信息
     if (submission.consultationReason) fields['咨询主要原因'] = submission.consultationReason;
     if (submission.nutritionistSupportGoals) fields['希望营养师支持领域'] = submission.nutritionistSupportGoals;
-    if (submission.height != null) fields['身高'] = submission.height;
-    if (submission.weight != null) fields['体重'] = submission.weight;
+    if (submission.height != null) fields['身高'] = String(submission.height);
+    if (submission.weight != null) fields['体重'] = String(submission.weight);
     if (submission.weightChange) fields['体重变化'] = submission.weightChange;
     if (submission.chronicDiseases) fields['慢性疾病'] = submission.chronicDiseases;
     if (submission.medicationsSupplements) fields['药物或补充剂'] = submission.medicationsSupplements;
@@ -1265,8 +1265,8 @@ export const feishuService = {
     // 03 饮食习惯（2/4）
     if (submission.dislikedFoods) fields['不喜欢食物'] = submission.dislikedFoods;
     if (submission.dietPlanType) fields['特定饮食计划'] = submission.dietPlanType;
-    if (submission.typicalDietWorkday) fields['工作日饮食图片'] = { link: submission.typicalDietWorkday };
-    if (submission.typicalDietWeekend) fields['周末饮食图片'] = { link: submission.typicalDietWeekend };
+    if (submission.typicalDietWorkday) fields['工作日饮食安排'] = submission.typicalDietWorkday;
+    if (submission.typicalDietWeekend) fields['周末饮食安排'] = submission.typicalDietWeekend;
     if (submission.typicalDietDescription) fields['典型饮食描述'] = submission.typicalDietDescription;
 
     // 03 饮食习惯（3/4）- 饮品频率
@@ -1336,7 +1336,7 @@ export const feishuService = {
     if (submission.freqRedMeat) fields['红肉'] = submission.freqRedMeat;
 
     // 06 饮食频率（3/3）- 乳制品与零食
-    if (submission.freqMilkDairy) fields['牛奶'] = submission.freqMilkDairy;
+    if (submission.freqMilkDairy) fields['牛奶频率'] = submission.freqMilkDairy;
     if (submission.freqYogurt) fields['酸奶'] = submission.freqYogurt;
     if (submission.freqCheese) fields['奶酪'] = submission.freqCheese;
     if (submission.freqNonDairyAlternatives) fields['非乳制品替代'] = submission.freqNonDairyAlternatives;

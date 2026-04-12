@@ -12,38 +12,38 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/auth': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/dashboard': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/form1': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/form2': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/users': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/sync': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
       '/admin/surveys': {
-        target: 'http://118.145.239.169:3002',  // ✅ 默认连接测试环境
+        target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
     },

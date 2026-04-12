@@ -1234,7 +1234,7 @@ const HealthForm = () => {
                     security
                   </span>
                   <div>
-                    <h3 className="font-headline font-bold text-sm mb-1">隐私与独立视角承诺</h3>
+                    <h3 className="text-white/70 font-headline font-bold text-sm mb-1">隐私与独立视角承诺</h3>
                     <p className="text-white/70 text-[10px] leading-relaxed">
                       您的信息均受管家级加密保护。坚持第三方立场，剔除利益干扰，还原医学逻辑。
                     </p>

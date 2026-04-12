@@ -1,28 +1,11 @@
-import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const SurveySuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [countdown, setCountdown] = useState(5);
   const type = searchParams.get('type') || 'sleep';
   
   const title = type === 'sleep' ? '睡眠问卷' : '营养问卷';
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/account');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-6">
@@ -47,16 +30,13 @@ const SurveySuccess = () => {
         </p>
       </div>
 
-      <div className="mt-8 flex flex-col items-center gap-4">
+      <div className="mt-8">
         <button
           onClick={() => navigate('/account')}
           className="px-8 py-3 bg-secondary text-white font-bold text-sm rounded-2xl"
         >
           返回个人中心
         </button>
-        <p className="text-xs text-on-surface-variant">
-          {countdown} 秒后自动返回
-        </p>
       </div>
     </div>
   );

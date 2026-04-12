@@ -1,6 +1,8 @@
 import prisma from '../config/database';
 import { comparePassword, hashPassword } from '../utils/password';
 import { signToken } from '../utils/jwt';
+import { feishuService } from './feishu.service';
+import { logger } from '../utils/logger';
 import {
   PaginatedResult,
   UserListItem,
@@ -13,7 +15,6 @@ import {
   SyncFailedList,
   HealthFormData,
 } from '../models/common.types';
-import { logger } from '../utils/logger';
 import { generateUserId } from './auth.service';
 
 // 角色类型定义
@@ -714,6 +715,11 @@ export const adminService = {
     });
 
     logger.info('ADMIN', `User updated: id=${id}, role=${updated.role}`);
+
+    // 异步触发飞书用户更新（不阻塞响应）
+    feishuService.updateUser(updated).catch((err) => {
+      logger.error('FEISHU', `Async update user failed: id=${id}`, err);
+    });
 
     return {
       id: updated.id,

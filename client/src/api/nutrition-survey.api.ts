@@ -93,6 +93,13 @@ export interface NutritionSurveyData {
   freqCookiesCake?: string;
   freqChocolateCandy?: string;
   freqSaltySnacks?: string;
+  // 07 上传的饮食记录文件
+  uploadedDietFiles?: Array<{
+    name: string;
+    size: number;
+    url: string;
+    type: 'pdf' | 'image' | 'doc' | 'other';
+  }>;
 }
 
 /** 营养问卷列表项 */
@@ -139,6 +146,7 @@ export const submitNutritionSurvey = async (data: NutritionSurveyData): Promise<
   if (Array.isArray(payload.foodSources)) payload.foodSources = (payload.foodSources as string[]).join(',');
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
+  if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
 
   const res = await api.post('/nutrition-survey', payload);
   const result = res.data.data;
@@ -182,6 +190,14 @@ export const getNutritionSurveyDetail = async (id: number): Promise<NutritionSur
     if (typeof data.formData.socialActivities === 'string') {
       data.formData.socialActivities = data.formData.socialActivities ? data.formData.socialActivities.split(',') : [];
     }
+    // 将 JSON 字符串转换为数组
+    if (typeof data.formData.uploadedDietFiles === 'string' && data.formData.uploadedDietFiles) {
+      try {
+        data.formData.uploadedDietFiles = JSON.parse(data.formData.uploadedDietFiles);
+      } catch {
+        data.formData.uploadedDietFiles = [];
+      }
+    }
   }
   return data;
 };
@@ -205,6 +221,14 @@ export const getLatestNutritionSurvey = async (): Promise<NutritionSurveyDetail 
     if (typeof data.formData.socialActivities === 'string') {
       data.formData.socialActivities = data.formData.socialActivities ? data.formData.socialActivities.split(',') : [];
     }
+    // 将 JSON 字符串转换为数组
+    if (typeof data.formData.uploadedDietFiles === 'string' && data.formData.uploadedDietFiles) {
+      try {
+        data.formData.uploadedDietFiles = JSON.parse(data.formData.uploadedDietFiles);
+      } catch {
+        data.formData.uploadedDietFiles = [];
+      }
+    }
   }
   return data;
 };
@@ -222,6 +246,7 @@ export const updateNutritionSurvey = async (
   if (Array.isArray(payload.foodSources)) payload.foodSources = (payload.foodSources as string[]).join(',');
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
+  if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
 
   const res = await api.put(`/nutrition-survey/${id}`, payload);
   const result = res.data.data;
@@ -253,6 +278,7 @@ export const saveNutritionDraft = async (
   if (Array.isArray(payload.foodSources)) payload.foodSources = (payload.foodSources as string[]).join(',');
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
+  if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
 
   const res = await api.post('/nutrition-survey/draft', payload);
   const result = res.data.data;

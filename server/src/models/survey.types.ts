@@ -151,6 +151,8 @@ export interface NutritionSurveyData {
   freqCookiesCake?: string;          // 饼干蛋糕
   freqChocolateCandy?: string;       // 巧克力糖果
   freqSaltySnacks?: string;          // 咸味小吃
+  // 07 上传的饮食记录文件
+  uploadedDietFiles?: string;        // 上传的饮食记录文件（JSON 字符串）
 }
 
 /** 营养问卷列表项 */

@@ -80,27 +80,52 @@ const SleepSurvey = () => {
         return;
       }
 
-      // 正常模式：尝试加载已有数据
+      // 正常模式：优先从服务器加载数据
       try {
-        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setFormData({ ...initialFormData, ...parsed.formData });
-          if (parsed.surveyId) setSurveyId(parsed.surveyId);
-          setLoading(false);
-          return;
-        }
-
         const survey = await getLatestSleepSurvey();
+        
         if (survey?.formData) {
+          // 服务器有数据：使用服务器数据，并保存到本地
           setFormData({ ...initialFormData, ...survey.formData });
           setSurveyId(survey.id);
-        } else if (user) {
-          setFormData(prev => ({ ...prev, name: user.username || '', phone: user.phone || '' }));
+        } else {
+          // 服务器无数据：检查本地是否有草稿（用户可能中断填写）
+          const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            
+            // 校验用户ID：只有当前用户的缓存数据才能恢复
+            const isCurrentUserCache = parsed.userId && user?.id && parsed.userId === user.id;
+            
+            if (!isCurrentUserCache) {
+              // 非当前用户的缓存：清除本地存储，保持空白
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+            } else {
+              // 当前用户的缓存：检查是否有有效的填写内容
+              const hasLocalContent = parsed.formData && 
+                Object.entries(parsed.formData).some(([key, value]) => {
+                  // 排除 name 和 phone 字段，检查其他字段是否有值
+                  if (key === 'name' || key === 'phone') return false;
+                  if (typeof value === 'string') return value.trim() !== '';
+                  if (typeof value === 'number') return value !== 0;
+                  return Boolean(value);
+                });
+              
+              if (hasLocalContent && parsed.surveyId) {
+                // 有有效草稿：恢复草稿
+                setFormData({ ...initialFormData, ...parsed.formData });
+                setSurveyId(parsed.surveyId);
+              } else {
+                // 无有效草稿：清除本地存储，保持空白
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+              }
+            }
+          }
+          // 如果本地也没有数据，保持表单为空白（initialFormData）
         }
       } catch (error) {
         console.error('加载问卷失败:', error);
-        if (user) setFormData(prev => ({ ...prev, name: user.username || '', phone: user.phone || '' }));
+        // 网络错误时不自动填充，保持空白
       } finally {
         setLoading(false);
       }
@@ -112,10 +137,11 @@ const SleepSurvey = () => {
     const dataToSave = {
       formData,
       surveyId,
+      userId: user?.id, // 添加用户ID到缓存数据
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [formData, surveyId]);
+  }, [formData, surveyId, user?.id]);
 
   const showSaveIndicator = useCallback(() => {
     setSaveIndicator(true);
@@ -138,8 +164,24 @@ const SleepSurvey = () => {
 
     setSaving(true);
     try {
-      if (surveyId) await updateSleepSurvey(surveyId, formData);
-      else { const result = await saveSleepDraft(formData); setSurveyId(result.data.id); }
+      if (surveyId) {
+        try {
+          await updateSleepSurvey(surveyId, formData);
+        } catch (updateError: unknown) {
+          // 如果更新失败（如记录不存在），重新创建草稿
+          const err = updateError as { response?: { data?: { code?: number } } };
+          if (err.response?.data?.code === 404) {
+            console.log('问卷记录不存在，重新创建草稿');
+            const result = await saveSleepDraft(formData);
+            setSurveyId(result.data.id);
+          } else {
+            throw updateError;
+          }
+        }
+      } else {
+        const result = await saveSleepDraft(formData);
+        setSurveyId(result.data.id);
+      }
       showSaveIndicator();
     } catch (error) {
       console.error('保存失败:', error);
@@ -150,14 +192,31 @@ const SleepSurvey = () => {
     }
   };
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 步骤变化时自动滚动到顶部
+  useEffect(() => {
+    // 使用多种方式确保滚动到顶部，兼容不同浏览器和场景
+    const scrollToTop = () => {
+      // 方式1: 直接设置 scrollTop（最可靠）
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      // 方式2: scrollTo 方法
+      window.scrollTo(0, 0);
+    };
+
+    // 立即执行一次
+    scrollToTop();
+
+    // 在下一个事件循环再执行一次，确保 DOM 完全渲染
+    const timer = setTimeout(scrollToTop, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   const handleNextStep = async () => {
     try {
       await handleSaveStep();
       if (currentStep < TOTAL_STEPS - 1) {
         setCurrentStep(prev => prev + 1);
-        scrollToTop();
       }
     } catch {}
   };
@@ -165,7 +224,6 @@ const SleepSurvey = () => {
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
-      scrollToTop();
     }
   };
 
@@ -178,8 +236,18 @@ const SleepSurvey = () => {
 
     setSaving(true);
     try {
-      if (surveyId) await updateSleepSurvey(surveyId, formData);
-      else await submitSleepSurvey(formData);
+      console.log('提交睡眠问卷, surveyId:', surveyId, 'formData:', formData);
+      let result;
+      if (surveyId) {
+        result = await updateSleepSurvey(surveyId, formData);
+        console.log('更新问卷结果:', result);
+      } else {
+        result = await submitSleepSurvey(formData);
+        console.log('提交问卷结果:', result);
+      }
+      console.log('准备跳转到成功页面');
+      // 清除本地草稿
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
       navigate('/survey-success?type=sleep');
     } catch (error) {
       console.error('提交失败:', error);
@@ -260,8 +328,8 @@ const SleepSurvey = () => {
 
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
                   {/* Q1: 上床时间 */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                  <div className="space-y-3">
+                    <label className="text-base font-semibold text-primary px-1">
                       1. 过去一个月通常上床睡觉的时间是？
                     </label>
                     <div className="relative">
@@ -278,8 +346,8 @@ const SleepSurvey = () => {
                   </div>
 
                   {/* Q2: 入睡时间 */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                  <div className="space-y-3">
+                    <label className="text-base font-semibold text-primary px-1">
                       2. 过去一个月每晚通常需要多长时间才能入睡？
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -300,8 +368,8 @@ const SleepSurvey = () => {
                   </div>
 
                   {/* Q3: 起床时间 */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                  <div className="space-y-3">
+                    <label className="text-base font-semibold text-primary px-1">
                       3. 过去一个月每天早上通常什么时候起床？
                     </label>
                     <div className="relative">
@@ -318,8 +386,8 @@ const SleepSurvey = () => {
                   </div>
 
                   {/* Q4: 实际睡眠时间 */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                  <div className="space-y-3">
+                    <label className="text-base font-semibold text-primary px-1">
                       4. 过去一个月每晚实际睡眠时间有多少？
                     </label>
                     <div className="flex items-center gap-4">
@@ -388,8 +456,8 @@ const SleepSurvey = () => {
                 <p className="text-on-surface-variant text-sm mb-8">请填写过去一个月的睡眠干扰情况</p>
 
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
+                  <div className="space-y-3">
+                    <label className="text-base font-semibold text-primary px-1">
                       5. 过去一个月是否因为以下问题而经常睡眠不好？
                     </label>
                   </div>
@@ -676,10 +744,9 @@ const SleepSurvey = () => {
 
                   {/* Q6: 睡眠质量评分 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">6</span>
-                      <p className="text-sm font-semibold text-primary">对过去一个月睡眠质量评分</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      6. 对过去一个月睡眠质量评分
+                    </label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { value: '非常好', icon: 'sentiment_very_satisfied' },
@@ -741,10 +808,9 @@ const SleepSurvey = () => {
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
                   {/* Q7 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">7</span>
-                      <p className="text-sm font-semibold text-primary">近1个月使用催眠药物的情况</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      7. 近1个月使用催眠药物的情况
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周不足1晚', '每周1-2晚', '每周3晚或更多'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -763,10 +829,9 @@ const SleepSurvey = () => {
 
                   {/* Q8 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">8</span>
-                      <p className="text-sm font-semibold text-primary">过去1个月在开车、吃饭或参加社会活动时难以保持清醒状态？</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      8. 过去1个月在开车、吃饭或参加社会活动时难以保持清醒状态？
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周不足1晚', '每周1-2晚', '每周3晚或更多'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -785,10 +850,9 @@ const SleepSurvey = () => {
 
                   {/* Q9 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">9</span>
-                      <p className="text-sm font-semibold text-primary">过去1个月在积极完成事情上有无困难？</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      9. 过去1个月在积极完成事情上有无困难？
+                    </label>
                     <div className="space-y-2">
                       {['没有困难', '有一点困难', '比较困难', '非常困难'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -807,10 +871,9 @@ const SleepSurvey = () => {
 
                   {/* Q10 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">10</span>
-                      <p className="text-sm font-semibold text-primary">是否与人同睡一床</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      10. 是否与人同睡一床
+                    </label>
                     <div className="space-y-2">
                       {[
                         '没有与人同睡',
@@ -868,10 +931,9 @@ const SleepSurvey = () => {
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
                   {/* Q11 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">11</span>
-                      <p className="text-sm font-semibold text-primary">在你睡觉时，有无打鼾声</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      11. 在你睡觉时，有无打鼾声
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周平均不足1个晚上', '每周平均1-2个晚上', '每周平均3个或更多晚上'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -890,10 +952,9 @@ const SleepSurvey = () => {
 
                   {/* Q12 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">12</span>
-                      <p className="text-sm font-semibold text-primary">在你睡觉时，呼吸之间有没有长时间停顿</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      12. 在你睡觉时，呼吸之间有没有长时间停顿
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周平均不足1个晚上', '每周平均1-2个晚上', '每周平均3个或更多晚上'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -912,10 +973,9 @@ const SleepSurvey = () => {
 
                   {/* Q13 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">13</span>
-                      <p className="text-sm font-semibold text-primary">在你睡觉时，你的腿有无抽动或者有痉挛</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      13. 在你睡觉时，你的腿有无抽动或者有痉挛
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周平均不足1个晚上', '每周平均1-2个晚上', '每周平均3个或更多晚上'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -934,10 +994,9 @@ const SleepSurvey = () => {
 
                   {/* Q14 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">14</span>
-                      <p className="text-sm font-semibold text-primary">在你睡觉时是否出现不能辨认方向或混乱状态</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      14. 在你睡觉时是否出现不能辨认方向或混乱状态
+                    </label>
                     <div className="space-y-2">
                       {['过去1个月没有', '每周平均不足1个晚上', '每周平均1-2个晚上', '每周平均3个或更多晚上'].map(opt => (
                         <label key={opt} className="flex items-center p-4 rounded-2xl bg-surface border-none cursor-pointer hover:bg-surface-container-low transition-all">
@@ -956,10 +1015,9 @@ const SleepSurvey = () => {
 
                   {/* Q15 */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">15</span>
-                      <p className="text-sm font-semibold text-primary">在你睡觉时你有无其他睡不安宁的情况</p>
-                    </div>
+                    <label className="text-base font-semibold text-primary px-1">
+                      15. 在你睡觉时你有无其他睡不安宁的情况
+                    </label>
                     <textarea
                       value={formData.otherRestlessSleep || ''}
                       onChange={e => updateField('otherRestlessSleep', e.target.value)}

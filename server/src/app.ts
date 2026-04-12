@@ -6,8 +6,8 @@ import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
 import form1Routes from './routes/form1.routes';
 import form2Routes from './routes/form2.routes';
-// import sleepSurveyRoutes from './routes/sleep-survey.routes'; // TODO: 稍后启用
-// import nutritionSurveyRoutes from './routes/nutrition-survey.routes'; // TODO: 稍后启用
+import sleepSurveyRoutes from './routes/sleep-survey.routes';
+import nutritionSurveyRoutes from './routes/nutrition-survey.routes';
 import adminRoutes from './routes/admin.routes';
 // import uploadRoutes from './routes/upload.routes'; // TODO: 稍后启用
 
@@ -28,8 +28,8 @@ app.use((req, _res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/form1', form1Routes);
 app.use('/api/form2', form2Routes);
-// app.use('/api/sleep-survey', sleepSurveyRoutes); // TODO: 稍后启用
-// app.use('/api/nutrition-survey', nutritionSurveyRoutes); // TODO: 稍后启用
+app.use('/api/sleep-survey', sleepSurveyRoutes);
+app.use('/api/nutrition-survey', nutritionSurveyRoutes);
 // app.use('/api/upload', uploadRoutes); // TODO: 稍后启用
 app.use('/admin', adminRoutes);
 

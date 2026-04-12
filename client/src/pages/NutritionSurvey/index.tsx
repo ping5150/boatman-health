@@ -7,16 +7,25 @@ import {
   updateNutritionSurvey,
   NutritionSurveyData,
 } from '@/api/nutrition-survey.api';
+import { uploadFile } from '@/api/upload.api';
 import { useUser } from '@/contexts/UserContext';
 
-const TOTAL_STEPS = 10;
+// 上传文件类型
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  progress: number;
+  status: 'uploading' | 'success' | 'error';
+  url?: string;
+  type?: 'pdf' | 'image' | 'doc' | 'other';
+}
+
+const TOTAL_STEPS = 12;
 const LOCAL_STORAGE_KEY = 'nutrition_survey_draft';
 
 // 频率选项
 const FREQ_OPTIONS = ['每天', '每周3-6次', '每周1-2次', '每月1-3次', '几乎不', '从不'];
-
-// 是/否选项
-const YES_NO = ['是', '否'];
 
 const initialFormData: NutritionSurveyData = {
   name: '',
@@ -96,6 +105,7 @@ const initialFormData: NutritionSurveyData = {
   freqCookiesCake: '',
   freqChocolateCandy: '',
   freqSaltySnacks: '',
+  uploadedDietFiles: [],
 };
 
 const NutritionSurvey = () => {
@@ -107,11 +117,10 @@ const NutritionSurvey = () => {
   const [surveyId, setSurveyId] = useState<number | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [uploadedDietFiles, setUploadedDietFiles] = useState<UploadedFile[]>([]);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
-  const mainRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,45 +149,100 @@ const NutritionSurvey = () => {
         return;
       }
 
-      // 正常模式：尝试加载已有数据
+      // 正常模式：优先从服务器加载数据
       try {
-        // 先尝试从localStorage加载
-        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setFormData({ ...initialFormData, ...parsed.formData });
-          if (parsed.surveyId) setSurveyId(parsed.surveyId);
-          setLoading(false);
-          return;
-        }
-
-        // 如果localStorage没有，从服务器加载
         const survey = await getLatestNutritionSurvey();
+        
         if (survey?.formData) {
+          // 服务器有数据：使用服务器数据
           setFormData({ ...initialFormData, ...survey.formData });
           setSurveyId(survey.id);
-        } else if (user) {
-          setFormData(prev => ({ ...prev, name: user.username || '', phone: user.phone || '' }));
+
+          // 恢复已上传的文件列表
+          if (survey.formData.uploadedDietFiles && survey.formData.uploadedDietFiles.length > 0) {
+            setUploadedDietFiles(survey.formData.uploadedDietFiles.map(f => ({
+              id: f.url || Date.now().toString() + Math.random().toString(36).slice(2, 11),
+              name: f.name,
+              size: f.size,
+              progress: 100,
+              status: 'success' as const,
+              url: f.url,
+              type: f.type,
+            })));
+          }
+        } else {
+          // 服务器无数据：检查本地是否有草稿（用户可能中断填写）
+          const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            
+            // 校验用户ID：只有当前用户的缓存数据才能恢复
+            const isCurrentUserCache = parsed.userId && user?.id && parsed.userId === user.id;
+            
+            if (!isCurrentUserCache) {
+              // 非当前用户的缓存：清除本地存储，保持空白
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+            } else {
+              // 当前用户的缓存：检查是否有有效的填写内容
+              const hasLocalContent = parsed.formData && 
+                Object.entries(parsed.formData).some(([key, value]) => {
+                  // 排除 name 和 phone 字段，检查其他字段是否有值
+                  if (key === 'name' || key === 'phone') return false;
+                  if (typeof value === 'string') return value.trim() !== '';
+                  if (typeof value === 'number') return value !== 0;
+                  if (Array.isArray(value)) return value.length > 0;
+                  return Boolean(value);
+                });
+              
+              if (hasLocalContent && parsed.surveyId) {
+                // 有有效草稿：恢复草稿
+                setFormData({ ...initialFormData, ...parsed.formData });
+                setSurveyId(parsed.surveyId);
+              } else {
+                // 无有效草稿：清除本地存储，保持空白
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+              }
+            }
+          }
+          // 如果本地也没有数据，保持表单为空白（initialFormData）
         }
       } catch (error) {
         console.error('加载问卷失败:', error);
-        if (user) setFormData(prev => ({ ...prev, name: user.username || '', phone: user.phone || '' }));
+        // 网络错误时不自动填充，保持空白
       } finally {
         setLoading(false);
       }
     };
     loadLatest();
-  }, [user]);
+  }, [user, isPreviewMode]);
 
   // localStorage实时自动保存
+  useEffect(() => {
+    // 将上传的文件同步到 formData
+    if (uploadedDietFiles.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        uploadedDietFiles: uploadedDietFiles
+          .filter(f => f.status === 'success' && f.url)
+          .map(f => ({
+            name: f.name,
+            size: f.size,
+            url: f.url!,
+            type: f.type || 'other',
+          })),
+      }));
+    }
+  }, [uploadedDietFiles]);
+
   useEffect(() => {
     const dataToSave = {
       formData,
       surveyId,
+      userId: user?.id, // 添加用户ID到缓存数据
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [formData, surveyId]);
+  }, [formData, surveyId, user?.id]);
 
   const showSaveIndicator = useCallback(() => { setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); }, []);
 
@@ -193,30 +257,69 @@ const NutritionSurvey = () => {
     updateField(field, updated);
   };
 
-  // 手势滑动处理
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+  // 处理文件选择
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      // 限制文件大小 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        showToast(`文件 ${file.name} 超过 50MB 限制`);
+        return;
+      }
+
+      const fileId = Date.now().toString() + Math.random().toString(36).slice(2, 11);
+      const fileType: UploadedFile['type'] = file.name.endsWith('.pdf') ? 'pdf' :
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name) ? 'image' :
+        /\.(doc|docx)$/i.test(file.name) ? 'doc' : 'other';
+
+      const newFile: UploadedFile = {
+        id: fileId,
+        name: file.name,
+        size: file.size,
+        progress: 0,
+        status: 'uploading',
+        type: fileType,
+      };
+
+      setUploadedDietFiles((prev) => [...prev, newFile]);
+
+      // 调用上传 API
+      uploadFile(file, (percent) => {
+        setUploadedDietFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: Math.min(percent, 99) } : f))
+        );
+      }).then((result) => {
+        setUploadedDietFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? {
+            ...f,
+            progress: 100,
+            status: 'success' as const,
+            url: result.url,
+          } : f))
+        );
+      }).catch(() => {
+        setUploadedDietFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: 0, status: 'error' as const } : f))
+        );
+        showToast(`文件 ${file.name} 上传失败`);
+      });
+    });
+
+    e.target.value = '';
   };
 
-  const handleTouchEnd = async () => {
-    const diff = touchStartX.current - touchEndX.current;
-    const threshold = 50;
-
-    if (Math.abs(diff) < threshold || isTransitioning) return;
-
-    if (diff > 0 && currentStep < TOTAL_STEPS - 1) {
-      setIsTransitioning(true);
-      await handleNextStep();
-      setTimeout(() => setIsTransitioning(false), 300);
-    } else if (diff < 0 && currentStep > 0) {
-      setIsTransitioning(true);
-      handlePrevStep();
-      setTimeout(() => setIsTransitioning(false), 300);
-    }
+  // 移除文件
+  const removeDietFile = (fileId: string) => {
+    setUploadedDietFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
   const validateStep1 = (): boolean => {
@@ -229,6 +332,19 @@ const NutritionSurvey = () => {
     return true;
   };
 
+  // 清理表单数据：移除无效的数值字段（0 值会被后端 positive() 校验拒绝）
+  const cleanFormData = (data: NutritionSurveyData): Partial<NutritionSurveyData> => {
+    const cleaned: Partial<NutritionSurveyData> = { ...data };
+    // 移除值为 0 的数值字段，避免后端 positive() 校验失败
+    if (cleaned.height === 0 || cleaned.height === undefined || cleaned.height === null) {
+      delete cleaned.height;
+    }
+    if (cleaned.weight === 0 || cleaned.weight === undefined || cleaned.weight === null) {
+      delete cleaned.weight;
+    }
+    return cleaned;
+  };
+
   const handleSaveStep = async () => {
     // 预览模式：只保存到本地存储，不调用 API
     if (isPreviewMode) {
@@ -238,8 +354,25 @@ const NutritionSurvey = () => {
 
     setSaving(true);
     try {
-      if (surveyId) await updateNutritionSurvey(surveyId, formData);
-      else { const result = await saveNutritionDraft(formData); setSurveyId(result.data.id); }
+      const cleanedData = cleanFormData(formData);
+      if (surveyId) {
+        try {
+          await updateNutritionSurvey(surveyId, cleanedData);
+        } catch (updateError: unknown) {
+          // 如果更新失败（如记录不存在），重新创建草稿
+          const err = updateError as { response?: { data?: { code?: number } } };
+          if (err.response?.data?.code === 404) {
+            console.log('问卷记录不存在，重新创建草稿');
+            const result = await saveNutritionDraft(cleanedData);
+            setSurveyId(result.data.id);
+          } else {
+            throw updateError;
+          }
+        }
+      } else {
+        const result = await saveNutritionDraft(cleanedData);
+        setSurveyId(result.data.id);
+      }
       showSaveIndicator();
     } catch (error) {
       console.error('保存失败:', error);
@@ -250,21 +383,77 @@ const NutritionSurvey = () => {
     }
   };
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 步骤变化时自动滚动到顶部
+  useEffect(() => {
+    // 使用多种方式确保滚动到顶部，兼容不同浏览器和场景
+    const scrollToTop = () => {
+      // 方式1: 直接设置 scrollTop（最可靠）
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      // 方式2: scrollTo 方法
+      window.scrollTo(0, 0);
+    };
+
+    // 立即执行一次
+    scrollToTop();
+
+    // 在下一个事件循环再执行一次，确保 DOM 完全渲染
+    const timer = setTimeout(scrollToTop, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
+  // 判断是否跳过步骤6、7（运动习惯详情）
+  const shouldSkipExerciseDetails = formData.exerciseLevel === '日常活动量';
+
+  // 判断是否跳过步骤10、11、12（饮食频率详情）
+  const shouldSkipDietFrequency = !!(formData.typicalDietDescription && formData.typicalDietDescription.trim());
+
+  // 切换步骤后滚动到顶部
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleNextStep = async () => {
     if (currentStep === 0 && !validateStep1()) return;
     try {
       await handleSaveStep();
-      if (currentStep < TOTAL_STEPS - 1) { setCurrentStep(prev => prev + 1); scrollToTop(); }
+      if (currentStep < TOTAL_STEPS - 1) {
+        let nextStep = currentStep + 1;
+
+        // 步骤5 -> 如果选择"日常活动量"，跳过步骤6、7
+        if (currentStep === 4 && shouldSkipExerciseDetails) {
+          nextStep = 7; // 跳到步骤8
+        }
+
+        // 步骤9 -> 如果已填写典型饮食描述，跳过步骤10、11、12
+        if (currentStep === 8 && shouldSkipDietFrequency) {
+          nextStep = 11; // 跳到步骤12（最后一步）
+        }
+
+        setCurrentStep(nextStep);
+        scrollToTop();
+      }
     } catch {}
   };
 
-  const handlePrevStep = () => { if (currentStep > 0) { setCurrentStep(prev => prev - 1); scrollToTop(); } };
+  const handlePrevStep = () => {
+    if (currentStep > 0) {
+      let prevStep = currentStep - 1;
 
-  const goToStep = async (index: number) => {
-    if (index === currentStep) return;
-    try { if (index > currentStep) await handleSaveStep(); setCurrentStep(index); scrollToTop(); } catch {}
+      // 步骤8 -> 如果跳过了步骤6、7，返回步骤5
+      if (currentStep === 7 && shouldSkipExerciseDetails) {
+        prevStep = 4; // 返回步骤5
+      }
+
+      // 步骤12 -> 如果跳过了步骤10、11，返回步骤9
+      if (currentStep === 11 && shouldSkipDietFrequency) {
+        prevStep = 8; // 返回步骤9
+      }
+
+      setCurrentStep(prevStep);
+      scrollToTop();
+    }
   };
 
   const handleFinalSubmit = async () => {
@@ -276,8 +465,31 @@ const NutritionSurvey = () => {
 
     setSaving(true);
     try {
-      if (surveyId) await updateNutritionSurvey(surveyId, formData);
-      else await submitNutritionSurvey(formData);
+      // 将上传的文件数据添加到表单数据中
+      const submitData: NutritionSurveyData = {
+        ...formData,
+        uploadedDietFiles: uploadedDietFiles
+          .filter(f => f.status === 'success' && f.url)
+          .map(f => ({
+            name: f.name,
+            size: f.size,
+            url: f.url!,
+            type: f.type || 'other',
+          })),
+      };
+
+      console.log('提交营养问卷, surveyId:', surveyId, 'formData:', submitData);
+      let result;
+      if (surveyId) {
+        result = await updateNutritionSurvey(surveyId, cleanFormData(submitData));
+        console.log('更新问卷结果:', result);
+      } else {
+        result = await submitNutritionSurvey(submitData);
+        console.log('提交问卷结果:', result);
+      }
+      console.log('准备跳转到成功页面');
+      // 清除本地草稿
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
       navigate('/survey-success?type=nutrition');
     } catch (error) {
       console.error('提交失败:', error);
@@ -287,63 +499,60 @@ const NutritionSurvey = () => {
     }
   };
 
-  const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
+  // 动态计算实际步骤数和当前步骤序号
+  const getActualStepInfo = () => {
+    // 基础步骤: 1(健康信息), 2(饮食1), 3(饮食2), 4(饮食3), 5(饮食4)
+    // 条件步骤: 6,7(运动详情 - 取决于是否选择"日常活动量")
+    // 基础步骤: 8(生活1), 9(生活2)
+    // 条件步骤: 10,11,12(饮食频率 - 取决于是否已填写典型饮食)
+
+    let actualStep = currentStep + 1; // 1-based
+    let totalActualSteps = TOTAL_STEPS;
+
+    // 如果跳过运动详情（步骤6、7）
+    if (shouldSkipExerciseDetails) {
+      totalActualSteps -= 2; // 总步骤减少2
+      if (currentStep >= 7) {
+        actualStep -= 2; // 当前步骤序号减少2
+      }
+    }
+
+    // 如果跳过饮食频率详情（步骤10、11）
+    if (shouldSkipDietFrequency) {
+      totalActualSteps -= 2; // 总步骤减少2（跳过10、11，保留12作为最后一步）
+      if (currentStep >= 11) {
+        actualStep -= 2; // 当前步骤序号减少2
+      }
+    }
+
+    return { actualStep, totalActualSteps };
+  };
+
+  const { actualStep, totalActualSteps } = getActualStepInfo();
+  const progress = (actualStep / totalActualSteps) * 100;
 
   if (loading) {
     return <div className="min-h-screen bg-surface flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   }
 
-  // 渲染单选按钮组
-  const renderRadioGroup = (field: keyof NutritionSurveyData, options: string[], cols = 2) => (
-    <div className={`grid grid-cols-${cols} gap-2`}>
-      {options.map(opt => (
-        <label key={opt} className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer text-sm ${formData[field] === opt ? 'bg-secondary/10 border border-secondary/30' : 'bg-surface'}`}>
-          <input type="radio" name={field} checked={formData[field] === opt} onChange={() => updateField(field, opt)} className="text-secondary" />
-          {opt}
-        </label>
-      ))}
-    </div>
-  );
-
-  // 渲染多选按钮组
-  const renderCheckboxGroup = (field: keyof NutritionSurveyData, options: string[]) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map(opt => (
-        <label key={opt} className={`px-3 py-2 rounded-full text-xs cursor-pointer ${((formData[field] as string[]) || []).includes(opt) ? 'bg-secondary text-white' : 'bg-surface border border-outline-variant/30'}`}>
-          <input type="checkbox" checked={((formData[field] as string[]) || []).includes(opt)} onChange={() => toggleArray(field, opt)} className="hidden" />
-          {opt}
-        </label>
-      ))}
-    </div>
-  );
-
-  // 渲染频率选择器
-  const renderFreqSelector = (field: keyof NutritionSurveyData, label: string) => (
-    <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-      <p className="text-sm font-medium mb-2">{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {FREQ_OPTIONS.map(opt => (
-          <label key={opt} className={`px-3 py-1.5 rounded-full text-xs cursor-pointer ${formData[field] === opt ? 'bg-secondary text-white' : 'bg-surface border border-outline-variant/30'}`}>
-            <input type="radio" name={field} checked={formData[field] === opt} onChange={() => updateField(field, opt)} className="hidden" />
-            {opt}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="flex flex-col h-screen bg-surface">
+    <div className="flex flex-col h-screen bg-surface overflow-x-hidden">
       {/* 顶部导航 & 进度条 */}
       <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shrink-0">
         <div className="grid grid-cols-3 items-center w-full px-4 py-3">
           <div className="flex justify-start">
             {currentStep > 0 ? (
-              <button onClick={handlePrevStep} className="text-primary hover:opacity-70 transition-opacity">
+              <button
+                onClick={handlePrevStep}
+                className="text-primary hover:opacity-70 transition-opacity"
+              >
                 <span className="material-symbols-outlined">arrow_back</span>
               </button>
             ) : (
-              <button onClick={() => navigate(-1)} className="text-primary hover:opacity-70 transition-opacity">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-primary hover:opacity-70 transition-opacity"
+              >
                 <span className="material-symbols-outlined">arrow_back</span>
               </button>
             )}
@@ -352,7 +561,10 @@ const NutritionSurvey = () => {
             <h1 className="font-headline font-bold tracking-tight text-lg text-primary">船夫健康</h1>
           </div>
           <div className="flex justify-end items-center gap-2">
-            <span id="save-indicator" className={`text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full transition-opacity duration-300 ${saveIndicator ? 'opacity-100' : 'opacity-0'}`}>
+            <span
+              id="save-indicator"
+              className={`text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full transition-opacity duration-300 ${saveIndicator ? 'opacity-100' : 'opacity-0'}`}
+            >
               已保存
             </span>
             <span className="material-symbols-outlined text-primary text-xl">account_circle</span>
@@ -362,422 +574,1628 @@ const NutritionSurvey = () => {
         {/* 进度条 */}
         <div className="w-full px-4 pb-2">
           <div className="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
-            <div className="h-full bg-secondary transition-all duration-500 ease-out rounded-full" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
       </header>
 
       {/* 主体内容区域 */}
-      <main 
-        ref={mainRef}
-        className="relative pb-28"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-          
-          {/* ================= 步骤 1: 基本信息 ================= */}
-          {currentStep === 0 && (
-            <div className="px-4 pb-4">
-              <div className="max-w-md mx-auto pt-2">
-                <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
-                  Step 1 of {TOTAL_STEPS}
-                </span>
-                <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">基本信息</h2>
-                <p className="text-on-surface-variant text-sm mb-8">开启您的私人管家级营养健康管理。</p>
+      <main className="relative pb-28 overflow-x-hidden">
+        <div className="transition-all duration-300 opacity-100">
+        
+        {/* ================= 步骤 1: 健康信息 ================= */}
+        {currentStep === 0 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">健康信息</h2>
+              <p className="text-on-surface-variant text-sm mb-8">为了提供精准的私人管家式营养服务，请详细填写您的基础现状与核心诉求。</p>
 
-                <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
-                      姓名 <span className="text-error">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      value={formData.name} 
-                      onChange={e => updateField('name', e.target.value)} 
-                      className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.name ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
-                      placeholder="请输入姓名" 
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+              {/* 咨询主要原因 */}
+              <div className="space-y-2">
+                <label className="block">
+                  <span className="text-primary font-bold text-base mb-1.5 block leading-snug">您此次咨询的主要原因或关注点是什么？</span>
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)]"
+                    placeholder="例如：近期感到疲劳、希望通过饮食改善血糖等..."
+                    rows={2}
+                    value={formData.consultationReason || ''}
+                    onChange={e => updateField('consultationReason', e.target.value)}
+                  />
+                </label>
+              </div>
+              {/* 希望营养师支持领域 */}
+              <div className="space-y-2">
+                <label className="block">
+                  <span className="text-primary font-bold text-base mb-1.5 block leading-snug">您希望营养师在哪些具体目标或领域上为您提供支持？</span>
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)]"
+                    placeholder="例如：减脂增肌方案、慢病调理、每日配餐建议等..."
+                    rows={2}
+                    value={formData.nutritionistSupportGoals || ''}
+                    onChange={e => updateField('nutritionistSupportGoals', e.target.value)}
+                  />
+                </label>
+              </div>
+              {/* 基础体征 */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-[2px] bg-secondary" />
+                  <h2 className="font-headline font-bold text-base text-primary tracking-tight">基础体征</h2>
+                </div>
+                {/* 姓名和电话 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
+                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">姓名 <span className="text-error">*</span></span>
+                    <input
+                      className="bg-transparent border-none p-0 text-base font-headline font-bold text-primary w-full focus:ring-0 placeholder:text-outline-variant"
+                      placeholder="请输入"
+                      type="text"
+                      value={formData.name}
+                      onChange={e => updateField('name', e.target.value)}
                     />
-                    {fieldErrors.name && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.name}</p>}
+                    {fieldErrors.name && <p className="text-error text-[10px] mt-1">{fieldErrors.name}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">
-                      联系电话 <span className="text-error">*</span>
-                    </label>
-                    <input 
-                      type="tel" 
-                      value={formData.phone} 
-                      onChange={e => updateField('phone', e.target.value)} 
-                      className={`w-full bg-surface border rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input transition-colors ${fieldErrors.phone ? 'border-error/60 ring-1 ring-error/30' : 'border-transparent'}`}
-                      placeholder="请输入手机号" 
+                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
+                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">电话 <span className="text-error">*</span></span>
+                    <input
+                      className="bg-transparent border-none p-0 text-base font-headline font-bold text-primary w-full focus:ring-0 placeholder:text-outline-variant"
+                      placeholder="请输入"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={e => updateField('phone', e.target.value)}
                     />
-                    {fieldErrors.phone && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.phone}</p>}
+                    {fieldErrors.phone && <p className="text-error text-[10px] mt-1">{fieldErrors.phone}</p>}
                   </div>
                 </div>
-
-                {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
-                  <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
-                  >
-                    返回
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    disabled={saving}
-                    className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
-                  >
-                    {saving ? '保存中...' : '下一步'}
-                  </button>
+                {/* 身高和体重 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
+                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">身高</span>
+                    <div className="flex items-baseline gap-1">
+                      <input
+                        className="bg-transparent border-none p-0 text-xl font-headline font-bold text-primary w-14 focus:ring-0 placeholder:text-outline-variant"
+                        placeholder="000"
+                        type="number"
+                        value={formData.height || ''}
+                        onChange={e => updateField('height', parseFloat(e.target.value) || 0)}
+                      />
+                      <span className="text-on-surface-variant font-bold text-[10px]">厘米</span>
+                    </div>
+                  </div>
+                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
+                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">体重</span>
+                    <div className="flex items-baseline gap-1">
+                      <input
+                        className="bg-transparent border-none p-0 text-xl font-headline font-bold text-primary w-14 focus:ring-0 placeholder:text-outline-variant"
+                        placeholder="00.0"
+                        type="number"
+                        value={formData.weight || ''}
+                        onChange={e => updateField('weight', parseFloat(e.target.value) || 0)}
+                      />
+                      <span className="text-on-surface-variant font-bold text-[10px]">千克</span>
+                    </div>
+                  </div>
                 </div>
+              </section>
+              {/* 体重变化 */}
+              <div className="space-y-2">
+                <h3 className="text-primary font-bold text-base leading-snug">在过去一个月内，您的体重有明显变化吗？</h3>
+                <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl">
+                  {['是', '否', '其他'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => updateField('weightChange', opt)}
+                      className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                        formData.weightChange === opt
+                          ? 'bg-primary text-white'
+                          : 'hover:bg-surface-container'
+                      }`}
+                    >
+                      <span className={`text-xs font-medium text-center leading-tight ${formData.weightChange === opt ? 'text-white' : 'text-outline'}`}>
+                        {opt}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* 慢性疾病 */}
+              <div className="space-y-2">
+                <label className="block">
+                  <span className="text-primary font-bold text-base mb-1.5 block leading-snug">您是否有任何慢性疾病或健康问题？如果有，请说明。</span>
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)]"
+                    placeholder="请详细描述病情或目前的健康状况..."
+                    rows={2}
+                    value={formData.chronicDiseases || ''}
+                    onChange={e => updateField('chronicDiseases', e.target.value)}
+                  />
+                </label>
+              </div>
+              {/* 药物或补充剂 */}
+              <div className="space-y-2">
+                <label className="block">
+                  <span className="text-primary font-bold text-base mb-1.5 block leading-snug">您目前是否正在服用任何药物、补充剂或草药？如果是，请说明药物或补充剂名字、服用频率、是否是医生推荐或者其他专业人士推荐</span>
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)]"
+                    placeholder="请列出名称、剂量、频率及来源..."
+                    rows={3}
+                    value={formData.medicationsSupplements || ''}
+                    onChange={e => updateField('medicationsSupplements', e.target.value)}
+                  />
+                </label>
+              </div>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  返回
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 步骤 2: 健康信息 */}
-          {currentStep === 1 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 2 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">健康信息</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">咨询主要原因或关注点</label>
-                  <textarea value={formData.consultationReason || ''} onChange={e => updateField('consultationReason', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={3} placeholder="请描述..." />
+        {/* ================= 步骤 2: 饮食习惯（1/4） ================= */}
+        {currentStep === 1 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食习惯 (1/4)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">了解您的日常饮食习惯，帮助我们制定更精准的方案。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+              {/* Question 1: Single Choice */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">1</span>
+                  <h3 className="text-lg font-bold text-primary leading-snug">您通常每天的主餐有几餐？</h3>
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">希望营养师支持的领域</label>
-                  <textarea value={formData.nutritionistSupportGoals || ''} onChange={e => updateField('nutritionistSupportGoals', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
+                <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl">
+                  {['1餐', '2餐', '3餐', '其他'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => updateField('dailyMeals', opt)}
+                      className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                        formData.dailyMeals === opt
+                          ? 'bg-primary text-white'
+                          : 'hover:bg-surface-container'
+                      }`}
+                    >
+                      <span className={`text-xs font-medium text-center leading-tight ${formData.dailyMeals === opt ? 'text-white' : 'text-outline'}`}>
+                        {opt}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-xs font-bold text-primary/60 uppercase">身高 (cm)</label>
-                    <input type="number" value={formData.height || ''} onChange={e => updateField('height', parseFloat(e.target.value) || 0)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
-                  </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-xs font-bold text-primary/60 uppercase">体重 (kg)</label>
-                    <input type="number" value={formData.weight || ''} onChange={e => updateField('weight', parseFloat(e.target.value) || 0)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
-                  </div>
+              </section>
+              {/* Question 2: Yes/No */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">2</span>
+                  <h3 className="text-lg font-bold text-primary">您是否有固定的早餐习惯？</h3>
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">过去6个月内体重是否有明显变化？</label>
-                  {renderRadioGroup('weightChange', YES_NO)}
+                <div className="grid grid-cols-2 gap-1 bg-white p-1 rounded-xl">
+                  {['是', '否'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => updateField('breakfastHabit', opt)}
+                      className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                        formData.breakfastHabit === opt
+                          ? 'bg-primary text-white'
+                          : 'hover:bg-surface-container'
+                      }`}
+                    >
+                      <span className={`text-xs font-medium text-center leading-tight ${formData.breakfastHabit === opt ? 'text-white' : 'text-outline'}`}>
+                        {opt}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">慢性疾病或健康问题</label>
-                  <textarea value={formData.chronicDiseases || ''} onChange={e => updateField('chronicDiseases', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
+              </section>
+              {/* Question 3: Multi Choice */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">3</span>
+                  <h3 className="text-lg font-bold text-primary">您在一天中常吃的零食有哪些？<span className="text-xs font-normal text-on-surface-variant inline ml-2">(可多选)</span></h3>
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">目前服用的药物或补充剂</label>
-                  <textarea value={formData.medicationsSupplements || ''} onChange={e => updateField('medicationsSupplements', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
+                <div className="flex flex-wrap gap-2">
+                  {['水果', '坚果', '薯片', '巧克力', '饼干', '其他'].map(opt => (
+                    <label key={opt} className="cursor-pointer">
+                      <input
+                        className="sr-only peer"
+                        type="checkbox"
+                        checked={((formData.commonSnacks as string[]) || []).includes(opt)}
+                        onChange={() => toggleArray('commonSnacks', opt)}
+                      />
+                      <div className="px-4 py-2 rounded-full bg-surface-container-low shadow-[0_4px_16px_rgba(0,30,64,0.04)] border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
+                        <span className="text-xs font-bold text-primary">{opt}</span>
+                      </div>
+                    </label>
+                  ))}
                 </div>
+              </section>
+              {/* Question 4: Source Checklist */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">4</span>
+                  <h3 className="text-lg font-bold text-primary">请列出您食物的前三个来源：</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {['食堂', '餐馆', '外卖', '超市购买的现成食品', '家人做饭', '自己做饭', '其他'].map(opt => (
+                    <label key={opt} className="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer">
+                      <input
+                        className="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all"
+                        type="checkbox"
+                        checked={((formData.foodSources as string[]) || []).includes(opt)}
+                        onChange={() => toggleArray('foodSources', opt)}
+                      />
+                      <span className="ml-3 text-sm font-bold text-primary">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+              {/* Question 5: Text Input */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">5</span>
+                  <h3 className="text-lg font-bold text-primary">您是否有任何已知的食物过敏或不耐受？</h3>
+                </div>
+                <div className="relative">
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-4 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)]"
+                    placeholder="如果有，请简要说明..."
+                    rows={2}
+                    value={formData.foodAllergies || ''}
+                    onChange={e => updateField('foodAllergies', e.target.value)}
+                  />
+                </div>
+              </section>
               </div>
-            </>
-          )}
 
-          {/* 步骤 3: 饮食习惯（1/4） */}
-          {currentStep === 2 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 3 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮食习惯</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您每天吃几顿主餐？</label>
-                  {renderRadioGroup('dailyMeals', ['1餐', '2餐', '3餐', '其他'])}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您是否有固定吃早餐的习惯？</label>
-                  {renderRadioGroup('breakfastHabit', YES_NO)}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您平时常吃的零食有哪些？</label>
-                  {renderCheckboxGroup('commonSnacks', ['水果', '坚果', '薯片', '巧克力', '饼干', '其他'])}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您的主要食物来源？</label>
-                  {renderCheckboxGroup('foodSources', ['食堂', '餐馆', '外卖', '超市现成食品', '家人做饭', '自己做饭', '其他'])}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">食物过敏或不耐受</label>
-                  <textarea value={formData.foodAllergies || ''} onChange={e => updateField('foodAllergies', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述..." />
-                </div>
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        )}
 
-          {/* 步骤 4: 典型饮食模式 */}
-          {currentStep === 3 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 4 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">典型饮食模式</h2>
-                <p className="text-on-surface-variant text-sm mt-1">请描述您的典型饮食习惯</p></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您的饮食类型？</label>
-                  {renderRadioGroup('dietPlanType', ['普通饮食', '素食', '低碳水饮食', '生酮饮食', '其他'])}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">工作日典型饮食安排</label>
-                  <textarea value={formData.typicalDietWorkday || ''} onChange={e => updateField('typicalDietWorkday', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="请描述您工作日一天的典型饮食安排..." />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">周末典型饮食安排</label>
-                  <textarea value={formData.typicalDietWeekend || ''} onChange={e => updateField('typicalDietWeekend', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="请描述您周末一天的典型饮食安排..." />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">其他饮食说明</label>
-                  <textarea value={formData.typicalDietDescription || ''} onChange={e => updateField('typicalDietDescription', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={3} placeholder="如有其他需要说明的饮食习惯..." />
-                </div>
-              </div>
-            </>
-          )}
+        {/* ================= 步骤 3: 饮食习惯（2/4） ================= */}
+        {currentStep === 2 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食习惯 (2/4)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">继续了解您的饮食偏好和细节。</p>
 
-          {/* 步骤 5: 饮品习惯 */}
-          {currentStep === 4 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 5 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮品习惯</h2>
-                <p className="text-on-surface-variant text-sm mt-1">请选择您饮用以下饮品的频率</p></div>
-              <div className="space-y-3">
-                {renderFreqSelector('drinkWater', '水')}
-                {renderFreqSelector('drinkCoffee', '咖啡')}
-                {renderFreqSelector('drinkTea', '茶')}
-                {renderFreqSelector('drinkMilk', '牛奶')}
-                {renderFreqSelector('drinkPlantMilk', '植物奶')}
-                {renderFreqSelector('drinkMilkTea', '奶茶')}
-                {renderFreqSelector('drinkSugarFree', '无糖饮料')}
-                {renderFreqSelector('drinkSugary', '含糖饮料')}
-                {renderFreqSelector('drinkEnergy', '能量饮料')}
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">其他饮品</label>
-                  <input type="text" value={formData.drinkOther || ''} onChange={e => updateField('drinkOther', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请输入..." />
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+              {/* Question 6: Textarea */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">6</span>
+                  <h2 className="text-lg font-bold text-primary leading-snug">您是否有不喜欢或避免的食物？请说明原因。</h2>
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您在高温或高强度运动时是否出汗较多？</label>
-                  {renderRadioGroup('highSaltSweat', YES_NO)}
+                <div className="relative">
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)] outline-none"
+                    placeholder="例如：海鲜（过敏）、香菜（味道）、深加工食品（健康考虑）..."
+                    rows={2}
+                    value={formData.dislikedFoods || ''}
+                    onChange={e => updateField('dislikedFoods', e.target.value)}
+                  />
                 </div>
-              </div>
-            </>
-          )}
+              </section>
+              {/* Question 7: Selection List */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">7</span>
+                  <h2 className="text-lg font-bold text-primary leading-snug">您是否遵循特定的饮食计划？</h2>
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {['生酮饮食', '间歇性禁食', '素食主义', '无麸质饮食', '无特定饮食计划'].map(opt => (
+                    <label key={opt} className="flex items-center p-3 rounded-xl hover:bg-surface-container transition-colors group cursor-pointer">
+                      <input
+                        className="w-4 h-4 rounded-full text-secondary border-outline/30 focus:ring-secondary/20 transition-all"
+                        type="radio"
+                        name="dietPlanType"
+                        checked={formData.dietPlanType === opt}
+                        onChange={() => updateField('dietPlanType', opt)}
+                      />
+                      <span className="ml-3 text-sm font-bold text-primary">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+              {/* Question 8: Textareas */}
+              <section className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-primary/10 font-headline text-2xl font-bold">8</span>
+                  <h2 className="text-lg font-bold text-primary leading-snug">您典型的一天饮食是什么样的？</h2>
+                </div>
+                <p className="text-on-surface-variant text-[11px] leading-tight opacity-70 mb-2">请上传2天的饮食记录，包括早餐、午餐、晚餐及任何小吃。支持文字或图片。工作日和周末各一天。</p>
 
-          {/* 步骤 6: 饮食满意度与运动水平 */}
-          {currentStep === 5 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 6 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">饮食满意度与运动水平</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您对当前饮食的满意度？</label>
-                  {renderRadioGroup('dietSatisfaction', ['非常满意', '比较满意', '一般', '不太满意', '非常不满意'])}
+                {/* 上传区域 */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <span className="material-symbols-outlined text-2xl text-secondary mb-1">upload</span>
+                  <p className="text-[11px] text-outline font-medium">点击上传饮食记录</p>
+                  <p className="text-[10px] text-outline/60 mt-0.5">图片 / PDF / Word，单个文件最大 50MB</p>
                 </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您当前的运动水平？</label>
-                  {renderRadioGroup('exerciseLevel', ['高活动量', '中高活动量', '中等活动量', '轻度活动量', '日常活动量'])}
-                </div>
-              </div>
-            </>
-          )}
 
-          {/* 步骤 7: 运动习惯详细 */}
-          {currentStep === 6 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 7 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">运动习惯详细</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您常做的运动类型？</label>
-                  {renderCheckboxGroup('exerciseTypes', ['有氧运动', '力量训练', '柔韧性训练', '团队运动', '其他'])}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-sm font-medium mb-2 block">每次运动时长</label>
-                    {renderRadioGroup('exerciseDuration', ['<30分钟', '30-60分钟', '1-2小时', '>2小时'], 1)}
-                  </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-sm font-medium mb-2 block">每周运动频率</label>
-                    {renderRadioGroup('exerciseFrequency', ['1-2次', '3-4次', '5次+'], 1)}
-                  </div>
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">运动时间段</label>
-                  {renderRadioGroup('exerciseTime', ['早上', '下午', '晚上'])}
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">运动激励因素</label>
-                  <textarea value={formData.exerciseMotivation || ''} onChange={e => updateField('exerciseMotivation', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">运动挑战</label>
-                  <textarea value={formData.exerciseChallenges || ''} onChange={e => updateField('exerciseChallenges', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述您在运动中遇到的困难或挑战..." />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">运动目标</label>
-                  <textarea value={formData.exerciseGoals || ''} onChange={e => updateField('exerciseGoals', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} placeholder="请描述您的运动目标..." />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">是否有运动伙伴？</label>
-                  {renderRadioGroup('hasExercisePartner', YES_NO)}
-                  {formData.hasExercisePartner === '是' && (
-                    <input type="text" value={formData.exercisePartnerDetail || ''} onChange={e => updateField('exercisePartnerDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请描述..." />
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 步骤 8: 生活方式 */}
-          {currentStep === 7 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 8 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">生活方式</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您目前的压力水平？</label>
-                  {renderRadioGroup('stressLevel', ['无', '轻微', '一般', '相当大', '无法忍受'])}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-sm font-medium mb-2 block">是否吸烟？</label>
-                    {renderRadioGroup('isSmoker', YES_NO)}
-                    {formData.isSmoker === '是' && (
-                      <input type="text" value={formData.smokingDetail || ''} onChange={e => updateField('smokingDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="支/天，年数" />
-                    )}
-                  </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-sm font-medium mb-2 block">是否饮酒？</label>
-                    {renderRadioGroup('isDrinker', YES_NO)}
-                    {formData.isDrinker === '是' && (
-                      <input type="text" value={formData.drinkingDetail || ''} onChange={e => updateField('drinkingDetail', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-2 mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="频率/种类" />
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-xs font-bold text-primary/60 uppercase">工作日起床时间</label>
-                    <input type="time" value={formData.weekdayWakeTime || ''} onChange={e => updateField('weekdayWakeTime', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
-                  </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-xs font-bold text-primary/60 uppercase">工作日睡觉时间</label>
-                    <input type="time" value={formData.weekdaySleepTime || ''} onChange={e => updateField('weekdaySleepTime', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" />
-                  </div>
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">起床时的精神状态</label>
-                  <textarea value={formData.morningState || ''} onChange={e => updateField('morningState', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={2} />
-                </div>
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-xs font-bold text-primary/60 uppercase">日常屏幕使用时间</label>
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    <div className="bg-surface-container-highest rounded-xl p-2">
-                      <label className="text-[10px] font-bold text-primary/60 uppercase">电视</label>
-                      <input type="text" value={formData.screenTimeTv || ''} onChange={e => updateField('screenTimeTv', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
-                    </div>
-                    <div className="bg-surface-container-highest rounded-xl p-2">
-                      <label className="text-[10px] font-bold text-primary/60 uppercase">阅读</label>
-                      <input type="text" value={formData.screenTimeReading || ''} onChange={e => updateField('screenTimeReading', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
-                    </div>
-                    <div className="bg-surface-container-highest rounded-xl p-2">
-                      <label className="text-[10px] font-bold text-primary/60 uppercase">电子设备</label>
-                      <input type="text" value={formData.screenTimeElectronics || ''} onChange={e => updateField('screenTimeElectronics', e.target.value)} className="w-full bg-transparent text-sm mt-1 focus:outline-none" placeholder="小时/天" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 步骤 9: 社交活动与其他反馈 */}
-          {currentStep === 8 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 9 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">社交活动与其他反馈</h2></div>
-              <div className="space-y-4">
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">您常参与的社交活动？</label>
-                  {renderCheckboxGroup('socialActivities', ['朋友聚会', '家庭聚餐', '体育活动', '社区活动', '兴趣小组', '公司活动', '其他'])}
-                </div>
-                {((formData.socialActivities as string[]) || []).includes('其他') && (
-                  <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                    <label className="text-sm font-medium mb-2 block">其他社交活动</label>
-                    <input type="text" value={formData.socialActivitiesOther || ''} onChange={e => updateField('socialActivitiesOther', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" placeholder="请描述..." />
+                {/* 已上传文件列表 */}
+                {uploadedDietFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {uploadedDietFiles.map((file) => (
+                      <div key={file.id} className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-outline-variant/10">
+                        {/* 缩略图/图标 */}
+                        {file.type === 'image' && file.url ? (
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0 cursor-pointer"
+                            onClick={() => setPreviewFile(file)}
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined text-secondary text-2xl flex-shrink-0">
+                            {file.type === 'pdf' ? 'picture_as_pdf' : file.type === 'doc' ? 'article' : 'description'}
+                          </span>
+                        )}
+                        {/* 文件信息 */}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs block truncate">{file.name}</span>
+                          <span className="text-[10px] text-outline">{formatFileSize(file.size)}</span>
+                        </div>
+                        {/* 操作按钮 */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {file.status === 'uploading' ? (
+                            <span className="text-[10px] text-primary">{file.progress}%</span>
+                          ) : file.status === 'error' ? (
+                            <span className="text-[10px] text-error font-medium">上传失败</span>
+                          ) : file.url ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewFile(file)}
+                              className="p-1 hover:bg-primary/10 rounded"
+                            >
+                              <span className="material-symbols-outlined text-primary text-sm">visibility</span>
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => removeDietFile(file.id)}
+                            className="p-1 hover:bg-error/10 rounded"
+                          >
+                            <span className="material-symbols-outlined text-on-surface-variant text-sm">close</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/5">
-                  <label className="text-sm font-medium mb-2 block">其他反馈或建议</label>
-                  <textarea value={formData.otherFeedback || ''} onChange={e => updateField('otherFeedback', e.target.value)} className="w-full bg-surface-container-highest rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-all" rows={4} placeholder="如有其他补充请在此填写..." />
+
+                {/* 文字描述输入 */}
+                <div className="mt-2">
+                  <textarea
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all shadow-[0_4px_16px_rgba(0,30,64,0.04)] outline-none"
+                    placeholder="或在此手动输入您的饮食记录..."
+                    rows={3}
+                    value={formData.typicalDietDescription || ''}
+                    onChange={e => updateField('typicalDietDescription', e.target.value)}
+                  />
+                </div>
+              </section>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 4: 饮食习惯（3/4）饮品频率 ================= */}
+        {currentStep === 3 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食习惯 (3/4)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">请评估您过去一个月中，下列饮品的通常摄入频率。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-3">
+                {[
+                  { field: 'drinkWater', label: '水' },
+                  { field: 'drinkCoffee', label: '咖啡' },
+                  { field: 'drinkTea', label: '茶' },
+                  { field: 'drinkMilk', label: '牛奶' },
+                  { field: 'drinkPlantMilk', label: '植物奶' },
+                  { field: 'drinkMilkTea', label: '奶茶' },
+                  { field: 'drinkSugarFree', label: '无糖饮料' },
+                  { field: 'drinkSugary', label: '含糖饮料' },
+                  { field: 'drinkEnergy', label: '能量饮料' },
+                ].map(item => (
+                  <div key={item.field} className="bg-white rounded-xl p-4 shadow-[0_2px_8px_rgba(0,30,64,0.04)]">
+                    <div className="font-semibold text-on-surface text-sm mb-3">{item.label}</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {FREQ_OPTIONS.map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                          className={`py-2 px-2 rounded-lg text-[10px] font-medium transition-all text-center leading-tight ${
+                            formData[item.field as keyof NutritionSurveyData] === opt
+                              ? 'bg-primary text-white'
+                              : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {/* 其他输入框 */}
+                <div className="bg-white rounded-xl p-4 shadow-[0_2px_8px_rgba(0,30,64,0.04)]">
+                  <div className="font-semibold text-on-surface text-sm mb-3">其他</div>
+                  <input
+                    className="w-full bg-surface-container border-none rounded-lg py-2.5 px-3 text-xs text-on-surface placeholder:text-outline-variant focus:ring-1 focus:ring-secondary focus:bg-white transition-all"
+                    placeholder="请输入具体说明..."
+                    type="text"
+                    value={formData.drinkOther || ''}
+                    onChange={e => updateField('drinkOther', e.target.value)}
+                  />
                 </div>
               </div>
-            </>
-          )}
 
-          {/* 步骤 10: 食物频率 */}
-          {currentStep === 9 && (
-            <>
-              <div><span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px]">Step 10 of {TOTAL_STEPS}</span>
-                <h2 className="font-headline text-2xl font-bold text-primary mt-2">食物频率</h2>
-                <p className="text-on-surface-variant text-sm mt-1">请选择您食用以下食物的频率</p></div>
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">谷薯与水果</p>
-                {renderFreqSelector('freqRice', '米饭')}
-                {renderFreqSelector('freqNoodlesBread', '面条、面包')}
-                {renderFreqSelector('freqWholeGrains', '全谷物制品')}
-                {renderFreqSelector('freqFreshFruit', '新鲜水果')}
-                {renderFreqSelector('freqFruitJuice', '果汁')}
-                {renderFreqSelector('freqDriedFruit', '干果')}
-                
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">蔬菜</p>
-                {renderFreqSelector('freqLeafyVegetables', '绿叶蔬菜')}
-                {renderFreqSelector('freqStarchyVegetables', '淀粉类蔬菜')}
-                {renderFreqSelector('freqOtherVegetables', '其他蔬菜')}
-                
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">蛋白质</p>
-                {renderFreqSelector('freqEggs', '鸡蛋')}
-                {renderFreqSelector('freqPoultry', '家禽')}
-                {renderFreqSelector('freqFishSeafood', '鱼类和海鲜')}
-                {renderFreqSelector('freqBeansSoy', '豆类和豆制品')}
-                {renderFreqSelector('freqRedMeat', '红肉')}
-                
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">乳制品</p>
-                {renderFreqSelector('freqMilkDairy', '牛奶')}
-                {renderFreqSelector('freqYogurt', '酸奶')}
-                {renderFreqSelector('freqCheese', '奶酪')}
-                {renderFreqSelector('freqNonDairyAlternatives', '非乳制品替代品')}
-                
-                <p className="text-xs font-bold text-primary/60 uppercase mt-4 mb-2">零食</p>
-                {renderFreqSelector('freqNutsSeeds', '坚果和种子')}
-                {renderFreqSelector('freqCookiesCake', '饼干、蛋糕')}
-                {renderFreqSelector('freqChocolateCandy', '巧克力、糖果')}
-                {renderFreqSelector('freqSaltySnacks', '咸味零食')}
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
               </div>
-              
-              <div className="bg-primary p-5 rounded-3xl text-white mt-6">
-                <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-secondary-container text-2xl" style={{ fontVariationSettings: '"FILL" 1' }}>security</span>
-                  <div>
-                    <h3 className="font-headline font-bold text-sm mb-1">隐私保护承诺</h3>
-                    <p className="text-white/70 text-xs leading-relaxed">您的信息均受管家级加密保护。我们将严格遵守隐私保护协议。</p>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 5: 饮食习惯（4/4） ================= */}
+        {currentStep === 4 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食习惯 (4/4)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">继续了解您的饮食习惯细节。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                {/* Question 10: 高盐出汗 */}
+                <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <div className="flex items-start gap-3">
+                <span className="font-headline font-extrabold text-primary/20 text-2xl leading-none">10</span>
+                <div className="space-y-2 flex-1">
+                  <h2 className="font-headline font-bold text-primary text-base leading-snug">您觉得自己是出汗含盐量高的人吗？</h2>
+                  <p className="text-on-surface-variant text-xs leading-relaxed opacity-80">*通常，如果您的皮肤在出汗后感觉有粘性，或者汗干后留下白色的盐渍痕迹，这可能表明您出汗的含盐量较高。</p>
+                  <div className="grid grid-cols-2 gap-1 bg-white p-1 rounded-xl mt-3">
+                    {['是', '否'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => updateField('highSaltSweat', opt)}
+                        className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                          formData.highSaltSweat === opt
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className={`text-xs font-medium text-center leading-tight ${formData.highSaltSweat === opt ? 'text-white' : 'text-outline'}`}>
+                          {opt}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
-            </>
-          )}
+            </section>
+            {/* Question 11: 饮食满意度 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <div className="flex items-start gap-3">
+                <span className="font-headline font-extrabold text-primary/20 text-2xl leading-none">11</span>
+                <div className="space-y-3 w-full">
+                  <h2 className="font-headline font-bold text-primary text-base leading-snug">您对目前的饮食习惯满意吗？</h2>
+                  <div className="grid grid-cols-5 gap-1 bg-white p-1 rounded-xl">
+                    {['非常满意', '较满意', '中立', '不太满意', '不满意'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => updateField('dietSatisfaction', opt)}
+                        className={`flex items-center justify-center py-3 px-1 rounded-xl transition-all ${
+                          formData.dietSatisfaction === opt
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className={`text-[10px] font-medium text-center leading-tight ${formData.dietSatisfaction === opt ? 'text-white' : 'text-outline'}`}>
+                          {opt}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+            {/* 运动习惯卡片 */}
+            <section className="bg-primary-container rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <span className="material-symbols-outlined text-6xl text-on-primary-container">directions_run</span>
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">开始</span>
+                  <h3 className="text-on-primary-container font-headline font-bold text-xs">运动习惯评估</h3>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="font-headline font-extrabold text-on-primary-container/30 text-2xl leading-none">01</span>
+                  <div className="space-y-3 w-full">
+                    <h2 className="font-headline font-bold text-on-primary-container text-base leading-snug">请评估您当前的运动水平：</h2>
+                    <div className="space-y-2">
+                      {[
+                        { label: '高活动量', desc: '每天进行高强度的体育活动或参与竞技类运动，运动强度和持续时间较长。' },
+                        { label: '中高活动量', desc: '每周至少进行三次高强度的身体活动，例如跑步、快速骑行或高强度有氧运动。' },
+                        { label: '中等活动量', desc: '每周进行一次或多次中等强度的运动，例如快步走、适度骑行等。' },
+                        { label: '轻度活动量', desc: '偶尔进行轻度的运动，例如散步、轻度园艺工作或缓和的瑜伽。' },
+                        { label: '日常活动量', desc: '主要进行日常生活中的活动，未进行专门的身体锻炼。' },
+                      ].map(opt => (
+                        <label key={opt.label} className="block cursor-pointer group">
+                          <div className="flex gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                            <input
+                              className="w-5 h-5 rounded-full text-secondary border-none bg-surface-container-highest focus:ring-secondary mt-1 flex-shrink-0"
+                              type="radio"
+                              name="exerciseLevel"
+                              checked={formData.exerciseLevel === opt.label}
+                              onChange={() => updateField('exerciseLevel', opt.label)}
+                            />
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-bold text-white">{opt.label}</p>
+                              <p className="text-[11px] text-on-primary-container/80 leading-relaxed">{opt.desc}</p>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+              </div>
 
-          {/* 步骤按钮 */}
-          <div className="flex gap-3 mt-6">
-            {currentStep > 0 && <button onClick={handlePrevStep} className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm">上一步</button>}
-            {currentStep < TOTAL_STEPS - 1 ? (
-              <button onClick={handleNextStep} disabled={saving} className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm disabled:opacity-50">{saving ? '保存中...' : '下一步'}</button>
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 6: 运动习惯（1/2） ================= */}
+        {currentStep === 5 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">运动习惯 (1/2)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">了解您的运动习惯，帮助我们评估您的能量消耗。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+            {/* Question 2: 运动类型 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <h2 className="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+                <span className="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5" />
+                <span>2. 您通常进行哪些类型的运动？(请勾选所有适用项)</span>
+              </h2>
+              <div className="space-y-2">
+                {[
+                  { label: '有氧运动（例如：跑步、游泳、骑自行车等）' },
+                  { label: '力量训练（例如：举重、阻力训练等）' },
+                  { label: '柔韧性训练（例如：瑜伽、普拉提等）' },
+                  { label: '团队运动（例如：足球、篮球、羽毛球等）' },
+                ].map(opt => (
+                  <label key={opt.label} className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-lowest hover:bg-white transition-colors cursor-pointer">
+                    <input
+                      className="w-4 h-4 rounded text-secondary border-none bg-surface-container-highest focus:ring-secondary"
+                      type="checkbox"
+                      checked={((formData.exerciseTypes as string[]) || []).includes(opt.label)}
+                      onChange={() => toggleArray('exerciseTypes', opt.label)}
+                    />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+            {/* Question 3: 运动时长 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <h2 className="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+                <span className="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5" />
+                <span>3. 您每次运动的时长通常是多少？</span>
+              </h2>
+              <div className="space-y-2">
+                {['少于 30 分钟', '30 分钟至 1 小时', '1 至 2 小时', '2 小时以上'].map(opt => (
+                  <label key={opt} className="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest cursor-pointer group">
+                    <span className="text-xs font-medium">{opt}</span>
+                    <input
+                      className="w-4 h-4 text-secondary border-none bg-surface-container-highest focus:ring-secondary"
+                      type="radio"
+                      name="exerciseDuration"
+                      checked={formData.exerciseDuration === opt}
+                      onChange={() => updateField('exerciseDuration', opt)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+            {/* Question 4: 运动频率 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <h2 className="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+                <span className="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5" />
+                <span>4. 您每周运动的频率大概是多少？</span>
+              </h2>
+              <div className="flex gap-2">
+                {['每周 1-2 次', '每周 3-4 次', '每周 5 次或以上'].map(opt => (
+                  <label key={opt} className="flex-1 text-center py-3 px-1 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:border-secondary has-[:checked]:bg-blue-50 transition-all">
+                    <input
+                      className="hidden"
+                      type="radio"
+                      name="exerciseFrequency"
+                      checked={formData.exerciseFrequency === opt}
+                      onChange={() => updateField('exerciseFrequency', opt)}
+                    />
+                    <span className="text-xs font-semibold block">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+            {/* Question 5: 运动时间 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)] mb-4">
+              <h2 className="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+                <span className="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5" />
+                <span>5. 您主要在什么时间段进行运动？</span>
+              </h2>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: '早上', icon: 'light_mode' },
+                  { label: '下午', icon: 'wb_sunny' },
+                  { label: '晚上', icon: 'dark_mode' },
+                ].map(opt => (
+                  <label key={opt.label} className="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest cursor-pointer border border-transparent has-[:checked]:bg-blue-50 has-[:checked]:border-secondary transition-all">
+                    <input
+                      className="hidden"
+                      type="radio"
+                      name="exerciseTime"
+                      checked={formData.exerciseTime === opt.label}
+                      onChange={() => updateField('exerciseTime', opt.label)}
+                    />
+                    <span className="material-symbols-outlined text-secondary">{opt.icon}</span>
+                    <span className="text-xs font-bold">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+            {/* Question 6: 运动激励 */}
+            <section className="bg-surface-container-low rounded-xl p-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+              <h2 className="text-sm font-bold text-primary mb-3 flex items-start gap-2">
+                <span className="w-1.5 h-4 bg-secondary rounded-full shrink-0 mt-0.5" />
+                <span>6. 是什么激励您保持运动？</span>
+              </h2>
+              <textarea
+                className="w-full text-xs p-4 bg-surface-container-lowest border-none rounded-xl focus:ring-1 focus:ring-secondary/30 transition-all outline-none resize-none"
+                placeholder="请在此输入您的激励因素..."
+                rows={4}
+                value={formData.exerciseMotivation || ''}
+                onChange={e => updateField('exerciseMotivation', e.target.value)}
+              />
+            </section>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 7: 运动习惯（2/2） ================= */}
+        {currentStep === 6 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">运动习惯 (2/2)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">继续了解您的运动习惯细节。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <section>
+                  <h2 className="text-3xl font-headline font-extrabold text-primary leading-tight mb-4">04 运动习惯（2/2）</h2>
+                  <p className="text-on-surface-variant leading-relaxed"><br /></p>
+                </section>
+            {/* Question 7 */}
+            <div className="mb-10 bg-surface-container-low rounded-xl p-6 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+              <label className="block text-sm font-semibold text-primary mb-3">7. 您在保持规律运动方面面临的最大挑战或障碍是什么？</label>
+              <p className="text-xs text-on-surface-variant mb-4 opacity-70">（例如：时间不足、体力不足、健康问题等）</p>
+              <textarea
+                className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline-variant resize-none"
+                placeholder="在此输入您的详细情况..."
+                rows={3}
+                value={formData.exerciseChallenges || ''}
+                onChange={e => updateField('exerciseChallenges', e.target.value)}
+              />
+            </div>
+            {/* Question 8 */}
+            <div className="mb-10 bg-surface-container-low rounded-xl p-6 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+              <label className="block text-sm font-semibold text-primary mb-3">8. 您是否有特定的运动目标？</label>
+              <p className="text-xs text-on-surface-variant mb-4 opacity-70">（例如：减肥、增肌、提升耐力等）</p>
+              <textarea
+                className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline-variant resize-none"
+                placeholder="例如：我希望在三个月内通过增加力量训练来减少5%的体脂..."
+                rows={3}
+                value={formData.exerciseGoals || ''}
+                onChange={e => updateField('exerciseGoals', e.target.value)}
+              />
+            </div>
+            {/* Question 9 & Follow-up */}
+            <div className="mb-10 bg-surface-container-low rounded-xl p-6 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+              <label className="block text-sm font-semibold text-primary mb-6">9. 您是否与他人一起运动？</label>
+              <div className="flex gap-4 mb-8">
+                {['是', '否'].map(opt => (
+                  <label key={opt} className="flex-1 group cursor-pointer">
+                    <input
+                      className="hidden peer"
+                      type="radio"
+                      name="hasExercisePartner"
+                      checked={formData.hasExercisePartner === opt}
+                      onChange={() => updateField('hasExercisePartner', opt)}
+                    />
+                    <div className="w-full py-4 text-center rounded-xl bg-surface-container-highest text-on-surface peer-checked:bg-primary peer-checked:text-white transition-all duration-200">
+                      {opt}
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4 pt-6 border-t border-white/40">
+                <label className="block text-xs font-semibold text-primary mb-3 opacity-80">如果是，通常是和谁一起？</label>
+                <input
+                  className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline-variant"
+                  placeholder="例如：朋友、家人、运动伙伴、教练等"
+                  type="text"
+                  value={formData.exercisePartnerDetail || ''}
+                  onChange={e => updateField('exercisePartnerDetail', e.target.value)}
+                />
+              </div>
+              </div>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 8: 生活方式（1/2） ================= */}
+        {currentStep === 7 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">生活方式 (1/2)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">了解您的生活方式，帮助我们全面评估您的健康状况。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <form className="space-y-8">
+              {/* Question 1: Stress Level */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">1. 请评估您当前的压力水平：</label>
+                <div className="bg-surface-container-low rounded-xl p-2 space-y-1">
+                  {[
+                    '无：没有感到任何压力',
+                    '轻微：感受到轻微的压力，但对日常活动影响不大',
+                    '一般：偶尔感到压力，能够较好地应对',
+                    '相当大：经常感到压力，对工作和生活有一定影响',
+                    '无法忍受：压力非常大，已经严重影响生活和工作',
+                  ].map(opt => (
+                    <label key={opt} className="flex p-3 hover:bg-white rounded-lg transition-colors cursor-pointer group items-start">
+                      <input
+                        className="w-5 h-5 text-secondary border-none bg-surface-container-highest focus:ring-secondary mt-0.5"
+                        type="radio"
+                        name="stressLevel"
+                        checked={formData.stressLevel === opt.split('：')[0]}
+                        onChange={() => updateField('stressLevel', opt.split('：')[0])}
+                      />
+                      <span className="ml-3 text-on-surface font-medium text-sm">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Question 2: Smoking */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">2. 您是否吸烟？</label>
+                <div className="flex gap-4">
+                  {['是', '否'].map(opt => (
+                    <label key={opt} className="flex-1 bg-surface-container-low p-4 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white transition-colors">
+                      <input
+                        className="w-5 h-5 text-secondary border-none bg-surface-container-highest"
+                        type="radio"
+                        name="isSmoker"
+                        checked={formData.isSmoker === opt}
+                        onChange={() => updateField('isSmoker', opt)}
+                      />
+                      <span className="ml-2 font-medium">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="bg-surface-container-low p-5 rounded-xl space-y-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+                  <p className="text-sm font-medium text-on-surface-variant">如果是，每天几支烟？持续多长时间？</p>
+                  <input
+                    className="w-full bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline"
+                    placeholder="例如：10支/天，持续5年"
+                    type="text"
+                    value={formData.smokingDetail || ''}
+                    onChange={e => updateField('smokingDetail', e.target.value)}
+                  />
+                </div>
+              </div>
+              {/* Question 3: Alcohol */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">3. 您是否饮酒？</label>
+                <div className="flex gap-4">
+                  {['是', '否'].map(opt => (
+                    <label key={opt} className="flex-1 bg-surface-container-low p-4 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white transition-colors">
+                      <input
+                        className="w-5 h-5 text-secondary border-none bg-surface-container-highest"
+                        type="radio"
+                        name="isDrinker"
+                        checked={formData.isDrinker === opt}
+                        onChange={() => updateField('isDrinker', opt)}
+                      />
+                      <span className="ml-2 font-medium">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="bg-surface-container-low p-5 rounded-xl space-y-4 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
+                  <p className="text-sm font-medium text-on-surface-variant">如果是，您每周饮酒几次？通常饮用哪种酒类？每次饮用的量是多少？</p>
+                  <input
+                    className="w-full bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline"
+                    placeholder="次数、酒类与饮用量详情"
+                    type="text"
+                    value={formData.drinkingDetail || ''}
+                    onChange={e => updateField('drinkingDetail', e.target.value)}
+                  />
+                </div>
+              </div>
+              {/* Question 4: Sleep Schedule */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">4. 您平时工作日：</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-surface-container-low p-4 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-secondary tracking-widest uppercase">起床时间</span>
+                    <input
+                      className="w-full bg-transparent border-none p-0 text-xl font-bold text-primary focus:ring-0"
+                      type="time"
+                      value={formData.weekdayWakeTime || ''}
+                      onChange={e => updateField('weekdayWakeTime', e.target.value)}
+                    />
+                  </div>
+                  <div className="bg-surface-container-low p-4 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-secondary tracking-widest uppercase">睡觉时间</span>
+                    <input
+                      className="w-full bg-transparent border-none p-0 text-xl font-bold text-primary focus:ring-0"
+                      type="time"
+                      value={formData.weekdaySleepTime || ''}
+                      onChange={e => updateField('weekdaySleepTime', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Question 5: Morning State */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">5. 您起床时感觉精神状态如何？</label>
+                <textarea
+                  className="w-full bg-surface-container-low border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-secondary/20 placeholder:text-outline"
+                  placeholder="请描述您清晨的感受，例如：清醒、疲倦或头痛..."
+                  rows={3}
+                  value={formData.morningState || ''}
+                  onChange={e => updateField('morningState', e.target.value)}
+                />
+              </div>
+              {/* Question 6: Screen Time */}
+              <div className="space-y-4">
+                <label className="text-lg font-headline font-bold text-primary block">6. 您每天花多少时间：</label>
+                <div className="bg-surface-container-low rounded-xl divide-y-2 divide-surface">
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="material-symbols-outlined text-secondary mr-3">tv</span>
+                      <span className="font-medium">看电视</span>
+                    </div>
+                    <input
+                      className="w-24 bg-surface-container-highest border-none rounded-lg p-2 text-right text-sm focus:ring-secondary"
+                      placeholder="小时/分"
+                      type="text"
+                      value={formData.screenTimeTv || ''}
+                      onChange={e => updateField('screenTimeTv', e.target.value)}
+                    />
+                  </div>
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="material-symbols-outlined text-secondary mr-3">menu_book</span>
+                      <span className="font-medium">阅读</span>
+                    </div>
+                    <input
+                      className="w-24 bg-surface-container-highest border-none rounded-lg p-2 text-right text-sm focus:ring-secondary"
+                      placeholder="小时/分"
+                      type="text"
+                      value={formData.screenTimeReading || ''}
+                      onChange={e => updateField('screenTimeReading', e.target.value)}
+                    />
+                  </div>
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="material-symbols-outlined text-secondary mr-3">devices</span>
+                      <span className="font-medium">使用电子屏幕</span>
+                    </div>
+                    <input
+                      className="w-24 bg-surface-container-highest border-none rounded-lg p-2 text-right text-sm focus:ring-secondary"
+                      placeholder="小时/分"
+                      type="text"
+                      value={formData.screenTimeElectronics || ''}
+                      onChange={e => updateField('screenTimeElectronics', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              </form>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 9: 生活方式（2/2） ================= */}
+        {currentStep === 8 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">生活方式 (2/2)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">继续了解您的生活方式细节。</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+            {/* Questionnaire Options */}
+            <div className="space-y-2 mb-8">
+              {[
+                { label: '朋友聚会', desc: '例如: 定期的晚餐、咖啡或娱乐活动' },
+                { label: '家庭聚餐或家庭活动', desc: '' },
+                { label: '体育活动', desc: '例如: 健身、足球、篮球、瑜伽等' },
+                { label: '社区活动或志愿者服务', desc: '' },
+                { label: '兴趣小组或俱乐部', desc: '例如: 读书会、摄影俱乐部等' },
+                { label: '公司或职业社交活动', desc: '例如: 商务聚餐、团队建设活动' },
+              ].map(opt => (
+                <label key={opt.label} className="group flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-low cursor-pointer transition-all hover:bg-surface-container-high active:scale-[0.99]">
+                  <div className="relative flex items-center mt-0.5">
+                    <input
+                      className="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors"
+                      type="checkbox"
+                      checked={((formData.socialActivities as string[]) || []).includes(opt.label)}
+                      onChange={() => toggleArray('socialActivities', opt.label)}
+                    />
+                  </div>
+                  <div className="flex-grow">
+                    <span className="font-semibold text-primary block text-sm mb-0.5">{opt.label}</span>
+                    {opt.desc && <span className="text-xs text-on-surface-variant leading-tight">{opt.desc}</span>}
+                  </div>
+                </label>
+              ))}
+              {/* Other */}
+              <div className="group flex flex-col gap-2 p-3.5 rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <div className="relative flex items-center mt-0.5">
+                    <input
+                      className="peer h-5 w-5 rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-secondary/20 transition-colors"
+                      type="checkbox"
+                      checked={((formData.socialActivities as string[]) || []).includes('其他')}
+                      onChange={() => toggleArray('socialActivities', '其他')}
+                    />
+                  </div>
+                  <span className="font-semibold text-primary text-sm">其他 (请说明)</span>
+                </label>
+                <input
+                  className="ml-8 bg-surface-container-lowest border-none rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-secondary-container placeholder-on-surface-variant/30"
+                  placeholder="请输入具体活动内容..."
+                  type="text"
+                  value={formData.socialActivitiesOther || ''}
+                  onChange={e => updateField('socialActivitiesOther', e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Feedback Section */}
+            <section className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-secondary-container rounded-full" />
+                <h3 className="font-headline text-lg font-bold text-primary">其他反馈</h3>
+              </div>
+              <div className="rounded-xl bg-surface-container-low p-0.5 shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all focus-within:ring-2 focus-within:ring-secondary-container/20">
+                <textarea
+                  className="w-full bg-surface-container-lowest border-none rounded-[10px] p-4 text-sm text-on-surface leading-relaxed resize-none focus:ring-0 placeholder-on-surface-variant/30"
+                  placeholder="您还有其他想与营养师分享的信息或反馈吗？"
+                  rows={3}
+                  value={formData.otherFeedback || ''}
+                  onChange={e => updateField('otherFeedback', e.target.value)}
+                />
+              </div>
+            </section>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 10: 饮食频率（1/3）谷薯与水果 ================= */}
+        {currentStep === 9 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食频率 (1/3)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">谷薯与水果</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="space-y-12">
+              {/* Category: Grains */}
+              <div className="bg-surface-container-low rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <h3 className="font-headline font-bold text-xl text-primary mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-secondary rounded-full" />
+                  谷物类
+                </h3>
+                <div className="space-y-8">
+                  {[
+                    { field: 'freqRice', label: '米饭' },
+                    { field: 'freqNoodlesBread', label: '面条、面包等小麦制品' },
+                    { field: 'freqWholeGrains', label: '燕麦、全麦面包等全谷物制品' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <span className="font-medium text-on-surface">{item.label}</span>
+                      </div>
+                      <div className="grid grid-cols-6 gap-1 bg-surface-container-lowest rounded-2xl p-1 shadow-sm">
+                        {FREQ_OPTIONS.map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white shadow-md'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-medium text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Category: Fruits */}
+              <div className="bg-surface-container-low rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <h3 className="font-headline font-bold text-xl text-primary mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-secondary rounded-full" />
+                  水果类
+                </h3>
+                <div className="space-y-8">
+                  {[
+                    { field: 'freqFreshFruit', label: '新鲜水果' },
+                    { field: 'freqFruitJuice', label: '果汁' },
+                    { field: 'freqDriedFruit', label: '果干' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <span className="font-medium text-on-surface">{item.label}</span>
+                      </div>
+                      <div className="grid grid-cols-6 gap-1 bg-surface-container-lowest rounded-2xl p-1 shadow-sm">
+                        {FREQ_OPTIONS.map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white shadow-md'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-medium text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 11: 饮食频率（2/3）蔬菜与蛋白质 ================= */}
+        {currentStep === 10 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食频率 (2/3)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">蔬菜、蛋白质与海鲜</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="bg-surface-container-low rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-12 space-y-10">
+                  {/* Vegetables Section */}
+                  <section>
+                    <h3 className="font-headline font-bold text-xl text-primary mb-6 flex items-center gap-2">
+                      <span className="w-1.5 h-6 bg-secondary rounded-full" />
+                      蔬菜类
+                    </h3>
+                <div className="space-y-6">
+                  {[
+                    { field: 'freqLeafyVegetables', label: '绿叶蔬菜', sub: '(菠菜、生菜等)' },
+                    { field: 'freqStarchyVegetables', label: '淀粉类蔬菜', sub: '(土豆、玉米、豌豆)' },
+                    { field: 'freqOtherVegetables', label: '其他蔬菜', sub: '(胡萝卜、辣椒等)' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-2">
+                      <p className="text-sm font-medium text-on-surface px-1">
+                        {item.label} <span className="text-[10px] text-outline font-normal ml-1">{item.sub}</span>
+                      </p>
+                      <div className="grid grid-cols-6 gap-1 bg-surface-container-lowest rounded-2xl p-1">
+                        {FREQ_OPTIONS.map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex items-center justify-center py-2.5 rounded-xl transition-colors ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[9px] text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white font-bold' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              {/* Proteins Section */}
+              <section>
+                <h3 className="font-headline font-bold text-xl text-primary mb-6 flex items-center gap-2 border-t border-outline-variant pt-8">
+                  <span className="w-1.5 h-6 bg-secondary rounded-full" />
+                  蛋白质类
+                </h3>
+                <div className="space-y-6">
+                  {[
+                    { field: 'freqEggs', label: '鸡蛋', sub: '' },
+                    { field: 'freqPoultry', label: '家禽', sub: '(鸡、鸭、火鸡)' },
+                    { field: 'freqFishSeafood', label: '鱼类和海鲜', sub: '' },
+                    { field: 'freqBeansSoy', label: '豆类 / 大豆', sub: '' },
+                    { field: 'freqRedMeat', label: '红肉', sub: '(牛、猪、羊等)' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-2">
+                      <p className="text-sm font-medium text-on-surface px-1">
+                        {item.label} {item.sub && <span className="text-[10px] text-outline font-normal ml-1">{item.sub}</span>}
+                      </p>
+                      <div className="grid grid-cols-6 gap-1 bg-surface-container-lowest rounded-2xl p-1">
+                        {FREQ_OPTIONS.map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex items-center justify-center py-2.5 rounded-xl transition-colors ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[9px] text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white font-bold' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              </div>
+
+              {/* 步骤底部按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '下一步'}
+                </button>
+              </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 步骤 12: 饮食频率（3/3）乳制品与零食 ================= */}
+        {currentStep === 11 && (
+          <div className="px-4 pb-4">
+            <div className="max-w-md mx-auto pt-2">
+              <span className="text-secondary font-headline font-bold tracking-widest uppercase text-[10px] mb-2 block">
+                Step {actualStep} of {totalActualSteps}
+              </span>
+              <h2 className="font-headline text-3xl font-extrabold text-primary mb-6">饮食频率 (3/3)</h2>
+              <p className="text-on-surface-variant text-sm mb-8">乳制品与零食</p>
+
+              <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
+                <div className="space-y-6">
+                  {/* Category: Dairy */}
+                  <div className="bg-surface-container-low rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <h2 className="text-lg font-bold text-primary mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-secondary rounded-full" />
+                  乳制品及替代品
+                </h2>
+                <div className="space-y-8">
+                  {[
+                    { field: 'freqMilkDairy', label: '牛奶' },
+                    { field: 'freqYogurt', label: '酸奶' },
+                    { field: 'freqCheese', label: '奶酪' },
+                    { field: 'freqNonDairyAlternatives', label: '非乳制品替代品', sub: '(如杏仁奶、豆奶)' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-3">
+                      <p className="text-on-surface font-medium text-sm pl-1">
+                        {item.label} {item.sub && <span className="text-outline text-[10px] font-normal">{item.sub}</span>}
+                      </p>
+                      <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl">
+                        {FREQ_OPTIONS.slice(0, 4).map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-medium text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Category: Snacks */}
+              <div className="bg-surface-container-low rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <h2 className="text-lg font-bold text-primary mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-secondary-container rounded-full" />
+                  零食和甜食
+                </h2>
+                <div className="space-y-8">
+                  {[
+                    { field: 'freqNutsSeeds', label: '坚果和种子类' },
+                    { field: 'freqCookiesCake', label: '饼干、蛋糕等甜点' },
+                    { field: 'freqChocolateCandy', label: '巧克力及糖果类' },
+                    { field: 'freqSaltySnacks', label: '咸味小吃', sub: '(如薯片、饼干)' },
+                  ].map(item => (
+                    <div key={item.field} className="space-y-3">
+                      <p className="text-on-surface font-medium text-sm pl-1">
+                        {item.label} {item.sub && <span className="text-outline text-[10px] font-normal">{item.sub}</span>}
+                      </p>
+                      <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl">
+                        {FREQ_OPTIONS.slice(0, 4).map(opt => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField(item.field as keyof NutritionSurveyData, opt)}
+                            className={`flex items-center justify-center py-3 rounded-xl transition-all ${
+                              formData[item.field as keyof NutritionSurveyData] === opt
+                                ? 'bg-primary text-white'
+                                : 'hover:bg-surface-container'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-medium text-center leading-tight ${formData[item.field as keyof NutritionSurveyData] === opt ? 'text-white' : 'text-outline'}`}>
+                              {opt}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              </div>
+
+              {/* 步骤底部按钮 - 最后一步显示提交按钮 */}
+              <div className="flex gap-3 mt-6 pb-10">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex-1 py-4 rounded-2xl border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors"
+                >
+                  上一步
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFinalSubmit}
+                  disabled={saving}
+                  className="flex-1 py-4 rounded-2xl bg-primary text-white font-bold text-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? '提交中...' : '提交问卷'}
+                </button>
+              </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        </div>
+      </main>
+
+      {/* 文件预览弹窗 */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPreviewFile(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg z-10"
+            >
+              <span className="material-symbols-outlined text-on-surface text-lg">close</span>
+            </button>
+            {previewFile.type === 'image' && previewFile.url ? (
+              <img
+                src={previewFile.url}
+                alt={previewFile.name}
+                className="max-w-[90vw] max-h-[85vh] rounded-2xl object-contain"
+              />
+            ) : previewFile.type === 'pdf' && previewFile.url ? (
+              <iframe
+                src={previewFile.url}
+                title={previewFile.name}
+                className="w-[90vw] h-[85vh] rounded-2xl bg-white"
+              />
             ) : (
-              <button onClick={handleFinalSubmit} disabled={saving} className="flex-1 py-4 rounded-2xl bg-secondary text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
-                {saving ? '提交中...' : '完成提交'} {!saving && <span className="material-symbols-outlined text-lg">check_circle</span>}
-              </button>
+              <div className="bg-white rounded-2xl p-8 text-center min-w-[280px]">
+                <span className="material-symbols-outlined text-5xl text-secondary mb-3 block">
+                  {previewFile.type === 'pdf' ? 'picture_as_pdf' : 'description'}
+                </span>
+                <p className="text-sm font-medium mb-1 break-all">{previewFile.name}</p>
+                <p className="text-xs text-outline mb-4">{formatFileSize(previewFile.size)}</p>
+                {previewFile.url ? (
+                  <a
+                    href={previewFile.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-secondary font-medium hover:opacity-80"
+                  >
+                    <span className="material-symbols-outlined text-sm">download</span>
+                    下载查看
+                  </a>
+                ) : (
+                  <p className="text-xs text-outline">暂不支持在线预览此文件类型</p>
+                )}
+              </div>
             )}
           </div>
         </div>
-      </main>
+      )}
 
       {/* Toast */}
       {toast && (

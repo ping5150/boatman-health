@@ -23,9 +23,7 @@
 - **服务器 IP**：`118.145.239.169`
 - **代码目录**：`/opt/boatman-health-A4-server/`
 - **PM2 进程名**：`boatman-health-A4`
-- **进程 PID**：876884
-- **运行时长**：7 天+
-- **重启次数**：31 次
+- **Node.js版本**：v20.20.2
 
 #### 端口配置
 - **后端服务端口**：`3001`
@@ -43,8 +41,7 @@
 #### 数据库配置
 - **数据库类型**：SQLite
 - **数据库文件**：`/opt/boatman-health-A4-server/prisma/prisma/prod.db`
-- **数据库大小**：108K
-- **最后更新**：2026-04-12 13:28
+- **DATABASE_URL**：`file:./prisma/prod.db`
 
 #### 飞书表格配置
 ```bash
@@ -58,6 +55,10 @@ FORM1_TABLE_ID=tbloo8eMo2lh19w6
 # Form2（健康评估表单）
 FORM2_APP_TOKEN=EuHObRA2laxT2osbdjxcvCbHn7c
 FORM2_TABLE_ID=tblR5jTrJZnxsj91
+
+# User（用户表）
+USER_APP_TOKEN=EuHObRA2laxT2osbdjxcvCbHn7c
+USER_TABLE_ID=tblnNp0A16c7VcpG
 ```
 
 #### Nginx 配置文件
@@ -104,6 +105,18 @@ FORM1_TABLE_ID=tblA02sKspYGGMOH
 # Form2（健康评估表单）
 FORM2_APP_TOKEN=FQYXbHdHia9TEysbsH9coF9mnfg
 FORM2_TABLE_ID=tbl1Nc1TtNyLUcZ2
+
+# User（用户表）
+USER_APP_TOKEN=FQYXbHdHia9TEysbsH9coF9mnfg
+USER_TABLE_ID=tblel36RkWrCUlEn
+
+# Sleep（睡眠问卷表）- 仅测试环境
+SLEEP_APP_TOKEN=FQYXbHdHia9TEysbsH9coF9mnfg
+SLEEP_TABLE_ID=tblbNGJhTIJI34Cd
+
+# Nutrition（营养问卷表）- 仅测试环境
+NUTRITION_APP_TOKEN=FQYXbHdHia9TEysbsH9coF9mnfg
+NUTRITION_TABLE_ID=tbl9Pcxu0uIUsBYS
 ```
 
 #### Nginx 配置文件
@@ -180,7 +193,7 @@ server: {
 
 | 隔离项 | 生产环境 | 测试环境 | 本地开发 | 状态 |
 |--------|---------|---------|---------|------|
-| **数据库文件** | prod.db (108K) | test.db (96K) | dev.db | ✅ 完全隔离 |
+| **数据库文件** | prod.db | test.db | dev.db | ✅ 完全隔离 |
 | **飞书表格** | 不同 Token | 不同 Token | - | ✅ 完全隔离 |
 | **后端服务端口** | 3001 | 3003 | 3000 | ✅ 完全隔离 |
 | **前端访问端口** | 80, 8080 | 3002 | 5174 | ✅ 完全隔离 |
@@ -189,8 +202,11 @@ server: {
 
 | 表单类型 | 生产环境 Table ID | 测试环境 Table ID | 是否隔离 |
 |---------|------------------|------------------|---------|
+| **User（用户表）** | tblnNp0A16c7VcpG | tblel36RkWrCUlEn | ✅ 不同表格 |
 | **Form1（咨询预约）** | tbloo8eMo2lh19w6 | tblA02sKspYGGMOH | ✅ 不同表格 |
 | **Form2（健康评估）** | tblR5jTrJZnxsj91 | tbl1Nc1TtNyLUcZ2 | ✅ 不同表格 |
+| **Sleep（睡眠问卷）** | - | tblbNGJhTIJI34Cd | 仅测试环境 |
+| **Nutrition（营养问卷）** | - | tbl9Pcxu0uIUsBYS | 仅测试环境 |
 
 ---
 
@@ -352,5 +368,5 @@ target: 'http://118.145.239.169'  // 改为生产环境
 
 ---
 
-**最后更新**：2026-04-12 13:33
+**最后更新**：2026-04-12 16:37
 **文档维护**：开发团队

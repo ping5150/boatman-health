@@ -53,14 +53,18 @@ export const surveyService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const versionNumber = await getNextVersion(userId, 'sleep');
     const orderNo = await generateOrderNo('SS');
-    const submittedBy = user?.username || formData.name;
+    
+    // 优先使用表单数据，如果为空则使用用户信息
+    const name = formData.name || user?.username || '';
+    const phone = formData.phone || user?.phone || '';
+    const submittedBy = user?.username || name;
 
     const submission = await prisma.sleepSurvey.create({
       data: {
         userId,
         orderNo,
-        name: formData.name,
-        phone: formData.phone,
+        name,
+        phone,
         submittedBy,
         bedtime: formData.bedtime,
         sleepLatency: formData.sleepLatency,
@@ -169,8 +173,9 @@ export const surveyService = {
     const versionNumber = await getNextVersion(userId, 'sleep');
     const orderNo = await generateOrderNo('SS');
     const submittedBy = user?.username || formData.name || 'unknown';
-    const name = formData.name || '';
-    const phone = formData.phone || '';
+    // 优先使用表单数据，如果为空则使用用户信息
+    const name = formData.name || user?.username || '';
+    const phone = formData.phone || user?.phone || '';
 
     const submission = await prisma.sleepSurvey.create({
       data: {
@@ -525,6 +530,7 @@ export const surveyService = {
         freqCookiesCake: formData.freqCookiesCake,
         freqChocolateCandy: formData.freqChocolateCandy,
         freqSaltySnacks: formData.freqSaltySnacks,
+        uploadedDietFiles: formData.uploadedDietFiles,
         versionNumber,
         feishuSyncStatus: 'pending',
       },
@@ -670,6 +676,7 @@ export const surveyService = {
         freqCookiesCake: formData.freqCookiesCake,
         freqChocolateCandy: formData.freqChocolateCandy,
         freqSaltySnacks: formData.freqSaltySnacks,
+        uploadedDietFiles: formData.uploadedDietFiles,
         versionNumber,
         feishuSyncStatus: 'pending',
       },
@@ -812,6 +819,7 @@ export const surveyService = {
       freqCookiesCake: submission.freqCookiesCake ?? undefined,
       freqChocolateCandy: submission.freqChocolateCandy ?? undefined,
       freqSaltySnacks: submission.freqSaltySnacks ?? undefined,
+      uploadedDietFiles: submission.uploadedDietFiles ?? undefined,
     };
 
     return {
