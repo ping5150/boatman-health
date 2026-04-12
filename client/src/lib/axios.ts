@@ -1,13 +1,8 @@
 import axios from 'axios';
 
-// 开发环境通过 Vite proxy 代理
-// 预览/生产环境直接连接测试环境Nginx（端口3002）
-const baseURL = import.meta.env.DEV 
-  ? '/api' 
-  : 'http://118.145.239.169:3002/api';
-
+// 使用相对路径，通过 Vite 代理（开发环境）或 Nginx/EdgeOne（生产环境）转发
 const api = axios.create({
-  baseURL,
+  baseURL: '/api',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
