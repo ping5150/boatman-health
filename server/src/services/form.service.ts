@@ -10,7 +10,7 @@ import {
 import { logger } from '../utils/logger';
 import { feishuService } from './feishu.service';
 
-// 生成订单编号：BH/HA + 日期 + 4位序号
+// 生成订单编号：BH/HA + 日期 + 4位序号 + 4位随机数（防止并发冲突）
 async function generateOrderNo(prefix: 'BH' | 'HA'): Promise<string> {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const today = new Date();
@@ -21,7 +21,8 @@ async function generateOrderNo(prefix: 'BH' | 'HA'): Promise<string> {
     : await prisma.form2Submission.count({ where: { submittedAt: { gte: today } } });
 
   const seq = String(count + 1).padStart(4, '0');
-  return `${prefix}${dateStr}${seq}`;
+  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  return `${prefix}${dateStr}${seq}${random}`;
 }
 
 export const formService = {

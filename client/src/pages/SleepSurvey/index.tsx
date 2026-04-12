@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   submitSleepSurvey,
   getLatestSleepSurvey,
@@ -10,7 +10,6 @@ import {
 import { useUser } from '@/contexts/UserContext';
 
 const TOTAL_STEPS = 6;
-const LOCAL_STORAGE_KEY = 'sleep_survey_draft';
 
 const initialFormData: SleepSurveyData = {
   name: '',
@@ -54,11 +53,7 @@ const SleepSurvey = () => {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useUser();
-  
-  // 检测是否为预览模式
-  const isPreviewMode = location.pathname.includes('/preview/');
 
   const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -68,61 +63,16 @@ const SleepSurvey = () => {
 
   useEffect(() => {
     const loadLatest = async () => {
-      // 预览模式：直接加载本地存储数据，不调用 API
-      if (isPreviewMode) {
-        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setFormData({ ...initialFormData, ...parsed.formData });
-          if (parsed.surveyId) setSurveyId(parsed.surveyId);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // 正常模式：优先从服务器加载数据
+      // 只从 API 获取数据
       try {
         const survey = await getLatestSleepSurvey();
-        
+
         if (survey?.formData) {
-          // 服务器有数据：使用服务器数据，并保存到本地
+          // 服务器有数据：使用服务器数据
           setFormData({ ...initialFormData, ...survey.formData });
           setSurveyId(survey.id);
-        } else {
-          // 服务器无数据：检查本地是否有草稿（用户可能中断填写）
-          const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (localData) {
-            const parsed = JSON.parse(localData);
-            
-            // 校验用户ID：只有当前用户的缓存数据才能恢复
-            const isCurrentUserCache = parsed.userId && user?.id && parsed.userId === user.id;
-            
-            if (!isCurrentUserCache) {
-              // 非当前用户的缓存：清除本地存储，保持空白
-              localStorage.removeItem(LOCAL_STORAGE_KEY);
-            } else {
-              // 当前用户的缓存：检查是否有有效的填写内容
-              const hasLocalContent = parsed.formData && 
-                Object.entries(parsed.formData).some(([key, value]) => {
-                  // 排除 name 和 phone 字段，检查其他字段是否有值
-                  if (key === 'name' || key === 'phone') return false;
-                  if (typeof value === 'string') return value.trim() !== '';
-                  if (typeof value === 'number') return value !== 0;
-                  return Boolean(value);
-                });
-              
-              if (hasLocalContent && parsed.surveyId) {
-                // 有有效草稿：恢复草稿
-                setFormData({ ...initialFormData, ...parsed.formData });
-                setSurveyId(parsed.surveyId);
-              } else {
-                // 无有效草稿：清除本地存储，保持空白
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-              }
-            }
-          }
-          // 如果本地也没有数据，保持表单为空白（initialFormData）
         }
+        // 服务器无数据：保持表单为空白（initialFormData）
       } catch (error) {
         console.error('加载问卷失败:', error);
         // 网络错误时不自动填充，保持空白
@@ -131,55 +81,47 @@ const SleepSurvey = () => {
       }
     };
     loadLatest();
-  }, [user, isPreviewMode]);
-
-  useEffect(() => {
-    const dataToSave = {
-      formData,
-      surveyId,
-      userId: user?.id, // 添加用户ID到缓存数据
-      savedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [formData, surveyId, user?.id]);
+  }, [user]);
 
   const showSaveIndicator = useCallback(() => {
     setSaveIndicator(true);
     setTimeout(() => setSaveIndicator(false), 1500);
   }, []);
-  
-  console.log('saveIndicator', saveIndicator); // 暂时添加以消除未使用警告
 
   const updateField = (field: keyof SleepSurveyData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (fieldErrors[field]) setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
   };
 
-  const handleSaveStep = async () => {
-    // 预览模式：只保存到本地存储，不调用 API
-    if (isPreviewMode) {
-      showSaveIndicator();
-      return;
-    }
+  // 获取带有用户信息的表单数据
+  const getFormDataWithUserInfo = () => {
+    return {
+      ...formData,
+      name: formData.name || user?.username || '',
+      phone: formData.phone || user?.phone || '',
+    };
+  };
 
+  const handleSaveStep = async () => {
     setSaving(true);
+    const dataToSave = getFormDataWithUserInfo();
     try {
       if (surveyId) {
         try {
-          await updateSleepSurvey(surveyId, formData);
+          await updateSleepSurvey(surveyId, dataToSave);
         } catch (updateError: unknown) {
           // 如果更新失败（如记录不存在），重新创建草稿
           const err = updateError as { response?: { data?: { code?: number } } };
           if (err.response?.data?.code === 404) {
             console.log('问卷记录不存在，重新创建草稿');
-            const result = await saveSleepDraft(formData);
+            const result = await saveSleepDraft(dataToSave);
             setSurveyId(result.data.id);
           } else {
             throw updateError;
           }
         }
       } else {
-        const result = await saveSleepDraft(formData);
+        const result = await saveSleepDraft(dataToSave);
         setSurveyId(result.data.id);
       }
       showSaveIndicator();
@@ -228,26 +170,19 @@ const SleepSurvey = () => {
   };
 
   const handleFinalSubmit = async () => {
-    // 预览模式：显示提示
-    if (isPreviewMode) {
-      showToast('预览模式：数据已保存到本地存储', 'success');
-      return;
-    }
-
     setSaving(true);
+    const dataToSubmit = getFormDataWithUserInfo();
     try {
-      console.log('提交睡眠问卷, surveyId:', surveyId, 'formData:', formData);
+      console.log('提交睡眠问卷, surveyId:', surveyId, 'formData:', dataToSubmit);
       let result;
       if (surveyId) {
-        result = await updateSleepSurvey(surveyId, formData);
+        result = await updateSleepSurvey(surveyId, dataToSubmit);
         console.log('更新问卷结果:', result);
       } else {
-        result = await submitSleepSurvey(formData);
+        result = await submitSleepSurvey(dataToSubmit);
         console.log('提交问卷结果:', result);
       }
       console.log('准备跳转到成功页面');
-      // 清除本地草稿
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
       navigate('/survey-success?type=sleep');
     } catch (error) {
       console.error('提交失败:', error);

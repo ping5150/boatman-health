@@ -10,7 +10,7 @@ const DEV_CODE = '123456';
 // 存储验证码（开发阶段使用内存，生产环境替换为 Redis）
 const codeStore = new Map<string, { code: string; expiresAt: number }>();
 
-// 生成用户ID：CF + 日期 + 4位序号
+// 生成用户ID：CF + 日期 + 4位序号 + 4位随机数（防止并发冲突）
 export async function generateUserId(): Promise<string> {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const today = new Date();
@@ -21,7 +21,8 @@ export async function generateUserId(): Promise<string> {
   });
 
   const seq = String(count + 1).padStart(4, '0');
-  return `CF${dateStr}${seq}`;
+  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  return `CF${dateStr}${seq}${random}`;
 }
 
 export const authService = {

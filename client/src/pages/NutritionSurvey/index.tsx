@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   submitNutritionSurvey,
   getLatestNutritionSurvey,
@@ -22,7 +22,6 @@ interface UploadedFile {
 }
 
 const TOTAL_STEPS = 12;
-const LOCAL_STORAGE_KEY = 'nutrition_survey_draft';
 
 // 频率选项
 const FREQ_OPTIONS = ['每天', '每周3-6次', '每周1-2次', '每月1-3次', '几乎不', '从不'];
@@ -123,11 +122,7 @@ const NutritionSurvey = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useUser();
-  
-  // 检测是否为预览模式
-  const isPreviewMode = location.pathname.includes('/preview/');
 
   const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -137,22 +132,10 @@ const NutritionSurvey = () => {
 
   useEffect(() => {
     const loadLatest = async () => {
-      // 预览模式：直接加载本地存储数据，不调用 API
-      if (isPreviewMode) {
-        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setFormData({ ...initialFormData, ...parsed.formData });
-          if (parsed.surveyId) setSurveyId(parsed.surveyId);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // 正常模式：优先从服务器加载数据
+      // 只从 API 获取数据
       try {
         const survey = await getLatestNutritionSurvey();
-        
+
         if (survey?.formData) {
           // 服务器有数据：使用服务器数据
           setFormData({ ...initialFormData, ...survey.formData });
@@ -170,42 +153,8 @@ const NutritionSurvey = () => {
               type: f.type,
             })));
           }
-        } else {
-          // 服务器无数据：检查本地是否有草稿（用户可能中断填写）
-          const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (localData) {
-            const parsed = JSON.parse(localData);
-            
-            // 校验用户ID：只有当前用户的缓存数据才能恢复
-            const isCurrentUserCache = parsed.userId && user?.id && parsed.userId === user.id;
-            
-            if (!isCurrentUserCache) {
-              // 非当前用户的缓存：清除本地存储，保持空白
-              localStorage.removeItem(LOCAL_STORAGE_KEY);
-            } else {
-              // 当前用户的缓存：检查是否有有效的填写内容
-              const hasLocalContent = parsed.formData && 
-                Object.entries(parsed.formData).some(([key, value]) => {
-                  // 排除 name 和 phone 字段，检查其他字段是否有值
-                  if (key === 'name' || key === 'phone') return false;
-                  if (typeof value === 'string') return value.trim() !== '';
-                  if (typeof value === 'number') return value !== 0;
-                  if (Array.isArray(value)) return value.length > 0;
-                  return Boolean(value);
-                });
-              
-              if (hasLocalContent && parsed.surveyId) {
-                // 有有效草稿：恢复草稿
-                setFormData({ ...initialFormData, ...parsed.formData });
-                setSurveyId(parsed.surveyId);
-              } else {
-                // 无有效草稿：清除本地存储，保持空白
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-              }
-            }
-          }
-          // 如果本地也没有数据，保持表单为空白（initialFormData）
         }
+        // 服务器无数据：保持表单为空白（initialFormData）
       } catch (error) {
         console.error('加载问卷失败:', error);
         // 网络错误时不自动填充，保持空白
@@ -214,7 +163,7 @@ const NutritionSurvey = () => {
       }
     };
     loadLatest();
-  }, [user, isPreviewMode]);
+  }, [user]);
 
   // localStorage实时自动保存
   useEffect(() => {
@@ -233,16 +182,6 @@ const NutritionSurvey = () => {
       }));
     }
   }, [uploadedDietFiles]);
-
-  useEffect(() => {
-    const dataToSave = {
-      formData,
-      surveyId,
-      userId: user?.id, // 添加用户ID到缓存数据
-      savedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [formData, surveyId, user?.id]);
 
   const showSaveIndicator = useCallback(() => { setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); }, []);
 
@@ -337,12 +276,7 @@ const NutritionSurvey = () => {
   };
 
   const validateStep1 = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!formData.name?.trim()) errors.name = '请输入姓名';
-    if (!formData.phone?.trim()) errors.phone = '请输入联系电话';
-    else if (!/^1[3-9]\d{9}$/.test(formData.phone)) errors.phone = '请输入正确的手机号码';
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) { showToast(Object.values(errors)[0]); return false; }
+    // 姓名和电话已移除，由后端自动从用户信息获取
     return true;
   };
 
@@ -359,16 +293,20 @@ const NutritionSurvey = () => {
     return cleaned;
   };
 
-  const handleSaveStep = async () => {
-    // 预览模式：只保存到本地存储，不调用 API
-    if (isPreviewMode) {
-      showSaveIndicator();
-      return;
-    }
+  // 获取带有用户信息的表单数据
+  const getFormDataWithUserInfo = () => {
+    return {
+      ...formData,
+      name: formData.name || user?.username || '',
+      phone: formData.phone || user?.phone || '',
+    };
+  };
 
+  const handleSaveStep = async () => {
     setSaving(true);
     try {
-      const cleanedData = cleanFormData(formData);
+      const dataToSave = getFormDataWithUserInfo();
+      const cleanedData = cleanFormData(dataToSave);
       if (surveyId) {
         try {
           await updateNutritionSurvey(surveyId, cleanedData);
@@ -472,17 +410,12 @@ const NutritionSurvey = () => {
   };
 
   const handleFinalSubmit = async () => {
-    // 预览模式：显示提示
-    if (isPreviewMode) {
-      showToast('预览模式：数据已保存到本地存储', 'success');
-      return;
-    }
-
     setSaving(true);
     try {
-      // 将上传的文件数据添加到表单数据中
+      // 获取带有用户信息的表单数据，并将上传的文件数据添加到表单数据中
+      const baseData = getFormDataWithUserInfo();
       const submitData: NutritionSurveyData = {
-        ...formData,
+        ...baseData,
         uploadedDietFiles: uploadedDietFiles
           .filter(f => f.status === 'success' && f.url)
           .map(f => ({
@@ -503,8 +436,6 @@ const NutritionSurvey = () => {
         console.log('提交问卷结果:', result);
       }
       console.log('准备跳转到成功页面');
-      // 清除本地草稿
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
       navigate('/survey-success?type=nutrition');
     } catch (error) {
       console.error('提交失败:', error);
@@ -643,31 +574,6 @@ const NutritionSurvey = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-[2px] bg-secondary" />
                   <h2 className="font-headline font-bold text-base text-primary tracking-tight">基础体征</h2>
-                </div>
-                {/* 姓名和电话 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
-                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">姓名 <span className="text-error">*</span></span>
-                    <input
-                      className="bg-transparent border-none p-0 text-base font-headline font-bold text-primary w-full focus:ring-0 placeholder:text-outline-variant"
-                      placeholder="请输入"
-                      type="text"
-                      value={formData.name}
-                      onChange={e => updateField('name', e.target.value)}
-                    />
-                    {fieldErrors.name && <p className="text-error text-[10px] mt-1">{fieldErrors.name}</p>}
-                  </div>
-                  <div className="bg-surface-container-low p-3 rounded-xl shadow-[0_4px_16px_rgba(0,30,64,0.04)] transition-all flex flex-col justify-center">
-                    <span className="text-on-surface-variant font-semibold text-[10px] uppercase tracking-widest block mb-1 opacity-60">电话 <span className="text-error">*</span></span>
-                    <input
-                      className="bg-transparent border-none p-0 text-base font-headline font-bold text-primary w-full focus:ring-0 placeholder:text-outline-variant"
-                      placeholder="请输入"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={e => updateField('phone', e.target.value)}
-                    />
-                    {fieldErrors.phone && <p className="text-error text-[10px] mt-1">{fieldErrors.phone}</p>}
-                  </div>
                 </div>
                 {/* 身高和体重 */}
                 <div className="grid grid-cols-2 gap-3">

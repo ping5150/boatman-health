@@ -10,7 +10,7 @@ import {
 import { logger } from '../utils/logger';
 import { feishuService } from './feishu.service';
 
-// 生成订单编号：SS/NS + 日期 + 4位序号
+// 生成订单编号：SS/NS + 日期 + 4位序号 + 4位随机数（防止并发冲突）
 async function generateOrderNo(prefix: 'SS' | 'NS'): Promise<string> {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const today = new Date();
@@ -21,7 +21,8 @@ async function generateOrderNo(prefix: 'SS' | 'NS'): Promise<string> {
     : await prisma.nutritionSurvey.count({ where: { submittedAt: { gte: today } } });
 
   const seq = String(count + 1).padStart(4, '0');
-  return `${prefix}${dateStr}${seq}`;
+  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  return `${prefix}${dateStr}${seq}${random}`;
 }
 
 // 获取下一个版本号
@@ -446,14 +447,18 @@ export const surveyService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const versionNumber = await getNextVersion(userId, 'nutrition');
     const orderNo = await generateOrderNo('NS');
-    const submittedBy = user?.username || formData.name;
+    
+    // 优先使用表单数据，如果为空则使用用户信息
+    const name = formData.name || user?.username || '';
+    const phone = formData.phone || user?.phone || '';
+    const submittedBy = user?.username || name;
 
     const submission = await prisma.nutritionSurvey.create({
       data: {
         userId,
         orderNo,
-        name: formData.name,
-        phone: formData.phone,
+        name,
+        phone,
         submittedBy,
         consultationReason: formData.consultationReason,
         nutritionistSupportGoals: formData.nutritionistSupportGoals,
@@ -590,9 +595,11 @@ export const surveyService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const versionNumber = await getNextVersion(userId, 'nutrition');
     const orderNo = await generateOrderNo('NS');
-    const submittedBy = user?.username || formData.name || 'unknown';
-    const name = formData.name || '';
-    const phone = formData.phone || '';
+    
+    // 优先使用表单数据，如果为空则使用用户信息
+    const name = formData.name || user?.username || '';
+    const phone = formData.phone || user?.phone || '';
+    const submittedBy = user?.username || name;
 
     const submission = await prisma.nutritionSurvey.create({
       data: {
