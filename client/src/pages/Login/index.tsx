@@ -150,11 +150,11 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-surface to-surface-container-low relative">
       <TopBar showBack={step !== 'phone'} showAccount={false} onBack={handleBack} transparent />
 
-      <main className="min-h-screen flex flex-col items-center justify-center px-6 py-8 -mt-16">
+      <main className="pt-20 pb-8 flex flex-col items-center px-6">
         {/* Logo and Title */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-3">
-            <img src={new URL('@/images/img-04.png', import.meta.url).href} alt="船夫健康Logo" className="h-48 w-auto drop-shadow-sm" />
+            <img src={new URL('@/images/img-04.png', import.meta.url).href} alt="船夫健康Logo" className="h-40 w-auto drop-shadow-sm" />
           </div>
           {/* <h1 className="font-headline font-extrabold text-3xl text-primary tracking-tight">船夫健康</h1> */}
           <p className="text-on-surface-variant text-sm mt-1">您的专属私人健康管家</p>

@@ -40,7 +40,14 @@ const App = () => {
         {/* 主布局页面（带底部导航） */}
         <Route element={<MainLayout />}>
           <Route path="/services" element={<Services />} />
-          <Route path="/account" element={<Account />} />
+          <Route
+            path="/account"
+            element={
+              <AuthGuard>
+                <Account />
+              </AuthGuard>
+            }
+          />
         </Route>
 
         {/* 子页面布局（带返回按钮 + 底部导航） */}
@@ -48,7 +55,14 @@ const App = () => {
           <Route path="/about" element={<About />} />
           <Route path="/paradigm" element={<Paradigm />} />
           <Route path="/cases" element={<Cases />} />
-          <Route path="/consultation" element={<Consultation />} />
+          <Route
+            path="/consultation"
+            element={
+              <AuthGuard>
+                <Consultation />
+              </AuthGuard>
+            }
+          />
           <Route
             path="/health-form"
             element={
@@ -66,10 +80,26 @@ const App = () => {
               </AuthGuard>
             }
           />
-          <Route path="/account/health-archive" element={<HealthArchiveEdit />} />
-          <Route path="/account/settings" element={<Settings />} />
-          <Route path="/account/contact" element={<Contact />} />
-          <Route path="/account/logout" element={<Logout />} />
+          <Route path="/account/health-archive" element={
+            <AuthGuard>
+              <HealthArchiveEdit />
+            </AuthGuard>
+          } />
+          <Route path="/account/settings" element={
+            <AuthGuard>
+              <Settings />
+            </AuthGuard>
+          } />
+          <Route path="/account/contact" element={
+            <AuthGuard>
+              <Contact />
+            </AuthGuard>
+          } />
+          <Route path="/account/logout" element={
+            <AuthGuard>
+              <Logout />
+            </AuthGuard>
+          } />
           <Route path="/booking-success" element={<BookingSuccess />} />
           <Route path="/booking/:id" element={<BookingDetail />} />
           <Route path="/archive-success" element={<ArchiveSuccess />} />

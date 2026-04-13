@@ -16,7 +16,7 @@ interface BookingResult {
 }
 
 const Consultation = () => {
-  const { isAuthenticated, user } = useUser();
+  const { user } = useUser();
   const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -29,12 +29,6 @@ const Consultation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (user) {

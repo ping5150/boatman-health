@@ -1,19 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import { useEffect, useState } from 'react';
 import { getBookingList, BookingData } from '@/api/form1.api';
 
 const Account = () => {
   const { user, isAuthenticated } = useUser();
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const fetchBookings = async () => {

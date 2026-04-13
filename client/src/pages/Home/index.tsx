@@ -1,22 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
-import { useUser } from '@/contexts/UserContext';
 import homeImage01 from '@/images/hoem-01.jpg';
 
 const Home = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useUser();
-
-  // 检查登录状态，未登录跳转到登录页
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
-
-
-
   return (
     <div className="min-h-screen bg-surface">
       {/* 透明 TopBar */}
