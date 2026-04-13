@@ -19,6 +19,7 @@ interface UploadedFile {
   status: 'uploading' | 'success' | 'error';
   url?: string;
   type?: 'pdf' | 'image' | 'doc' | 'other';
+  source?: 'weekday' | 'weekend'; // 文件来源：工作日/周末
 }
 
 const TOTAL_STEPS = 12;
@@ -39,7 +40,9 @@ const initialFormData: NutritionSurveyData = {
   dailyMeals: '',
   breakfastHabit: '',
   commonSnacks: [],
+  commonSnacksOther: '',
   foodSources: [],
+  foodSourcesOther: '',
   foodAllergies: '',
   dislikedFoods: '',
   dietPlanType: '',
@@ -119,7 +122,8 @@ const NutritionSurvey = () => {
   const [uploadedDietFiles, setUploadedDietFiles] = useState<UploadedFile[]>([]);
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const weekdayFileInputRef = useRef<HTMLInputElement>(null);
+  const weekendFileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
   const { user } = useUser();
@@ -204,7 +208,7 @@ const NutritionSurvey = () => {
   };
 
   // 处理文件选择
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, source: 'weekday' | 'weekend') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -241,6 +245,7 @@ const NutritionSurvey = () => {
         progress: 0,
         status: 'uploading',
         type: fileType,
+        source, // 记录文件来源
       };
 
       setUploadedDietFiles((prev) => [...prev, newFile]);
@@ -337,28 +342,54 @@ const NutritionSurvey = () => {
 
   // 步骤变化时自动滚动到顶部
   useEffect(() => {
-    // 使用双重 requestAnimationFrame 确保在页面渲染完成后再滚动
     const scrollToTop = () => {
-      // 方式1: 直接设置 scrollTop（最可靠）
+      // 方式1: 标准方法
+      window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-      // 方式2: scrollTo 方法
-      window.scrollTo(0, 0);
+
+      // 方式2: 找到所有可能的滚动容器
+      const findAndScrollAllContainers = () => {
+        // 检查 html 元素
+        const html = document.documentElement;
+        if (html.scrollTop > 0) {
+          html.scrollTop = 0;
+        }
+
+        // 检查 body 元素
+        const body = document.body;
+        if (body.scrollTop > 0) {
+          body.scrollTop = 0;
+        }
+
+        // 检查所有可能的滚动容器
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(el => {
+          if (el instanceof HTMLElement) {
+            const style = window.getComputedStyle(el);
+            const overflow = style.overflow + style.overflowY;
+            if ((overflow.includes('auto') || overflow.includes('scroll')) && el.scrollTop > 0) {
+              el.scrollTop = 0;
+            }
+          }
+        });
+      };
+
+      findAndScrollAllContainers();
+
+      // 使用 scrollIntoView 作为最终方案
+      const header = document.querySelector('header');
+      if (header) {
+        header.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
     };
 
-    // 使用双重 requestAnimationFrame 确保在 React 渲染完成后执行
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        scrollToTop();
-      });
-    });
-
-    // 延迟执行作为备用方案
-    const timer1 = setTimeout(scrollToTop, 50);
+    scrollToTop();
+    const timer = setTimeout(scrollToTop, 50);
     const timer2 = setTimeout(scrollToTop, 150);
 
     return () => {
-      clearTimeout(timer1);
+      clearTimeout(timer);
       clearTimeout(timer2);
     };
   }, [currentStep]);
@@ -388,7 +419,9 @@ const NutritionSurvey = () => {
 
         setCurrentStep(nextStep);
       }
-    } catch {}
+    } catch (error) {
+      console.error('handleNextStep error:', error);
+    }
   };
 
   const handlePrevStep = () => {
@@ -613,19 +646,44 @@ const NutritionSurvey = () => {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => updateField('weightChange', opt)}
+                      onClick={() => {
+                        if (opt === '其他') {
+                          // 选中"其他"时，设置空格作为占位符，表示选中了"其他"选项
+                          updateField('weightChange', ' ');
+                        } else {
+                          updateField('weightChange', opt);
+                        }
+                      }}
                       className={`flex items-center justify-center py-3 rounded-xl transition-all ${
-                        formData.weightChange === opt
+                        (opt === '其他'
+                          ? formData.weightChange && !['是', '否'].includes(formData.weightChange)
+                          : formData.weightChange === opt)
                           ? 'bg-primary text-white'
                           : 'hover:bg-surface-container'
                       }`}
                     >
-                      <span className={`text-xs font-medium text-center leading-tight ${formData.weightChange === opt ? 'text-white' : 'text-outline'}`}>
+                      <span className={`text-xs font-medium text-center leading-tight ${
+                        (opt === '其他'
+                          ? formData.weightChange && !['是', '否'].includes(formData.weightChange)
+                          : formData.weightChange === opt)
+                          ? 'text-white'
+                          : 'text-outline'
+                      }`}>
                         {opt}
                       </span>
                     </button>
                   ))}
                 </div>
+                {/* 其他输入框 - 选中"其他"时显示 */}
+                {formData.weightChange && !['是', '否'].includes(formData.weightChange) && (
+                  <input
+                    type="text"
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all"
+                    placeholder="请说明具体情况..."
+                    value={formData.weightChange === ' ' ? '' : formData.weightChange}
+                    onChange={e => updateField('weightChange', e.target.value || ' ')}
+                  />
+                )}
               </div>
               {/* 慢性疾病 */}
               <div className="space-y-2">
@@ -699,19 +757,44 @@ const NutritionSurvey = () => {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => updateField('dailyMeals', opt)}
+                      onClick={() => {
+                        if (opt === '其他') {
+                          // 选中"其他"时，设置空格作为占位符
+                          updateField('dailyMeals', ' ');
+                        } else {
+                          updateField('dailyMeals', opt);
+                        }
+                      }}
                       className={`flex items-center justify-center py-3 rounded-xl transition-all ${
-                        formData.dailyMeals === opt
+                        (opt === '其他'
+                          ? formData.dailyMeals && !['1餐', '2餐', '3餐'].includes(formData.dailyMeals)
+                          : formData.dailyMeals === opt)
                           ? 'bg-primary text-white'
                           : 'hover:bg-surface-container'
                       }`}
                     >
-                      <span className={`text-xs font-medium text-center leading-tight ${formData.dailyMeals === opt ? 'text-white' : 'text-outline'}`}>
+                      <span className={`text-xs font-medium text-center leading-tight ${
+                        (opt === '其他'
+                          ? formData.dailyMeals && !['1餐', '2餐', '3餐'].includes(formData.dailyMeals)
+                          : formData.dailyMeals === opt)
+                          ? 'text-white'
+                          : 'text-outline'
+                      }`}>
                         {opt}
                       </span>
                     </button>
                   ))}
                 </div>
+                {/* 其他输入框 */}
+                {formData.dailyMeals && !['1餐', '2餐', '3餐'].includes(formData.dailyMeals) && (
+                  <input
+                    type="text"
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all"
+                    placeholder="请说明具体餐数..."
+                    value={formData.dailyMeals === ' ' ? '' : formData.dailyMeals}
+                    onChange={e => updateField('dailyMeals', e.target.value || ' ')}
+                  />
+                )}
               </section>
               {/* Question 2: Yes/No */}
               <section className="space-y-3">
@@ -750,8 +833,19 @@ const NutritionSurvey = () => {
                       <input
                         className="sr-only peer"
                         type="checkbox"
-                        checked={((formData.commonSnacks as string[]) || []).includes(opt)}
-                        onChange={() => toggleArray('commonSnacks', opt)}
+                        checked={opt === '其他' ? (formData.commonSnacksOther !== undefined && formData.commonSnacksOther !== '') : ((formData.commonSnacks as string[]) || []).includes(opt)}
+                        onChange={() => {
+                          if (opt === '其他') {
+                            // 点击"其他"：切换状态
+                            if (formData.commonSnacksOther !== undefined && formData.commonSnacksOther !== '') {
+                              updateField('commonSnacksOther', '');
+                            } else {
+                              updateField('commonSnacksOther', ' '); // 设置一个空格作为占位符，表示选中
+                            }
+                          } else {
+                            toggleArray('commonSnacks', opt);
+                          }
+                        }}
                       />
                       <div className="px-4 py-2 rounded-full bg-surface-container-low shadow-[0_4px_16px_rgba(0,30,64,0.04)] border border-transparent peer-checked:border-secondary peer-checked:bg-secondary/5 transition-all">
                         <span className="text-xs font-bold text-primary">{opt}</span>
@@ -759,6 +853,16 @@ const NutritionSurvey = () => {
                     </label>
                   ))}
                 </div>
+                {/* 其他输入框 - 当选中"其他"时显示 */}
+                {formData.commonSnacksOther && formData.commonSnacksOther !== '' && (
+                  <input
+                    type="text"
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all"
+                    placeholder="请说明具体零食..."
+                    value={formData.commonSnacksOther?.trim() || ''}
+                    onChange={e => updateField('commonSnacksOther', e.target.value || ' ')}
+                  />
+                )}
               </section>
               {/* Question 4: Source Checklist */}
               <section className="space-y-3">
@@ -772,13 +876,33 @@ const NutritionSurvey = () => {
                       <input
                         className="w-4 h-4 rounded text-secondary border-outline/30 focus:ring-secondary/20 transition-all"
                         type="checkbox"
-                        checked={((formData.foodSources as string[]) || []).includes(opt)}
-                        onChange={() => toggleArray('foodSources', opt)}
+                        checked={opt === '其他' ? (formData.foodSourcesOther !== undefined && formData.foodSourcesOther !== '') : ((formData.foodSources as string[]) || []).includes(opt)}
+                        onChange={() => {
+                          if (opt === '其他') {
+                            if (formData.foodSourcesOther !== undefined && formData.foodSourcesOther !== '') {
+                              updateField('foodSourcesOther', '');
+                            } else {
+                              updateField('foodSourcesOther', ' ');
+                            }
+                          } else {
+                            toggleArray('foodSources', opt);
+                          }
+                        }}
                       />
                       <span className="ml-3 text-sm font-bold text-primary">{opt}</span>
                     </label>
                   ))}
                 </div>
+                {/* 其他输入框 */}
+                {formData.foodSourcesOther && formData.foodSourcesOther !== '' && (
+                  <input
+                    type="text"
+                    className="w-full bg-surface-container-low border-none rounded-xl p-3 focus:ring-2 focus:ring-secondary/20 text-on-surface text-sm placeholder:text-outline/40 transition-all"
+                    placeholder="请说明具体来源..."
+                    value={formData.foodSourcesOther?.trim() || ''}
+                    onChange={e => updateField('foodSourcesOther', e.target.value || ' ')}
+                  />
+                )}
               </section>
               {/* Question 5: Text Input */}
               <section className="space-y-3">
@@ -876,28 +1000,58 @@ const NutritionSurvey = () => {
                 </div>
                 <p className="text-on-surface-variant text-[11px] leading-tight opacity-70 mb-2">请上传2天的饮食记录，包括早餐、午餐、晚餐及任何小吃。支持文字或图片。工作日和周末各一天。</p>
 
-                {/* 上传区域 */}
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <span className="material-symbols-outlined text-2xl text-secondary mb-1">upload</span>
-                  <p className="text-[11px] text-outline font-medium">点击上传饮食记录</p>
-                  <p className="text-[10px] text-outline/60 mt-0.5">图片 / PDF / Word，单个文件最大 50MB，最多10个</p>
+                {/* 两个上传区域 */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 工作日饮食上传 */}
+                  <div
+                    onClick={() => weekdayFileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                  >
+                    <input
+                      ref={weekdayFileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx"
+                      onChange={(e) => handleFileSelect(e, 'weekday')}
+                      className="hidden"
+                    />
+                    <span className="material-symbols-outlined text-xl text-secondary mb-1">work</span>
+                    <p className="text-[11px] text-outline font-medium">工作日饮食</p>
+                    <p className="text-[10px] text-outline/60 mt-0.5">点击上传</p>
+                  </div>
+
+                  {/* 周末饮食上传 */}
+                  <div
+                    onClick={() => weekendFileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-outline-variant/50 rounded-2xl bg-surface cursor-pointer hover:bg-surface-variant transition"
+                  >
+                    <input
+                      ref={weekendFileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx"
+                      onChange={(e) => handleFileSelect(e, 'weekend')}
+                      className="hidden"
+                    />
+                    <span className="material-symbols-outlined text-xl text-secondary mb-1">weekend</span>
+                    <p className="text-[11px] text-outline font-medium">周末饮食</p>
+                    <p className="text-[10px] text-outline/60 mt-0.5">点击上传</p>
+                  </div>
                 </div>
 
-                {/* 已上传文件列表 */}
+                <p className="text-[10px] text-outline/60 text-center">单个文件最大 50MB，最多10个</p>
+
+                {/* 已上传文件列表 - 按来源排序：工作日在前，周末在后 */}
                 {uploadedDietFiles.length > 0 && (
                   <div className="space-y-2">
-                    {uploadedDietFiles.map((file) => (
+                    {[...uploadedDietFiles]
+                      .sort((a, b) => {
+                        // 工作日排前面，周末排后面
+                        if (a.source === 'weekday' && b.source !== 'weekday') return -1;
+                        if (a.source !== 'weekday' && b.source === 'weekday') return 1;
+                        return 0;
+                      })
+                      .map((file) => (
                       <div key={file.id} className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-outline-variant/10">
                         {/* 缩略图/图标 */}
                         {file.type === 'image' && file.url ? (
@@ -1343,10 +1497,10 @@ const NutritionSurvey = () => {
               <p className="text-on-surface-variant text-sm mb-8">继续了解您的运动习惯细节。</p>
 
               <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5 space-y-6">
-                <section>
+                {/* <section>
                   <h2 className="text-3xl font-headline font-extrabold text-primary leading-tight mb-4">04 运动习惯（2/2）</h2>
                   <p className="text-on-surface-variant leading-relaxed"><br /></p>
-                </section>
+                </section> */}
             {/* Question 7 */}
             <div className="mb-10 bg-surface-container-low rounded-xl p-6 shadow-[0_8px_24px_rgba(0,30,64,0.06)]">
               <label className="block text-sm font-semibold text-primary mb-3">7. 您在保持规律运动方面面临的最大挑战或障碍是什么？</label>

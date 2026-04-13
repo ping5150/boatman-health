@@ -76,7 +76,9 @@ export interface NutritionSurveyData {
   dailyMeals?: string;               // 每天主餐数量
   breakfastHabit?: string;           // 固定早餐习惯
   commonSnacks?: string;             // 常吃零食（多选，逗号分隔）
+  commonSnacksOther?: string;        // 其他零食
   foodSources?: string;              // 食物来源（多选，逗号分隔）
+  foodSourcesOther?: string;         // 其他食物来源
   foodAllergies?: string;            // 食物过敏
   // 03 饮食习惯（2/4）
   dislikedFoods?: string;            // 不喜欢食物

@@ -157,7 +157,9 @@ model NutritionSurvey {
   dailyMeals                String?   @map("daily_meals")                // 每天主餐数量
   breakfastHabit            String?   @map("breakfast_habit")            // 固定早餐习惯
   commonSnacks              String?   @map("common_snacks")              // 常吃零食
+  commonSnacksOther         String?   @map("common_snacks_other")        // 其他零食
   foodSources               String?   @map("food_sources")               // 食物来源
+  foodSourcesOther          String?   @map("food_sources_other")         // 其他食物来源
   foodAllergies             String?   @map("food_allergies")             // 食物过敏
   // 03 饮食习惯（2/4）
   dislikedFoods             String?   @map("disliked_foods")             // 不喜欢食物

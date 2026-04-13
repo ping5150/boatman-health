@@ -18,7 +18,9 @@ export interface NutritionSurveyData {
   dailyMeals?: string;
   breakfastHabit?: string;
   commonSnacks?: string[];
+  commonSnacksOther?: string;
   foodSources?: string[];
+  foodSourcesOther?: string;
   foodAllergies?: string;
   // 03 饮食习惯（2/4）
   dislikedFoods?: string;

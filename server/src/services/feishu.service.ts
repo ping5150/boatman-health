@@ -1256,18 +1256,37 @@ export const feishuService = {
     } else if (submission.weight != null) {
       fields['身高体重'] = `${submission.weight}kg`;
     }
-    if (submission.weightChange) fields['体重变化'] = submission.weightChange;
+    if (submission.weightChange) {
+      // 判断是否为"其他"值
+      fields['体重变化'] = ['是', '否'].includes(submission.weightChange as string)
+        ? submission.weightChange
+        : `其他：${submission.weightChange}`;
+    }
     if (submission.chronicDiseases) fields['慢性疾病'] = submission.chronicDiseases;
     if (submission.medicationsSupplements) fields['用药情况'] = submission.medicationsSupplements;
 
     // 02 饮食习惯（合并）
     const dietHabits: string[] = [];
-    if (submission.dailyMeals) dietHabits.push(`每日${submission.dailyMeals}餐`);
+    if (submission.dailyMeals) {
+      // 判断是否为"其他"值
+      const dailyMealsStr = ['1餐', '2餐', '3餐'].includes(submission.dailyMeals as string)
+        ? submission.dailyMeals
+        : `其他：${submission.dailyMeals}`;
+      dietHabits.push(`每日${dailyMealsStr}餐`);
+    }
     if (submission.breakfastHabit) dietHabits.push(`早餐: ${submission.breakfastHabit}`);
     if (dietHabits.length > 0) fields['饮食习惯'] = dietHabits.join('；');
 
-    if (submission.commonSnacks) fields['常吃零食'] = this.formatArray(submission.commonSnacks);
-    if (submission.foodSources) fields['食物来源'] = this.formatArray(submission.foodSources);
+    // 常吃零食（含"其他"）
+    if (submission.commonSnacks || submission.commonSnacksOther) {
+      const snacks = this.formatArrayWithOther(submission.commonSnacks, submission.commonSnacksOther);
+      fields['常吃零食'] = snacks;
+    }
+    // 食物来源（含"其他"）
+    if (submission.foodSources || submission.foodSourcesOther) {
+      const sources = this.formatArrayWithOther(submission.foodSources, submission.foodSourcesOther);
+      fields['食物来源'] = sources;
+    }
     if (submission.foodAllergies) fields['食物过敏'] = submission.foodAllergies;
     if (submission.dislikedFoods) fields['不喜欢的食物'] = submission.dislikedFoods;
     if (submission.dietPlanType) fields['特殊饮食'] = submission.dietPlanType;
@@ -1290,7 +1309,7 @@ export const feishuService = {
     if (submission.drinkSugarFree) drinks.push(`无糖饮料: ${submission.drinkSugarFree}`);
     if (submission.drinkSugary) drinks.push(`含糖饮料: ${submission.drinkSugary}`);
     if (submission.drinkEnergy) drinks.push(`能量饮料: ${submission.drinkEnergy}`);
-    if (submission.drinkOther) drinks.push(`其他: ${submission.drinkOther}`);
+    if (submission.drinkOther) drinks.push(`其他：${submission.drinkOther}`);
     if (drinks.length > 0) fields['饮品摄入'] = drinks.join('；');
 
     if (submission.highSaltSweat) fields['出汗含盐高'] = submission.highSaltSweat;
@@ -1343,8 +1362,10 @@ export const feishuService = {
     if (submission.screenTimeElectronics) screenTime.push(`电子设备: ${submission.screenTimeElectronics}`);
     if (screenTime.length > 0) fields['屏幕时间'] = screenTime.join('；');
 
-    if (submission.socialActivities) fields['社交活动'] = this.formatArray(submission.socialActivities);
-    if (submission.socialActivitiesOther) fields['其他社交'] = submission.socialActivitiesOther;
+    if (submission.socialActivities || submission.socialActivitiesOther) {
+      const activities = this.formatArrayWithOther(submission.socialActivities, submission.socialActivitiesOther);
+      fields['社交活动'] = activities;
+    }
     if (submission.otherFeedback) fields['其他反馈'] = submission.otherFeedback;
 
     // 饮食频率（合并为3个字段）
@@ -1408,11 +1429,69 @@ export const feishuService = {
 
   /**
    * 格式化数组为字符串
+   * 支持多种输入格式：数组、JSON字符串、逗号分隔字符串
    */
   formatArray(value: unknown): string {
     if (Array.isArray(value)) {
       return value.join('、');
     }
+    if (typeof value === 'string' && value.trim()) {
+      // 尝试解析 JSON 字符串
+      if (value.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            return parsed.join('、');
+          }
+        } catch {
+          // JSON 解析失败，返回原字符串
+        }
+      }
+      // 按逗号分隔处理
+      const items = value.split(',').map(s => s.trim()).filter(Boolean);
+      return items.join('、');
+    }
     return String(value);
+  },
+
+  /**
+   * 格式化数组字段，并添加"其他"内容
+   * 过滤掉数组中的"其他"选项，用 otherValue 替代显示
+   * 支持多种输入格式：数组、JSON字符串、逗号分隔字符串
+   */
+  formatArrayWithOther(mainValue: unknown, otherValue: unknown): string {
+    const items: string[] = [];
+    
+    // 解析 mainValue（可能是数组、JSON字符串或逗号分隔字符串）
+    let parsedArray: string[] = [];
+    if (Array.isArray(mainValue) && mainValue.length > 0) {
+      parsedArray = mainValue;
+    } else if (typeof mainValue === 'string' && mainValue.trim()) {
+      // 尝试解析 JSON 字符串
+      if (mainValue.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(mainValue);
+          if (Array.isArray(parsed)) {
+            parsedArray = parsed;
+          }
+        } catch {
+          // JSON 解析失败，尝试按逗号分隔
+          parsedArray = mainValue.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else {
+        // 按逗号分隔
+        parsedArray = mainValue.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
+    
+    // 过滤掉"其他"选项，避免重复显示
+    const filtered = parsedArray.filter(item => item !== '其他');
+    items.push(...filtered);
+    
+    // 添加"其他"内容（如果有实际输入）
+    if (otherValue && String(otherValue).trim()) {
+      items.push(`其他：${String(otherValue).trim()}`);
+    }
+    return items.join('、');
   },
 };
