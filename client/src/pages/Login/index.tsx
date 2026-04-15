@@ -6,6 +6,12 @@ import { useToast } from '@/components/Toast';
 import { checkUser, passwordLogin, register } from '@/api/auth.api';
 import { setToken, setUser } from '@/lib/auth';
 
+// 导入图标
+import phoneIcon from '@/assets/icons/phone.svg';
+import personIcon from '@/assets/icons/person.svg';
+import lockIcon from '@/assets/icons/lock.svg';
+import personAddIcon from '@/assets/icons/person-add.svg';
+
 type Step = 'phone' | 'login' | 'register';
 
 const Login = () => {
@@ -168,7 +174,7 @@ const Login = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">手机号</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">phone_iphone</span>
+                  <img src={phoneIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="tel"
                     value={formData.phone}
@@ -196,7 +202,7 @@ const Login = () => {
             <div className="space-y-4 animate-in fade-in duration-300">
               <div className="text-center mb-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <span className="material-symbols-outlined text-2xl text-primary">person</span>
+                  <img src={personIcon} alt="" className="w-7 h-7" style={{ filter: 'invert(15%) sepia(90%) saturate(500%) hue-rotate(190deg)' }} />
                 </div>
                 <h2 className="text-lg font-bold text-on-surface">欢迎回来</h2>
                 <p className="text-sm text-on-surface-variant mt-1">
@@ -208,7 +214,7 @@ const Login = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.password}
@@ -238,7 +244,7 @@ const Login = () => {
             <div className="space-y-3.5 animate-in fade-in duration-300">
               <div className="text-center mb-3">
                 <div className="w-14 h-14 bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <span className="material-symbols-outlined text-2xl text-secondary">person_add</span>
+                  <img src={personAddIcon} alt="" className="w-7 h-7" style={{ filter: 'invert(35%) sepia(90%) saturate(500%) hue-rotate(190deg)' }} />
                 </div>
                 <h2 className="text-lg font-bold text-on-surface">新用户注册</h2>
                 <p className="text-sm text-on-surface-variant mt-1">
@@ -249,7 +255,7 @@ const Login = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">用户名</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">person</span>
+                  <img src={personIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="text"
                     value={formData.username}
@@ -263,7 +269,7 @@ const Login = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.password}
@@ -277,7 +283,7 @@ const Login = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">确认密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.confirmPassword}

@@ -5,6 +5,13 @@ import { useToast } from '@/components/Toast';
 import { checkUser, passwordLogin, register } from '@/api/auth.api';
 import { setToken, setUser } from '@/lib/auth';
 
+// 导入图标
+import phoneIcon from '@/assets/icons/phone.svg';
+import personIcon from '@/assets/icons/person.svg';
+import lockIcon from '@/assets/icons/lock.svg';
+import arrowBackIcon from '@/assets/icons/arrow-back.svg';
+import personAddIcon from '@/assets/icons/person-add.svg';
+
 type Step = 'phone' | 'login' | 'register';
 
 const AuthModal = () => {
@@ -226,7 +233,7 @@ const AuthModal = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">手机号</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">phone_iphone</span>
+                  <img src={phoneIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="tel"
                     value={formData.phone}
@@ -254,7 +261,7 @@ const AuthModal = () => {
             <div className="space-y-3.5 animate-in fade-in duration-200">
               <div className="text-center mb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <span className="material-symbols-outlined text-xl text-primary">person</span>
+                  <img src={personIcon} alt="" className="w-6 h-6 text-primary" style={{ filter: 'invert(15%) sepia(90%) saturate(500%) hue-rotate(190deg)' }} />
                 </div>
                 <h2 className="text-base font-bold text-on-surface">欢迎回来</h2>
                 <p className="text-xs text-on-surface-variant mt-1">
@@ -266,7 +273,7 @@ const AuthModal = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.password}
@@ -280,9 +287,9 @@ const AuthModal = () => {
               <div className="flex justify-between items-center">
                 <button
                   onClick={handleBack}
-                  className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+                  className="text-xs text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
                 >
-                  <span className="material-symbols-outlined text-sm align-middle">arrow_back</span>
+                  <img src={arrowBackIcon} alt="" className="w-6 h-6" />
                   返回
                 </button>
                 <button className="text-xs text-secondary hover:text-secondary/80 transition-colors">忘记密码？</button>
@@ -303,7 +310,7 @@ const AuthModal = () => {
             <div className="space-y-2.5 animate-in fade-in duration-200">
               <div className="text-center mb-2">
                 <div className="w-12 h-12 bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <span className="material-symbols-outlined text-xl text-secondary">person_add</span>
+                  <img src={personAddIcon} alt="" className="w-6 h-6" style={{ filter: 'invert(35%) sepia(90%) saturate(500%) hue-rotate(190deg)' }} />
                 </div>
                 <h2 className="text-base font-bold text-on-surface">新用户注册</h2>
                 <p className="text-xs text-on-surface-variant mt-1">
@@ -314,7 +321,7 @@ const AuthModal = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">用户名</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">person</span>
+                  <img src={personIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="text"
                     value={formData.username}
@@ -328,7 +335,7 @@ const AuthModal = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.password}
@@ -342,7 +349,7 @@ const AuthModal = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-on-surface-variant ml-1">确认密码</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-xl">lock</span>
+                  <img src={lockIcon} alt="" className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 opacity-50" />
                   <input
                     type="password"
                     value={formData.confirmPassword}
@@ -356,9 +363,9 @@ const AuthModal = () => {
               <div className="flex justify-start pt-1">
                 <button
                   onClick={handleBack}
-                  className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+                  className="text-xs text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
                 >
-                  <span className="material-symbols-outlined text-sm align-middle">arrow_back</span>
+                  <img src={arrowBackIcon} alt="" className="w-6 h-6" />
                   返回
                 </button>
               </div>
