@@ -207,7 +207,7 @@ const NutritionSurvey = () => {
 
   const showSaveIndicator = useCallback(() => { setSaveIndicator(true); setTimeout(() => setSaveIndicator(false), 1500); }, []);
 
-  const updateField = (field: keyof NutritionSurveyData, value: string | number | string[]) => {
+  const updateField = (field: keyof NutritionSurveyData, value: string | number | string[] | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (fieldErrors[field]) setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
   };
