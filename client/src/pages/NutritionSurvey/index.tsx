@@ -415,9 +415,6 @@ const NutritionSurvey = () => {
   // 判断是否跳过步骤6、7（运动习惯详情）
   const shouldSkipExerciseDetails = formData.exerciseLevel === '日常活动量';
 
-  // 判断是否跳过步骤10、11、12（饮食频率详情）
-  const shouldSkipDietFrequency = !!(formData.typicalDietDescription && formData.typicalDietDescription.trim());
-
   const handleNextStep = async () => {
     if (currentStep === 0 && !validateStep1()) return;
     try {
@@ -428,11 +425,6 @@ const NutritionSurvey = () => {
         // 步骤5 -> 如果选择"日常活动量"，跳过步骤6、7
         if (currentStep === 4 && shouldSkipExerciseDetails) {
           nextStep = 7; // 跳到步骤8
-        }
-
-        // 步骤9 -> 如果已填写典型饮食描述，跳过步骤10、11、12
-        if (currentStep === 8 && shouldSkipDietFrequency) {
-          nextStep = 11; // 跳到步骤12（最后一步）
         }
 
         setCurrentStep(nextStep);
@@ -449,11 +441,6 @@ const NutritionSurvey = () => {
       // 步骤8 -> 如果跳过了步骤6、7，返回步骤5
       if (currentStep === 7 && shouldSkipExerciseDetails) {
         prevStep = 4; // 返回步骤5
-      }
-
-      // 步骤12 -> 如果跳过了步骤10、11，返回步骤9
-      if (currentStep === 11 && shouldSkipDietFrequency) {
-        prevStep = 8; // 返回步骤9
       }
 
       setCurrentStep(prevStep);
@@ -501,7 +488,7 @@ const NutritionSurvey = () => {
     // 基础步骤: 1(健康信息), 2(饮食1), 3(饮食2), 4(饮食3), 5(饮食4)
     // 条件步骤: 6,7(运动详情 - 取决于是否选择"日常活动量")
     // 基础步骤: 8(生活1), 9(生活2)
-    // 条件步骤: 10,11,12(饮食频率 - 取决于是否已填写典型饮食)
+    // 基础步骤: 10,11,12(饮食频率)
 
     let actualStep = currentStep + 1; // 1-based
     let totalActualSteps = TOTAL_STEPS;
@@ -510,14 +497,6 @@ const NutritionSurvey = () => {
     if (shouldSkipExerciseDetails) {
       totalActualSteps -= 2; // 总步骤减少2
       if (currentStep >= 7) {
-        actualStep -= 2; // 当前步骤序号减少2
-      }
-    }
-
-    // 如果跳过饮食频率详情（步骤10、11）
-    if (shouldSkipDietFrequency) {
-      totalActualSteps -= 2; // 总步骤减少2（跳过10、11，保留12作为最后一步）
-      if (currentStep >= 11) {
         actualStep -= 2; // 当前步骤序号减少2
       }
     }
