@@ -151,6 +151,9 @@ model NutritionSurvey {
   height                    Float?    @map("height")                     // 身高
   weight                    Float?    @map("weight")                     // 体重
   weightChange              String?   @map("weight_change")              // 体重变化
+  weightChangeHistory       String?   @map("weight_change_history")      // 体重变化史
+  weightGoal                String?   @map("weight_goal")                // 体重目标
+  bodyComposition           String?   @map("body_composition")           // 体成分情况变化
   chronicDiseases           String?   @map("chronic_diseases")           // 慢性疾病
   medicationsSupplements    String?   @map("medications_supplements")    // 药物或补充剂
   // 02 饮食习惯（1/4）
@@ -161,6 +164,17 @@ model NutritionSurvey {
   foodSources               String?   @map("food_sources")               // 食物来源
   foodSourcesOther          String?   @map("food_sources_other")         // 其他食物来源
   foodAllergies             String?   @map("food_allergies")             // 食物过敏
+  // 02 饮食习惯（1/4）- 新增
+  macroRatio                String?   @map("macro_ratio")                // 碳水/蛋白/脂肪比例
+  foodQuality               String?   @map("food_quality")               // 食物质量：高/中/低
+  mealRegularity            String?   @map("meal_regularity")            // 进餐规律：是/否
+  bingeFrequency            Int?      @map("binge_frequency")            // 暴食频率(每周)
+  emotionalEatingFrequency  Int?      @map("emotional_eating_frequency") // 情绪性进食频率(每周)
+  lateNightSnackFrequency   Int?      @map("late_night_snack_frequency") // 夜宵频率(每月)
+  eatingOutFrequency        Int?      @map("eating_out_frequency")       // 外食频率(每月)
+  hasHousekeeper            String?   @map("has_housekeeper")            // 是否有保姆：有/无
+  takeoutFrequency          Int?      @map("takeout_frequency")          // 叫外卖频次(每月)
+  socialDiningFrequency     Int?      @map("social_dining_frequency")    // 应酬频次(每月)
   // 03 饮食习惯（2/4）
   dislikedFoods             String?   @map("disliked_foods")             // 不喜欢食物
   dietPlanType              String?   @map("diet_plan_type")             // 特定饮食计划
@@ -236,6 +250,12 @@ model NutritionSurvey {
   freqSaltySnacks           String?   @map("freq_salty_snacks")          // 咸味小吃
   // 07 上传的饮食记录文件
   uploadedDietFiles         String?   @map("uploaded_diet_files")        // 上传的饮食记录文件（JSON 字符串）
+  // 08 期望的服务类型
+  serviceTypes              String?   @map("service_types")              // 服务类型（多选，逗号分隔）
+  serviceTypesOther         String?   @map("service_types_other")        // 服务类型其他
+  personalizationPreferences String?  @map("personalization_preferences") // 个性化偏好
+  complianceScore           Int?      @map("compliance_score")           // 执行力评分(1-10)
+  feedbackFrequency         String?   @map("feedback_frequency")         // 反馈频率
   // 系统字段
   submittedAt               DateTime  @default(now()) @map("submitted_at")
   updatedAt                 DateTime  @updatedAt @map("updated_at")

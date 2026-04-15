@@ -29,9 +29,9 @@ const Home = () => {
       <main className="pb-20">
         {/* Hero Section */}
         <section className="relative min-h-[500px] md:min-h-[700px] flex items-center overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 text-on-primary">
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-6 pb-6 relative z-10">
             <div className="max-w-3xl">
-              <h1 className="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 text-white pt-12">
+              <h1 className="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 text-white pt-18">
                 医疗级专业护航 <br />
                 <span className="text-secondary">+</span> 首脑级健康体验
               </h1>

@@ -262,6 +262,14 @@ const mapForm2ToFeishu = (submission: {
   const phone = formData.phone || submission.phone;
   if (phone) fields['联系电话'] = phone;
 
+  // 基本信息：年龄、性别、身高、体重
+  if (formData.age != null) fields['年龄'] = String(formData.age);
+  if (formData.gender) fields['性别'] = formData.gender;
+  if (formData.height != null) fields['身高'] = String(formData.height);
+  if (formData.weight != null) fields['当前体重'] = String(formData.weight);
+  if (formData.maxWeight != null) fields['成年后最高体重'] = String(formData.maxWeight);
+  if (formData.minWeight != null) fields['成年后最低体重'] = String(formData.minWeight);
+
   if (formData.emergencyName) fields['紧急联系人'] = formData.emergencyName;
   if (formData.emergencyPhone) fields['紧急联系人电话'] = formData.emergencyPhone;
 
@@ -1262,6 +1270,9 @@ export const feishuService = {
         ? submission.weightChange
         : `其他：${submission.weightChange}`;
     }
+    if (submission.weightChangeHistory) fields['体重变化史'] = submission.weightChangeHistory;
+    if (submission.weightGoal) fields['体重目标'] = submission.weightGoal;
+    if (submission.bodyComposition) fields['体成分情况'] = submission.bodyComposition;
     if (submission.chronicDiseases) fields['慢性疾病'] = submission.chronicDiseases;
     if (submission.medicationsSupplements) fields['用药情况'] = submission.medicationsSupplements;
 
@@ -1288,6 +1299,27 @@ export const feishuService = {
       fields['食物来源'] = sources;
     }
     if (submission.foodAllergies) fields['食物过敏'] = submission.foodAllergies;
+
+    // 饮食结构
+    if (submission.macroRatio) fields['碳水蛋白脂肪比例'] = submission.macroRatio;
+    if (submission.foodQuality) fields['食物质量'] = submission.foodQuality;
+    if (submission.mealRegularity) fields['进餐规律'] = submission.mealRegularity;
+
+    // 饮食行为
+    const dietBehavior: string[] = [];
+    if (submission.bingeFrequency != null) dietBehavior.push(`暴食: 每周${submission.bingeFrequency}次`);
+    if (submission.emotionalEatingFrequency != null) dietBehavior.push(`情绪性进食: 每周${submission.emotionalEatingFrequency}次`);
+    if (submission.lateNightSnackFrequency != null) dietBehavior.push(`夜宵: 每月${submission.lateNightSnackFrequency}次`);
+    if (submission.eatingOutFrequency != null) dietBehavior.push(`外食: 每月${submission.eatingOutFrequency}次`);
+    if (dietBehavior.length > 0) fields['饮食行为'] = dietBehavior.join('；');
+
+    // 烹饪执行条件
+    const cookingConditions: string[] = [];
+    if (submission.hasHousekeeper) cookingConditions.push(`保姆: ${submission.hasHousekeeper}`);
+    if (submission.takeoutFrequency != null) cookingConditions.push(`外卖: 每月${submission.takeoutFrequency}次`);
+    if (submission.socialDiningFrequency != null) cookingConditions.push(`应酬: 每月${submission.socialDiningFrequency}次`);
+    if (cookingConditions.length > 0) fields['烹饪执行条件'] = cookingConditions.join('；');
+
     if (submission.dislikedFoods) fields['不喜欢的食物'] = submission.dislikedFoods;
     if (submission.dietPlanType) fields['特殊饮食'] = submission.dietPlanType;
 
@@ -1402,6 +1434,13 @@ export const feishuService = {
     if (submission.freqChocolateCandy) dairySnacks.push(`糖果: ${submission.freqChocolateCandy}`);
     if (submission.freqSaltySnacks) dairySnacks.push(`咸零食: ${submission.freqSaltySnacks}`);
     if (dairySnacks.length > 0) fields['乳制品零食'] = dairySnacks.join('；');
+
+    // 期望的服务类型
+    if (submission.serviceTypes) fields['服务类型'] = this.formatArray(submission.serviceTypes);
+    if (submission.serviceTypesOther) fields['服务类型其他'] = submission.serviceTypesOther;
+    if (submission.personalizationPreferences) fields['个性化偏好'] = submission.personalizationPreferences;
+    if (submission.complianceScore != null) fields['执行力评分'] = String(submission.complianceScore);
+    if (submission.feedbackFrequency) fields['反馈频率'] = submission.feedbackFrequency;
 
     // 附件（饮食习惯中上传的文件，最多支持 10 个）
     if (submission.uploadedDietFiles) {

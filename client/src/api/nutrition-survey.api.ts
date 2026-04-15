@@ -12,6 +12,9 @@ export interface NutritionSurveyData {
   height?: number;
   weight?: number;
   weightChange?: string;
+  weightChangeHistory?: string;      // 体重变化史
+  weightGoal?: string;               // 体重目标
+  bodyComposition?: string;          // 体成分情况变化
   chronicDiseases?: string;
   medicationsSupplements?: string;
   // 02 饮食习惯（1/4）
@@ -22,6 +25,17 @@ export interface NutritionSurveyData {
   foodSources?: string[];
   foodSourcesOther?: string;
   foodAllergies?: string;
+  // 02 饮食习惯（1/4）- 新增
+  macroRatio?: string;               // 碳水/蛋白/脂肪比例
+  foodQuality?: string;              // 食物质量：高/中/低
+  mealRegularity?: string;           // 进餐规律：是/否
+  bingeFrequency?: number;           // 暴食频率(每周)
+  emotionalEatingFrequency?: number; // 情绪性进食频率(每周)
+  lateNightSnackFrequency?: number;  // 夜宵频率(每月)
+  eatingOutFrequency?: number;       // 外食频率(每月)
+  hasHousekeeper?: string;           // 是否有保姆：有/无
+  takeoutFrequency?: number;         // 叫外卖频次(每月)
+  socialDiningFrequency?: number;    // 应酬频次(每月)
   // 03 饮食习惯（2/4）
   dislikedFoods?: string;
   dietPlanType?: string;
@@ -102,6 +116,12 @@ export interface NutritionSurveyData {
     url: string;
     type: 'pdf' | 'image' | 'doc' | 'other';
   }>;
+  // 08 期望的服务类型
+  serviceTypes?: string[];           // 服务类型（多选）
+  serviceTypesOther?: string;        // 服务类型其他
+  personalizationPreferences?: string; // 个性化偏好
+  complianceScore?: number;          // 执行力评分(1-10)
+  feedbackFrequency?: string;        // 反馈频率
 }
 
 /** 营养问卷列表项 */
@@ -149,6 +169,7 @@ export const submitNutritionSurvey = async (data: NutritionSurveyData): Promise<
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
   if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
+  if (Array.isArray(payload.serviceTypes)) payload.serviceTypes = (payload.serviceTypes as string[]).join(',');
 
   const res = await api.post('/nutrition-survey', payload);
   const result = res.data.data;
@@ -192,6 +213,9 @@ export const getNutritionSurveyDetail = async (id: number): Promise<NutritionSur
     if (typeof data.formData.socialActivities === 'string') {
       data.formData.socialActivities = data.formData.socialActivities ? data.formData.socialActivities.split(',') : [];
     }
+    if (typeof data.formData.serviceTypes === 'string') {
+      data.formData.serviceTypes = data.formData.serviceTypes ? data.formData.serviceTypes.split(',') : [];
+    }
     // 将 JSON 字符串转换为数组
     if (typeof data.formData.uploadedDietFiles === 'string' && data.formData.uploadedDietFiles) {
       try {
@@ -223,6 +247,9 @@ export const getLatestNutritionSurvey = async (): Promise<NutritionSurveyDetail 
     if (typeof data.formData.socialActivities === 'string') {
       data.formData.socialActivities = data.formData.socialActivities ? data.formData.socialActivities.split(',') : [];
     }
+    if (typeof data.formData.serviceTypes === 'string') {
+      data.formData.serviceTypes = data.formData.serviceTypes ? data.formData.serviceTypes.split(',') : [];
+    }
     // 将 JSON 字符串转换为数组
     if (typeof data.formData.uploadedDietFiles === 'string' && data.formData.uploadedDietFiles) {
       try {
@@ -249,6 +276,7 @@ export const updateNutritionSurvey = async (
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
   if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
+  if (Array.isArray(payload.serviceTypes)) payload.serviceTypes = (payload.serviceTypes as string[]).join(',');
 
   const res = await api.put(`/nutrition-survey/${id}`, payload);
   const result = res.data.data;
@@ -281,6 +309,7 @@ export const saveNutritionDraft = async (
   if (Array.isArray(payload.exerciseTypes)) payload.exerciseTypes = (payload.exerciseTypes as string[]).join(',');
   if (Array.isArray(payload.socialActivities)) payload.socialActivities = (payload.socialActivities as string[]).join(',');
   if (Array.isArray(payload.uploadedDietFiles)) payload.uploadedDietFiles = JSON.stringify(payload.uploadedDietFiles);
+  if (Array.isArray(payload.serviceTypes)) payload.serviceTypes = (payload.serviceTypes as string[]).join(',');
 
   const res = await api.post('/nutrition-survey/draft', payload);
   const result = res.data.data;

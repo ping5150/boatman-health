@@ -70,6 +70,9 @@ export interface NutritionSurveyData {
   height?: number;                   // 身高
   weight?: number;                   // 体重
   weightChange?: string;             // 体重变化
+  weightChangeHistory?: string;      // 体重变化史
+  weightGoal?: string;               // 体重目标
+  bodyComposition?: string;          // 体成分情况变化
   chronicDiseases?: string;          // 慢性疾病
   medicationsSupplements?: string;   // 药物或补充剂
   // 02 饮食习惯（1/4）
@@ -80,6 +83,17 @@ export interface NutritionSurveyData {
   foodSources?: string;              // 食物来源（多选，逗号分隔）
   foodSourcesOther?: string;         // 其他食物来源
   foodAllergies?: string;            // 食物过敏
+  // 02 饮食习惯（1/4）- 新增
+  macroRatio?: string;               // 碳水/蛋白/脂肪比例
+  foodQuality?: string;              // 食物质量：高/中/低
+  mealRegularity?: string;           // 进餐规律：是/否
+  bingeFrequency?: number;           // 暴食频率(每周)
+  emotionalEatingFrequency?: number; // 情绪性进食频率(每周)
+  lateNightSnackFrequency?: number;  // 夜宵频率(每月)
+  eatingOutFrequency?: number;       // 外食频率(每月)
+  hasHousekeeper?: string;           // 是否有保姆：有/无
+  takeoutFrequency?: number;         // 叫外卖频次(每月)
+  socialDiningFrequency?: number;    // 应酬频次(每月)
   // 03 饮食习惯（2/4）
   dislikedFoods?: string;            // 不喜欢食物
   dietPlanType?: string;             // 特定饮食计划
@@ -155,6 +169,12 @@ export interface NutritionSurveyData {
   freqSaltySnacks?: string;          // 咸味小吃
   // 07 上传的饮食记录文件
   uploadedDietFiles?: string;        // 上传的饮食记录文件（JSON 字符串）
+  // 08 期望的服务类型
+  serviceTypes?: string;             // 服务类型（多选，逗号分隔）
+  serviceTypesOther?: string;        // 服务类型其他
+  personalizationPreferences?: string; // 个性化偏好
+  complianceScore?: number;          // 执行力评分(1-10)
+  feedbackFrequency?: string;        // 反馈频率
 }
 
 /** 营养问卷列表项 */

@@ -21,6 +21,12 @@ const TOTAL_STEPS = 7;
 const initialFormData = {
   name: '',
   phone: '',
+  age: undefined as number | undefined,
+  gender: '',
+  height: undefined as number | undefined,
+  weight: undefined as number | undefined,
+  maxWeight: undefined as number | undefined,
+  minWeight: undefined as number | undefined,
   emergencyName: '',
   emergencyPhone: '',
   diseases: [{ name: '', date: '' }],
@@ -461,6 +467,104 @@ const HealthForm = () => {
                   />
                   {fieldErrors.phone && <p className="text-error text-[10px] px-1 font-medium">{fieldErrors.phone}</p>}
                 </div>
+                
+                {/* 年龄、性别、身高、体重 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">年龄</label>
+                    <input
+                      type="number"
+                      value={formData.age ?? ''}
+                      onChange={(e) => updateField('age', e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                      placeholder="岁"
+                      min="0"
+                      max="150"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">性别</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateField('gender', '男')}
+                        className={`flex-1 py-4 rounded-2xl border text-sm font-medium transition-colors ${
+                          formData.gender === '男'
+                            ? 'bg-secondary text-white border-secondary'
+                            : 'bg-surface border-outline-variant/30 text-on-surface-variant hover:border-outline-variant'
+                        }`}
+                      >
+                        男
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateField('gender', '女')}
+                        className={`flex-1 py-4 rounded-2xl border text-sm font-medium transition-colors ${
+                          formData.gender === '女'
+                            ? 'bg-secondary text-white border-secondary'
+                            : 'bg-surface border-outline-variant/30 text-on-surface-variant hover:border-outline-variant'
+                        }`}
+                      >
+                        女
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">身高</label>
+                    <input
+                      type="number"
+                      value={formData.height ?? ''}
+                      onChange={(e) => updateField('height', e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                      placeholder="cm"
+                      min="0"
+                      max="300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">当前体重</label>
+                    <input
+                      type="number"
+                      value={formData.weight ?? ''}
+                      onChange={(e) => updateField('weight', e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                      placeholder="kg"
+                      min="0"
+                      max="500"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">成年后最高体重</label>
+                    <input
+                      type="number"
+                      value={formData.maxWeight ?? ''}
+                      onChange={(e) => updateField('maxWeight', e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                      placeholder="kg（可选）"
+                      min="0"
+                      max="500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">成年后最低体重</label>
+                    <input
+                      type="number"
+                      value={formData.minWeight ?? ''}
+                      onChange={(e) => updateField('minWeight', e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full bg-surface border-none rounded-2xl p-4 focus:ring-2 focus:ring-secondary/60 text-on-surface text-sm shadow-input"
+                      placeholder="kg（可选）"
+                      min="0"
+                      max="500"
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <label className="text-[10px] font-headline font-bold text-primary/60 uppercase tracking-widest px-1">紧急联系人</label>
                   <input
@@ -1083,7 +1187,7 @@ const HealthForm = () => {
 
                 {/* 上传附件 */}
                 <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/5">
-                  <label className="text-xs font-headline font-bold text-primary uppercase block mb-3">上传附件 (非必填)</label>
+                  <label className="text-xs font-headline font-bold text-primary uppercase block mb-3">上传近3年体检报告或其他相关检查报告（非必填）</label>
                   <div className="flex gap-3">
                     {/* 上传图片 */}
                     <div

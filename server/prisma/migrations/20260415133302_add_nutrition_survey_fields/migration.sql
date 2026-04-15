@@ -1,0 +1,19 @@
+-- AlterTable
+ALTER TABLE "nutrition_surveys" ADD COLUMN "binge_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "body_composition" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "compliance_score" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "eating_out_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "emotional_eating_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "feedback_frequency" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "food_quality" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "has_housekeeper" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "late_night_snack_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "macro_ratio" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "meal_regularity" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "personalization_preferences" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "service_types" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "service_types_other" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "social_dining_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "takeout_frequency" INTEGER;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "weight_change_history" TEXT;
+ALTER TABLE "nutrition_surveys" ADD COLUMN "weight_goal" TEXT;

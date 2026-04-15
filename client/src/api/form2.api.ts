@@ -15,6 +15,12 @@ export interface HealthFormData {
   // 基本信息
   name: string;
   phone: string;
+  age?: number; // 年龄
+  gender?: string; // 性别：男/女
+  height?: number; // 身高(cm)
+  weight?: number; // 当前体重(kg)
+  maxWeight?: number; // 成年后最高体重(kg)
+  minWeight?: number; // 成年后最低体重(kg)
   emergencyName: string;
   emergencyPhone: string;
   // 健康背景
