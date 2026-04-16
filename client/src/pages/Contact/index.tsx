@@ -3,19 +3,19 @@ import img03 from '@/images/img-03.png';
 
 const Contact = () => {
   return (
-    <div className="flex flex-col items-center justify-center px-8 py-12 min-h-[70vh]">
+    <div className="flex flex-col items-center justify-center px-8 py-14 min-h-[70vh]">
       {/* Identity */}
-      <div className="w-full mb-12 text-center">
+      <div className="w-full mb-8 text-center">
         <div className="inline-flex items-center justify-center w-36 h-26 rounded-full  mb-6 ">
           {/* <Icon name="support_agent" filled size={36} className="text-secondary-container" /> */}
-          <img src="/logo.png" alt="船夫健康Logo" className="w-36 h-26 " />
+          <img src="/logo-title.png" alt="船夫健康Logo" className="w-26 h-28 " />
         </div>
-        <h2 className="font-headline font-extrabold text-2xl text-primary tracking-tight mb-4">船夫 健康</h2>
-        <p className="font-body text-on-surface-variant leading-relaxed px-4">您的专属私人健康管家已就绪，扫码即可开启一对一咨询服务。</p>
+        {/* <h2 className="font-headline font-extrabold text-2xl text-primary tracking-tight mb-4">船夫 健康</h2> */}
+        <p className="font-body text-on-surface-variant leading-relaxed px-4 pt-4">您的专属私人健康管家已就绪，扫码即可开启一对一咨询服务。</p>
       </div>
 
       {/* QR Code Placeholder */}
-      <div className="relative w-full max-w-[280px] aspect-square bg-surface-container-lowest rounded-[2rem] p-6 shadow-elevated group overflow-hidden">
+      <div className="relative w-full max-w-[280px] aspect-square bg-white rounded-[2rem] p-3 shadow-elevated group overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/5 rounded-full -ml-16 -mb-16 blur-2xl" />
         <div className="relative w-full h-full bg-white rounded-xl flex flex-col items-center justify-center gap-4">
