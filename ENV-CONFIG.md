@@ -59,6 +59,14 @@ FORM2_TABLE_ID=tblR5jTrJZnxsj91
 # User（用户表）
 USER_APP_TOKEN=EuHObRA2laxT2osbdjxcvCbHn7c
 USER_TABLE_ID=tblnNp0A16c7VcpG
+
+# Sleep（睡眠问卷表）
+SLEEP_APP_TOKEN=EuHObRA2laxT2osbdjxcvCbHn7c
+SLEEP_TABLE_ID=tblIDRTapjexVXrC
+
+# Nutrition（营养问卷表）
+NUTRITION_APP_TOKEN=EuHObRA2laxT2osbdjxcvCbHn7c
+NUTRITION_TABLE_ID=tblQfYXQls5gErkk
 ```
 
 #### Nginx 配置文件
@@ -205,8 +213,8 @@ server: {
 | **User（用户表）** | tblnNp0A16c7VcpG | tblel36RkWrCUlEn | ✅ 不同表格 |
 | **Form1（咨询预约）** | tbloo8eMo2lh19w6 | tblA02sKspYGGMOH | ✅ 不同表格 |
 | **Form2（健康评估）** | tblR5jTrJZnxsj91 | tbl1Nc1TtNyLUcZ2 | ✅ 不同表格 |
-| **Sleep（睡眠问卷）** | - | tblbNGJhTIJI34Cd | 仅测试环境 |
-| **Nutrition（营养问卷）** | - | tbl9Pcxu0uIUsBYS | 仅测试环境 |
+| **Sleep（睡眠问卷）** | tblIDRTapjexVXrC | tblbNGJhTIJI34Cd | ✅ 不同表格 |
+| **Nutrition（营养问卷）** | tblQfYXQls5gErkk | tbl9Pcxu0uIUsBYS | ✅ 不同表格 |
 
 ---
 
