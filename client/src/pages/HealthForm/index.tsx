@@ -135,17 +135,20 @@ const HealthForm = () => {
           }));
           setArchiveId(archive.id);
 
-          // 反显已上传的附件
+          // 反显已上传的附件（过滤掉缺少必要字段的历史数据）
           if (archive.formData.uploadedFiles && archive.formData.uploadedFiles.length > 0) {
-            setUploadedFiles(archive.formData.uploadedFiles.map(f => ({
-              id: f.url || Date.now().toString() + Math.random().toString(36).slice(2, 11),
-              name: f.name,
-              size: f.size,
-              progress: 100,
-              status: 'success' as const,
-              url: f.url,
-              type: f.type,
-            })));
+            const validFiles = archive.formData.uploadedFiles
+              .filter(f => f.url && typeof f.size === 'number' && f.type)
+              .map(f => ({
+                id: f.url || Date.now().toString() + Math.random().toString(36).slice(2, 11),
+                name: f.name,
+                size: f.size,
+                progress: 100,
+                status: 'success' as const,
+                url: f.url,
+                type: f.type,
+              }));
+            setUploadedFiles(validFiles);
           }
         } else if (user) {
           // 无已有档案时，从用户信息自动带入姓名和手机号
@@ -183,7 +186,25 @@ const HealthForm = () => {
   const handleSaveStep = async () => {
     setSaving(true);
     try {
-      const partialData: Partial<HealthFormData> = { ...formData };
+      // 规范化上传文件和压力值，避免历史数据字段缺失导致校验失败
+      // 只保留上传成功且包含完整字段（size、url、type）的文件
+      const normalizedUploadedFiles = uploadedFiles
+        .filter((f) => f.status === 'success' && f.url && typeof f.size === 'number' && f.type)
+        .map((f) => ({
+          name: f.name,
+          size: f.size,
+          url: f.url!,
+          type: f.type!,
+        }));
+
+      const partialData: Partial<HealthFormData> = {
+        ...formData,
+        stressLevel:
+          formData.stressLevel !== undefined && formData.stressLevel !== null
+            ? Number(formData.stressLevel)
+            : undefined,
+        uploadedFiles: normalizedUploadedFiles.length > 0 ? normalizedUploadedFiles : undefined,
+      };
       
       if (archiveId) {
         await updateArchive(archiveId, partialData);

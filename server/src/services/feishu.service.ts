@@ -46,6 +46,19 @@ interface SyncResult {
 
 const tokenManager = new FeishuTokenManager();
 
+// 防止同一问卷记录在短时间内并发创建飞书记录
+const sleepSurveySyncLocks = new Set<number>();
+const nutritionSurveySyncLocks = new Set<number>();
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForLockRelease = async (locks: Set<number>, id: number, retries = 30, intervalMs = 100) => {
+  for (let i = 0; i < retries; i++) {
+    if (!locks.has(id)) return;
+    await sleep(intervalMs);
+  }
+};
+
 /**
  * 检查飞书 API 响应，若 code !== 0 则抛出详细错误
  */
@@ -942,17 +955,31 @@ export const feishuService = {
       return;
     }
 
-    // 新建前先查数据库最新状态
-    const latest = await prisma.sleepSurvey.findUnique({
-      where: { id: submission.id },
-      select: { feishuRecordId: true },
-    });
-    if (latest?.feishuRecordId) {
-      logger.info('FEISHU', `Skip sync sleep survey: id=${submission.id} already has feishuRecordId, use update instead`);
-      return this.updateSleepSurvey({ ...submission, feishuRecordId: latest.feishuRecordId } as any);
+    // 同一记录已在同步中：等待当前同步结束后，退化为更新，避免并发重复创建
+    if (sleepSurveySyncLocks.has(submission.id)) {
+      logger.warn('FEISHU', `Skip concurrent sleep survey sync: id=${submission.id}, waiting for in-flight sync`);
+      await waitForLockRelease(sleepSurveySyncLocks, submission.id);
+      const latestAfterWait = await prisma.sleepSurvey.findUnique({
+        where: { id: submission.id },
+        select: { feishuRecordId: true },
+      });
+      if (latestAfterWait?.feishuRecordId) {
+        return this.updateSleepSurvey({ ...submission, feishuRecordId: latestAfterWait.feishuRecordId } as any);
+      }
     }
 
+    sleepSurveySyncLocks.add(submission.id);
+
     try {
+      // 新建前先查数据库最新状态
+      const latest = await prisma.sleepSurvey.findUnique({
+        where: { id: submission.id },
+        select: { feishuRecordId: true },
+      });
+      if (latest?.feishuRecordId) {
+        logger.info('FEISHU', `Skip sync sleep survey: id=${submission.id} already has feishuRecordId, use update instead`);
+        return this.updateSleepSurvey({ ...submission, feishuRecordId: latest.feishuRecordId } as any);
+      }
       const fields: Record<string, unknown> = {
         '用户ID': submission.userId,
         '提交时间': formatDateStr(submission.submittedAt),
@@ -1010,6 +1037,8 @@ export const feishuService = {
 
       logger.error('FEISHU', `Sync failed: table=sleep_survey, recordId=${submission.id}`, err);
       throw err;
+    } finally {
+      sleepSurveySyncLocks.delete(submission.id);
     }
   },
 
@@ -1183,6 +1212,8 @@ export const feishuService = {
 
       logger.error('FEISHU', `Sync failed: table=nutrition_survey, recordId=${submission.id}`, err);
       throw err;
+    } finally {
+      nutritionSurveySyncLocks.delete(submission.id);
     }
   },
 
