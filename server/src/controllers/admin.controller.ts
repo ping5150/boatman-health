@@ -175,6 +175,84 @@ export const adminController = {
   },
 
   /**
+   * 睡眠问卷列表
+   */
+  async sleepSurveyList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(String(req.query.page || '1'), 10);
+      const limit = parseInt(String(req.query.limit || '20'), 10);
+      const search = req.query.search ? String(req.query.search) : undefined;
+
+      const result = await adminService.getSleepSurveyList(page, limit, search);
+      sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * 睡眠问卷详情
+   */
+  async sleepSurveyDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(String(req.params.id), 10);
+      if (isNaN(id)) {
+        sendError(res, 400, 'ID 参数无效');
+        return;
+      }
+
+      const result = await adminService.getSleepSurveyDetail(id);
+      sendSuccess(res, result);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message, error.code);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
+   * 营养问卷列表
+   */
+  async nutritionSurveyList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(String(req.query.page || '1'), 10);
+      const limit = parseInt(String(req.query.limit || '20'), 10);
+      const search = req.query.search ? String(req.query.search) : undefined;
+
+      const result = await adminService.getNutritionSurveyList(page, limit, search);
+      sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * 营养问卷详情
+   */
+  async nutritionSurveyDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(String(req.params.id), 10);
+      if (isNaN(id)) {
+        sendError(res, 400, 'ID 参数无效');
+        return;
+      }
+
+      const result = await adminService.getNutritionSurveyDetail(id);
+      sendSuccess(res, result);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const error = err as { code: number; message: string };
+        sendError(res, error.code, error.message, error.code);
+      } else {
+        next(err);
+      }
+    }
+  },
+
+  /**
    * 更新档案
    */
   async updateForm2(req: Request, res: Response, next: NextFunction) {

@@ -231,6 +231,48 @@ export interface ArchiveDetail extends ArchiveListItem {
   formData: HealthFormData;
 }
 
+// ==================== 问卷管理（睡眠 / 营养） ====================
+
+/** 睡眠问卷列表项 */
+export interface SleepSurveyListItem {
+  id: number;
+  orderNo: string;
+  userId: string;
+  name: string;
+  phone: string;
+  submittedAt: string;
+  updatedAt: string;
+  submittedBy: string;
+  versionNumber: number;
+  feishuSyncStatus: SyncStatus;
+}
+
+/** 睡眠问卷详情 */
+export interface SleepSurveyDetail extends SleepSurveyListItem {
+  feishuRecordId: string | null;
+  formData: Record<string, unknown>;
+}
+
+/** 营养问卷列表项 */
+export interface NutritionSurveyListItem {
+  id: number;
+  orderNo: string;
+  userId: string;
+  name: string;
+  phone: string;
+  submittedAt: string;
+  updatedAt: string;
+  submittedBy: string;
+  versionNumber: number;
+  feishuSyncStatus: SyncStatus;
+}
+
+/** 营养问卷详情 */
+export interface NutritionSurveyDetail extends NutritionSurveyListItem {
+  feishuRecordId: string | null;
+  formData: Record<string, unknown>;
+}
+
 // ==================== 管理后台 ====================
 
 /** 仪表盘统计 */

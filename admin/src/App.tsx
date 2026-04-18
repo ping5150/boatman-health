@@ -8,7 +8,9 @@ import DashboardPage from './pages/Dashboard';
 import BookingListPage from './pages/BookingList';
 import ArchiveListPage from './pages/ArchiveList';
 import FormDetailPage from './pages/FormDetail';
-import SyncManagementPage from './pages/SyncManagement';
+import SleepSurveyListPage from './pages/SleepSurveyList';
+import NutritionSurveyListPage from './pages/NutritionSurveyList';
+import SurveyDetailPage from './pages/SurveyDetail';
 import UserListPage from './pages/UserList';
 import UserDetailPage from './pages/UserDetail';
 
@@ -35,7 +37,10 @@ const App = () => {
             <Route path="/booking/:id" element={<FormDetailPage />} />
             <Route path="/archive" element={<ArchiveListPage />} />
             <Route path="/archive/:id" element={<FormDetailPage />} />
-            <Route path="/sync" element={<SyncManagementPage />} />
+            <Route path="/sleep-survey" element={<SleepSurveyListPage />} />
+            <Route path="/sleep-survey/:id" element={<SurveyDetailPage />} />
+            <Route path="/nutrition-survey" element={<NutritionSurveyListPage />} />
+            <Route path="/nutrition-survey/:id" element={<SurveyDetailPage />} />
           </Route>
 
           {/* 未匹配路由重定向 */}

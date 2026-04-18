@@ -67,6 +67,22 @@ router.get('/form2/:id', authMiddleware, adminGuard, adminController.form2Detail
 // PUT /admin/form2/:id — 更新档案
 router.put('/form2/:id', authMiddleware, adminGuard, adminController.updateForm2);
 
+// ==================== 睡眠问卷管理 ====================
+
+// GET /admin/sleep-surveys/list — 睡眠问卷列表
+router.get('/sleep-surveys/list', authMiddleware, adminGuard, adminController.sleepSurveyList);
+
+// GET /admin/sleep-surveys/:id — 睡眠问卷详情
+router.get('/sleep-surveys/:id', authMiddleware, adminGuard, adminController.sleepSurveyDetail);
+
+// ==================== 营养问卷管理 ====================
+
+// GET /admin/nutrition-surveys/list — 营养问卷列表
+router.get('/nutrition-surveys/list', authMiddleware, adminGuard, adminController.nutritionSurveyList);
+
+// GET /admin/nutrition-surveys/:id — 营养问卷详情
+router.get('/nutrition-surveys/:id', authMiddleware, adminGuard, adminController.nutritionSurveyDetail);
+
 // ==================== 用户管理 ====================
 
 // GET /admin/users — 用户列表

@@ -26,7 +26,7 @@ interface UserDetail {
   id: string;
   username: string;
   phone: string;
-  role: string; // 逗号分隔的多角色
+  role: string; // 单身份字段：user | salesman | admin
   createdAt: string;
   updatedAt: string;
   gender: string | null;
@@ -43,7 +43,7 @@ interface UserUpdateData {
   emergencyName?: string;
   emergencyRelation?: string;
   emergencyPhone?: string;
-  role?: string; // 逗号分隔的多角色
+  role?: string; // 单身份字段：user | salesman | admin
 }
 
 // 角色类型

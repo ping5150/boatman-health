@@ -5,7 +5,6 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   MedicineBoxOutlined,
-  SyncOutlined,
   LogoutOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -45,10 +44,16 @@ const AdminLayout: React.FC = () => {
       label: '档案管理',
     },
     {
-      key: '/sync',
-      icon: <SyncOutlined />,
-      label: '同步管理',
+      key: '/sleep-survey',
+      icon: <FileTextOutlined />,
+      label: '睡眠问卷',
     },
+    {
+      key: '/nutrition-survey',
+      icon: <MedicineBoxOutlined />,
+      label: '营养问卷',
+    },
+
   ];
 
   // 计算当前选中的菜单项
@@ -63,9 +68,13 @@ const AdminLayout: React.FC = () => {
     if (path.startsWith('/archive')) {
       return '/archive';
     }
-    if (path.startsWith('/sync')) {
-      return '/sync';
+    if (path.startsWith('/sleep-survey')) {
+      return '/sleep-survey';
     }
+    if (path.startsWith('/nutrition-survey')) {
+      return '/nutrition-survey';
+    }
+
     return '/';
   };
 

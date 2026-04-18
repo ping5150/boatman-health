@@ -94,6 +94,13 @@ const UserDetailPage: React.FC = () => {
     }
   };
 
+  const getPrimaryRole = (roleString: string): UserRole => {
+    const roles = roleString.split(',').map(r => r.trim()).filter(Boolean);
+    if (roles.includes('admin')) return 'admin';
+    if (roles.includes('salesman')) return 'salesman';
+    return 'user';
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 100 }}>
@@ -141,14 +148,10 @@ const UserDetailPage: React.FC = () => {
       >
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="用户ID">{profile.id}</Descriptions.Item>
-          <Descriptions.Item label="角色">
-            <Space size={4} wrap>
-              {profile.role.split(',').map(r => r.trim()).filter(Boolean).map(r => (
-                <Tag key={r} color={roleColors[r as UserRole] || 'default'}>
-                  {roleNames[r as UserRole] || r}
-                </Tag>
-              ))}
-            </Space>
+          <Descriptions.Item label="身份">
+            <Tag color={roleColors[getPrimaryRole(profile.role)]}>
+              {roleNames[getPrimaryRole(profile.role)]}
+            </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="注册时间">
             {profile.createdAt ? dayjs(profile.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-'}

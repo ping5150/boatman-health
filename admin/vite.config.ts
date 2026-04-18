@@ -18,31 +18,7 @@ export default defineConfig({
         target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },
-      '/admin/auth': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/dashboard': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/form1': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/form2': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/users': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/sync': {
-        target: 'http://118.145.239.169:3002',
-        changeOrigin: true,
-      },
-      '/admin/surveys': {
+      '/admin': {
         target: 'http://118.145.239.169:3002',
         changeOrigin: true,
       },

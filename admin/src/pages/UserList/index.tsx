@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Card, Input, Tag, Space, Typography, Button, Modal, Checkbox, message, Select } from 'antd';
+import { Table, Card, Input, Tag, Space, Typography, Button, Modal, message, Select, Radio } from 'antd';
 import { UserOutlined, SearchOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -35,7 +35,7 @@ const UserListPage: React.FC = () => {
   // 角色编辑弹窗状态
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<UserRole | undefined>(undefined);
   const [roleUpdating, setRoleUpdating] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -62,54 +62,44 @@ const UserListPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // 解析角色字符串为数组
-  const parseRoles = (roleString: string): string[] => {
-    return roleString.split(',').map(r => r.trim()).filter(Boolean);
+  // 从角色字符串中解析主身份（兼容历史多角色数据）
+  const getPrimaryRole = (roleString: string): UserRole => {
+    const roles = roleString.split(',').map(r => r.trim()).filter(Boolean);
+    if (roles.includes('admin')) return 'admin';
+    if (roles.includes('salesman')) return 'salesman';
+    return 'user';
   };
 
-  // 渲染角色标签
-  const renderRoleTags = (roleString: string) => {
-    const roles = parseRoles(roleString);
-    return (
-      <Space size={4} wrap>
-        {roles.map((role) => (
-          <Tag key={role} color={roleColors[role as UserRole] || 'default'}>
-            {roleNames[role as UserRole] || role}
-          </Tag>
-        ))}
-      </Space>
-    );
+  // 渲染身份标签
+  const renderRoleTag = (roleString: string) => {
+    const role = getPrimaryRole(roleString);
+    return <Tag color={roleColors[role]}>{roleNames[role]}</Tag>;
   };
 
-  // 打开角色编辑弹窗
+  // 打开身份编辑弹窗
   const handleEditRoles = (user: UserItem) => {
     setEditingUser(user);
-    setSelectedRoles(parseRoles(user.role));
+    setSelectedRole(getPrimaryRole(user.role));
     setRoleModalVisible(true);
   };
 
-  // 保存角色（user 身份强制保留）
+  // 保存身份（单身份直接覆盖）
   const handleSaveRoles = async () => {
     if (!editingUser) return;
-    
-    // 确保 user 角色始终存在
-    const rolesWithUser = selectedRoles.includes('user')
-      ? selectedRoles
-      : ['user', ...selectedRoles];
 
-    if (rolesWithUser.length === 0) {
-      message.warning('请至少选择一个角色');
+    if (!selectedRole) {
+      message.warning('请选择一个身份');
       return;
     }
 
     setRoleUpdating(true);
     try {
       const res = await userApi.update(editingUser.id, {
-        role: rolesWithUser.join(','),
+        role: selectedRole,
       });
-      
+
       if (res.code === 0) {
-        message.success('角色更新成功');
+        message.success('身份更新成功');
         setRoleModalVisible(false);
         fetchData();
       }
@@ -144,11 +134,11 @@ const UserListPage: React.FC = () => {
       key: 'phone',
     },
     {
-      title: '角色',
+      title: '身份',
       dataIndex: 'role',
       key: 'role',
       width: 180,
-      render: (role: string) => renderRoleTags(role),
+      render: (role: string) => renderRoleTag(role),
     },
     {
       title: '注册时间',
@@ -183,7 +173,7 @@ const UserListPage: React.FC = () => {
               icon={<SettingOutlined />}
               onClick={() => handleEditRoles(record)}
             >
-              角色
+              身份
             </Button>
           )}
         </Space>
@@ -246,9 +236,9 @@ const UserListPage: React.FC = () => {
         />
       </Card>
 
-      {/* 角色编辑弹窗 */}
+      {/* 身份编辑弹窗 */}
       <Modal
-        title={`编辑用户角色 - ${editingUser?.username || ''}`}
+        title={`编辑用户身份 - ${editingUser?.username || ''}`}
         open={roleModalVisible}
         onOk={handleSaveRoles}
         onCancel={() => setRoleModalVisible(false)}
@@ -258,27 +248,27 @@ const UserListPage: React.FC = () => {
       >
         <div style={{ marginBottom: 16 }}>
           <p style={{ color: '#666', marginBottom: 8 }}>
-            选择用户的角色（可多选）：
+            选择用户身份（单选，保存后将直接覆盖原身份）：
           </p>
-          <Checkbox.Group
-            value={selectedRoles}
-            onChange={(values) => setSelectedRoles(values as string[])}
+          <Radio.Group
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value as UserRole)}
           >
-            <Space vertical>
+            <Space direction="vertical">
               {allRoles.map((role) => (
-                <Checkbox key={role} value={role} disabled={role === 'user'}>
+                <Radio key={role} value={role}>
                   <Tag color={roleColors[role]}>{roleNames[role]}</Tag>
-                  {role === 'user' && <span style={{ color: '#999', marginLeft: 8 }}>基本用户角色（默认不可移除）</span>}
-                  {role === 'salesman' && <span style={{ color: '#999', marginLeft: 8 }}>可登录管理后台</span>}
-                  {role === 'admin' && <span style={{ color: '#999', marginLeft: 8 }}>管理员权限，可登录管理后台</span>}
-                </Checkbox>
+                  {role === 'user' && <span style={{ color: '#999', marginLeft: 8 }}>普通用户，不可登录管理后台</span>}
+                  {role === 'salesman' && <span style={{ color: '#999', marginLeft: 8 }}>业务员，可登录管理后台</span>}
+                  {role === 'admin' && <span style={{ color: '#999', marginLeft: 8 }}>管理员，可登录管理后台</span>}
+                </Radio>
               ))}
             </Space>
-          </Checkbox.Group>
+          </Radio.Group>
         </div>
         <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
           <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
-            <strong>提示：</strong>纯"用户"角色无法登录管理后台。只有拥有"业务员"或"管理员"角色的用户才能登录管理后台。
+            <strong>提示：</strong>保存后该用户只保留一个身份，不再使用逗号分隔多身份。
           </p>
         </div>
       </Modal>

@@ -11,6 +11,10 @@ import {
   BookingDetail,
   ArchiveListItem,
   ArchiveDetail,
+  SleepSurveyListItem,
+  SleepSurveyDetail,
+  NutritionSurveyListItem,
+  NutritionSurveyDetail,
   DashboardStats,
   SyncFailedList,
   HealthFormData,
@@ -441,6 +445,216 @@ export const adminService = {
   },
 
   /**
+   * 睡眠问卷列表（分页 + 搜索）
+   */
+  async getSleepSurveyList(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<PaginatedResult<SleepSurveyListItem>> {
+    const where: Record<string, unknown> = {};
+
+    if (search) {
+      where.OR = [
+        { orderNo: { contains: search } },
+        { name: { contains: search } },
+        { phone: { contains: search } },
+      ];
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.sleepSurvey.count({ where }),
+      prisma.sleepSurvey.findMany({
+        where,
+        orderBy: { submittedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          orderNo: true,
+          userId: true,
+          name: true,
+          phone: true,
+          submittedBy: true,
+          submittedAt: true,
+          updatedAt: true,
+          versionNumber: true,
+          feishuSyncStatus: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      list: list.map((item) => ({
+        id: item.id,
+        orderNo: item.orderNo,
+        userId: item.userId,
+        name: item.name,
+        phone: item.phone,
+        submittedBy: item.submittedBy,
+        submittedAt: item.submittedAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+        versionNumber: item.versionNumber,
+        feishuSyncStatus: item.feishuSyncStatus as SleepSurveyListItem['feishuSyncStatus'],
+      })),
+    };
+  },
+
+  /**
+   * 睡眠问卷详情
+   */
+  async getSleepSurveyDetail(id: number): Promise<SleepSurveyDetail> {
+    const submission = await prisma.sleepSurvey.findUnique({
+      where: { id },
+    });
+
+    if (!submission) {
+      throw { code: 404, message: '问卷记录不存在' };
+    }
+
+    const metadataKeys = new Set([
+      'id',
+      'userId',
+      'orderNo',
+      'name',
+      'phone',
+      'submittedBy',
+      'submittedAt',
+      'updatedAt',
+      'versionNumber',
+      'feishuRecordId',
+      'feishuSyncStatus',
+    ]);
+
+    const formData = Object.fromEntries(
+      Object.entries(submission).filter(([key]) => !metadataKeys.has(key)),
+    );
+
+    return {
+      id: submission.id,
+      orderNo: submission.orderNo,
+      userId: submission.userId,
+      name: submission.name,
+      phone: submission.phone,
+      submittedBy: submission.submittedBy,
+      submittedAt: submission.submittedAt.toISOString(),
+      updatedAt: submission.updatedAt.toISOString(),
+      versionNumber: submission.versionNumber,
+      feishuSyncStatus: submission.feishuSyncStatus as SleepSurveyDetail['feishuSyncStatus'],
+      feishuRecordId: submission.feishuRecordId,
+      formData,
+    };
+  },
+
+  /**
+   * 营养问卷列表（分页 + 搜索）
+   */
+  async getNutritionSurveyList(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<PaginatedResult<NutritionSurveyListItem>> {
+    const where: Record<string, unknown> = {};
+
+    if (search) {
+      where.OR = [
+        { orderNo: { contains: search } },
+        { name: { contains: search } },
+        { phone: { contains: search } },
+      ];
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.nutritionSurvey.count({ where }),
+      prisma.nutritionSurvey.findMany({
+        where,
+        orderBy: { submittedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          orderNo: true,
+          userId: true,
+          name: true,
+          phone: true,
+          submittedBy: true,
+          submittedAt: true,
+          updatedAt: true,
+          versionNumber: true,
+          feishuSyncStatus: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      list: list.map((item) => ({
+        id: item.id,
+        orderNo: item.orderNo,
+        userId: item.userId,
+        name: item.name,
+        phone: item.phone,
+        submittedBy: item.submittedBy,
+        submittedAt: item.submittedAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+        versionNumber: item.versionNumber,
+        feishuSyncStatus: item.feishuSyncStatus as NutritionSurveyListItem['feishuSyncStatus'],
+      })),
+    };
+  },
+
+  /**
+   * 营养问卷详情
+   */
+  async getNutritionSurveyDetail(id: number): Promise<NutritionSurveyDetail> {
+    const submission = await prisma.nutritionSurvey.findUnique({
+      where: { id },
+    });
+
+    if (!submission) {
+      throw { code: 404, message: '问卷记录不存在' };
+    }
+
+    const metadataKeys = new Set([
+      'id',
+      'userId',
+      'orderNo',
+      'name',
+      'phone',
+      'submittedBy',
+      'submittedAt',
+      'updatedAt',
+      'versionNumber',
+      'feishuRecordId',
+      'feishuSyncStatus',
+    ]);
+
+    const formData = Object.fromEntries(
+      Object.entries(submission).filter(([key]) => !metadataKeys.has(key)),
+    );
+
+    return {
+      id: submission.id,
+      orderNo: submission.orderNo,
+      userId: submission.userId,
+      name: submission.name,
+      phone: submission.phone,
+      submittedBy: submission.submittedBy,
+      submittedAt: submission.submittedAt.toISOString(),
+      updatedAt: submission.updatedAt.toISOString(),
+      versionNumber: submission.versionNumber,
+      feishuSyncStatus: submission.feishuSyncStatus as NutritionSurveyDetail['feishuSyncStatus'],
+      feishuRecordId: submission.feishuRecordId,
+      formData,
+    };
+  },
+
+  /**
    * 更新档案
    */
   async updateForm2(id: number, data: Record<string, unknown>) {
@@ -697,16 +911,15 @@ export const adminService = {
     if (data.emergencyRelation !== undefined) updateData.emergencyRelation = data.emergencyRelation;
     if (data.emergencyPhone !== undefined) updateData.emergencyPhone = data.emergencyPhone;
     
-    // 只有管理员才能更新角色
+    // 只有管理员才能更新角色（单身份覆盖）
     if (data.role !== undefined && isAdmin) {
-      // 验证角色格式
-      const validRoles = ['user', 'salesman', 'admin'];
-      const roles = (data.role as string).split(',').map((r: string) => r.trim());
-      const isValidRoles = roles.every((r: string) => validRoles.includes(r));
-      if (!isValidRoles) {
+      const validRoles = ['user', 'salesman', 'admin'] as const;
+      const role = String(data.role).trim();
+      const isValidRole = validRoles.includes(role as (typeof validRoles)[number]);
+      if (!isValidRole) {
         throw { code: 400, message: '无效的角色类型，有效角色：user、salesman、admin' };
       }
-      updateData.role = data.role;
+      updateData.role = role;
     }
 
     const updated = await prisma.user.update({
