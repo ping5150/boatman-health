@@ -149,7 +149,41 @@ TOS_PUBLIC_BASE_URL=https://boatman-health-2026.tos-cn-guangzhou.volces.com
 
 ---
 
-## 八、部署架构图
+## 八、前端静态文件目录
+
+| 子项目 | 生产目录 | 说明 |
+|--------|----------|------|
+| 用户端（client） | `/var/www/boatman-health-A4/` | nginx root 目录 |
+| 管理后台（admin） | `/var/www/boatman-health-A4/admin/` | nginx admin 静态文件目录 |
+
+### 前端部署命令
+
+```bash
+# 本地构建
+cd client && npm run build        # 构建用户端
+cd admin && npm run build         # 构建管理后台
+
+# 上传到生产服务器
+rsync -avz --delete client/dist/ root@118.145.239.169:/var/www/boatman-health-A4/
+rsync -avz --delete admin/dist/  root@118.145.239.169:/var/www/boatman-health-A4/admin/
+```
+
+### nginx 配置说明
+
+nginx 配置文件：`/etc/nginx/conf.d/boatman-health-A4.conf`
+
+Admin API 路由白名单（正则匹配）：
+```nginx
+location ~ ^/admin/(auth|dashboard|form1|form2|users|sync|sleep-surveys|nutrition-surveys) {
+    proxy_pass http://127.0.0.1:3001;
+}
+```
+
+> ⚠️ **注意**：新增 admin API 路由时，需同步更新上述正则白名单，否则新接口会被 nginx 当作前端页面请求处理（返回 HTML）。
+
+---
+
+## 九、部署架构图
 
 ```
 用户浏览器
@@ -180,4 +214,4 @@ EdgeOne Pages (CDN) / nginx
 
 ---
 
-*文档更新时间：2026-04-12*
+*文档更新时间：2026-04-18*
