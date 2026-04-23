@@ -185,6 +185,14 @@
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     display: inline-block;
     line-height: 1;
+    font-family: 'Material Symbols Outlined', sans-serif;
+    /* 字体加载失败时隐藏文本，避免显示英文图标名 */
+    visibility: hidden;
+  }
+
+  /* 字体加载成功后显示图标 */
+  .material-symbols-outlined.font-loaded {
+    visibility: visible;
   }
 
   /* Disable 100% black per DESIGN.md - always use on-surface */
