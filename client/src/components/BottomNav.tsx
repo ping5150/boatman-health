@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import Icon from './Icon';
 
 const BottomNav = () => {
   const { pathname } = useLocation();
@@ -28,12 +29,12 @@ const BottomNav = () => {
               : 'text-on-surface-variant hover:text-secondary'
           }`}
         >
-          <span
-            className="material-symbols-outlined text-xl sm:text-base"
-            style={isActive(item.href) ? { fontVariationSettings: 'FILL 1' } : {}}
-          >
-            {item.icon}
-          </span>
+          <Icon
+            name={item.icon}
+            size={20}
+            className="text-xl sm:text-base"
+            filled={isActive(item.href)}
+          />
           <span className="font-headline text-[9px] sm:text-[10px] font-semibold tracking-wide mt-1">{item.name}</span>
         </Link>
       ))}

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import Icon from './Icon';
 
 interface TopBarProps {
   title?: string;
@@ -47,7 +48,7 @@ const TopBar = ({
           onClick={handleBack}
           className="flex items-center gap-2 min-h-[44px] min-w-[44px] active:scale-95 transition-transform touch-manipulation"
         >
-          <span className="material-symbols-outlined text-primary cursor-pointer">arrow_back</span>
+          <Icon name="arrow_back" size={24} className="text-primary cursor-pointer" />
           <span className="text-lg sm:text-xl font-black text-primary tracking-tighter font-headline">{title}</span>
         </button>
       )}
