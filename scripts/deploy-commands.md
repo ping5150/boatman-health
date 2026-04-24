@@ -65,7 +65,7 @@ ssh root@118.145.239.169 "nginx -t && nginx -s reload"
 ## 第七步：验证部署
 
 # 7.1 检查后端健康
-ssh root@118.145.239.169 "curl http://localhost:3001/health"
+ssh root@118.145.239.169 "curl http://localhost:3003/health"
 
 # 7.2 查看日志
 ssh root@118.145.239.169 "pm2 logs server-test --lines 20 --nostream"

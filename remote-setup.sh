@@ -24,7 +24,7 @@ server {
     listen 80;
     server_name _;
 
-    root /home/chuanfu-health/frontend;
+    root /var/www/boatman-health-A4;
     index index.html;
 
     add_header X-Frame-Options "DENY" always;
@@ -49,7 +49,7 @@ server {
 
     # API 反向代理 → 本机后端服务
     location /api/ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -59,8 +59,8 @@ server {
     }
 
     # Admin API 反向代理 → 本机后端服务
-    location ~ ^/admin/(auth|dashboard|form1|form2|users|sync) {
-        proxy_pass http://127.0.0.1:3000;
+    location ~ ^/admin/(auth|dashboard|form1|form2|users|sync|sleep-surveys|nutrition-surveys) {
+        proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

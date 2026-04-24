@@ -2,13 +2,13 @@
   "apps": [
     {
       "name": "server-prod",
-      "cwd": "/www/server/boatman-health/server",
+      "cwd": "/opt/boatman-health-A4-server",
       "script": "dist/app.js",
       "instances": 1,
       "exec_mode": "fork",
       "env": {
         "NODE_ENV": "production",
-        "PORT": 3000
+        "PORT": 3001
       },
       "error_file": "/www/logs/boatman-health/prod-error.log",
       "out_file": "/www/logs/boatman-health/prod-out.log",

@@ -189,17 +189,18 @@ location ~ ^/admin/(auth|dashboard|form1|form2|users|sync|sleep-surveys|nutritio
 用户浏览器
     │
     ▼
-EdgeOne Pages (CDN) / nginx
-├── / → client SPA (用户端)
-├── /admin/ → admin SPA (管理后台)
-├── /api/* → rewrite 代理 → 118.145.239.169:3001/api/*
-└── /admin/* (API) → rewrite 代理 → 118.145.239.169:3001/admin/*
+Nginx（腾讯云轻量服务器 118.145.239.169）
+├── :80 / :8080 → 生产环境
+│   ├── / → 用户端 SPA（/var/www/boatman-health-A4/）
+│   ├── /admin/ → 管理后台 SPA（/var/www/boatman-health-A4/admin/）
+│   ├── /api/* → proxy_pass http://127.0.0.1:3001
+│   └── /admin/(auth|dashboard|...) → proxy_pass http://127.0.0.1:3001
     │
     ▼
-腾讯云轻量服务器 (118.145.239.169)
-└── PM2 → Node.js Express (port 3001)
-    ├── Prisma ORM → SQLite (prisma/prisma/prod.db)
-    └── axios → 飞书开放平台 API
+PM2 → Node.js Express (port 3001)
+    ├── Prisma ORM → SQLite (/opt/boatman-health-A4-server/prisma/prisma/prod.db)
+    ├── axios → 飞书开放平台 API
+    └── 火山引擎 TOS → 文件存储
 ```
 
 ---
@@ -214,4 +215,4 @@ EdgeOne Pages (CDN) / nginx
 
 ---
 
-*文档更新时间：2026-04-18*
+*文档更新时间：2026-04-24*
