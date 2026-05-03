@@ -40,7 +40,7 @@ request.interceptors.response.use(
       if (status === 401) {
         message.error('登录已过期，请重新登录');
         tokenUtil.clear();
-        window.location.href = '/#/login';
+        window.location.href = '/admin/#/login';
       } else if (status === 403) {
         message.error('无权限访问');
       } else {

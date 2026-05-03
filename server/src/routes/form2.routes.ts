@@ -53,7 +53,7 @@ const healthFormSchema = z.object({
   sleepQuality: z.string().optional(),
   wakeUpFeeling: z.array(z.string()).optional(),
   // 压力情绪
-  stressLevel: z.number().min(1).max(10).optional(),
+  stressLevel: z.coerce.number().min(1).max(10).optional(),
   anxietyFrequency: z.string().optional(),
   brainFog: z.array(z.string()).optional(),
   brainFogOther: z.string().optional(),
