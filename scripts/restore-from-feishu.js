@@ -4,16 +4,16 @@ const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
-const FEISHU_APP_ID = "cli_a9f73a62fbf99cb0";
-const FEISHU_APP_SECRET = "wiWZPN1D0sbybJPwoYnJReL86zEbGtdn";
+const FEISHU_APP_ID = "cli_a97c4a4129781bdf";
+const FEISHU_APP_SECRET = "NERYqZERdjLmn3QuCpaaqgVf6eza8nUG";
 const BASE_URL = "https://open.feishu.cn/open-apis";
 
 const TABLES = {
-  users: { appToken: "EuHObRA2laxT2osbdjxcvCbHn7c", tableId: "tblnNp0A16c7VcpG" },
-  form1: { appToken: "EuHObRA2laxT2osbdjxcvCbHn7c", tableId: "tbloo8eMo2lh19w6" },
-  form2: { appToken: "EuHObRA2laxT2osbdjxcvCbHn7c", tableId: "tblR5jTrJZnxsj91" },
-  sleep: { appToken: "EuHObRA2laxT2osbdjxcvCbHn7c", tableId: "tblIDRTapjexVXrC" },
-  nutrition: { appToken: "EuHObRA2laxT2osbdjxcvCbHn7c", tableId: "tblQfYXQls5gErkk" },
+  users: { appToken: "HgJzwQMPkiNBiMkmEXMcmLF3nEc", tableId: "tbl1U4Mosd7dzvHD" },
+  form1: { appToken: "HgJzwQMPkiNBiMkmEXMcmLF3nEc", tableId: "tbl1g5VYg6nJKUAj" },
+  form2: { appToken: "HgJzwQMPkiNBiMkmEXMcmLF3nEc", tableId: "tbl5sonmjYfbEibo" },
+  sleep: { appToken: "HgJzwQMPkiNBiMkmEXMcmLF3nEc", tableId: "tbl54plrv4NXtCRS" },
+  nutrition: { appToken: "HgJzwQMPkiNBiMkmEXMcmLF3nEc", tableId: "tbl1GMdpnljuWQcI" },
 };
 
 let accessToken = null;

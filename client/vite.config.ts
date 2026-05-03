@@ -17,12 +17,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://118.145.239.169:3002',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/admin': {
-        target: 'http://118.145.239.169:3002',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },

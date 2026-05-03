@@ -15,11 +15,11 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://118.145.239.169:3002',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://118.145.239.169:3002',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },
