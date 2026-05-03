@@ -75,23 +75,21 @@ async function restoreUsers(records) {
         id: f["用户ID"] || `RESTORED_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         username: f["用户名"] || "未知用户",
         phone: f["手机号"] || "",
-        password_hash: passwordHash,
+        passwordHash: passwordHash,
         role: f["角色"] === "管理员" ? "admin" : "user",
-        created_at: parseDate(f["注册时间"]),
-        updated_at: new Date(),
-        feishu_record_id: record.record_id,
-        feishu_sync_status: "success",
+        feishuRecordId: record.record_id,
+        feishuSyncStatus: "success",
       };
       
       // 检查是否已存在
-      const existing = await prisma.users.findUnique({ where: { phone: userData.phone } });
+      const existing = await prisma.user.findUnique({ where: { phone: userData.phone } });
       if (existing) {
         console.log(`  跳过已存在用户: ${userData.phone}`);
         skipped++;
         continue;
       }
       
-      await prisma.users.create({ data: userData });
+      await prisma.user.create({ data: userData });
       console.log(`  ✓ 恢复用户: ${userData.username} (${userData.phone})`);
       success++;
     } catch (e) {
@@ -117,14 +115,14 @@ async function restoreForm1(records) {
       
       // 如果用户ID是 CF 开头的，通过数据库查找
       if (feishuUserId && feishuUserId.startsWith("CF")) {
-        const user = await prisma.users.findUnique({ where: { id: feishuUserId } });
+        const user = await prisma.user.findUnique({ where: { id: feishuUserId } });
         if (user) userId = user.id;
       }
       
       // 如果找不到用户，尝试通过手机号查找
       if (!userId) {
         const phone = f["联系电话"];
-        const user = await prisma.users.findUnique({ where: { phone } });
+        const user = await prisma.user.findUnique({ where: { phone } });
         if (user) userId = user.id;
       }
       
@@ -135,33 +133,31 @@ async function restoreForm1(records) {
       }
       
       const formData = {
-        user_id: userId,
-        order_no: f["订单编号"] || `RESTORED_F1_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        userId: userId,
+        orderNo: f["订单编号"] || `RESTORED_F1_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         name: f["姓名"] || "",
         phone: f["联系电话"] || "",
-        consultation_type: f["咨询类型"] || "",
-        preferred_date: f["预约日期"] || "",
-        preferred_time: f["预约时间"] || "",
+        consultationType: f["咨询类型"] || "",
+        preferredDate: f["预约日期"] || "",
+        preferredTime: f["预约时间"] || "",
         brief: f["简要说明"] || "",
-        submitted_by: f["姓名"] || "",
+        submittedBy: f["姓名"] || "",
         status: "active",
-        submitted_at: parseDate(f["提交时间"]),
-        updated_at: new Date(),
-        version_number: parseInt(f["版本号"]) || 1,
-        feishu_record_id: record.record_id,
-        feishu_sync_status: "success",
+        versionNumber: parseInt(f["版本号"]) || 1,
+        feishuRecordId: record.record_id,
+        feishuSyncStatus: "success",
       };
       
       // 检查是否已存在
-      const existing = await prisma.form1_submissions.findUnique({ where: { order_no: formData.order_no } });
+      const existing = await prisma.form1Submission.findUnique({ where: { orderNo: formData.orderNo } });
       if (existing) {
-        console.log(`  跳过已存在: ${formData.order_no}`);
+        console.log(`  跳过已存在: ${formData.orderNo}`);
         skipped++;
         continue;
       }
       
-      await prisma.form1_submissions.create({ data: formData });
-      console.log(`  ✓ 恢复预约: ${formData.order_no} - ${formData.name}`);
+      await prisma.form1Submission.create({ data: formData });
+      console.log(`  ✓ 恢复预约: ${formData.orderNo} - ${formData.name}`);
       success++;
     } catch (e) {
       console.error(`  ✗ 失败: ${f["订单编号"]} - ${e.message}`);
@@ -185,13 +181,13 @@ async function restoreForm2(records) {
       let userId = null;
       
       if (feishuUserId && feishuUserId.startsWith("CF")) {
-        const user = await prisma.users.findUnique({ where: { id: feishuUserId } });
+        const user = await prisma.user.findUnique({ where: { id: feishuUserId } });
         if (user) userId = user.id;
       }
       
       if (!userId) {
         const phone = f["联系电话"];
-        const user = await prisma.users.findUnique({ where: { phone } });
+        const user = await prisma.user.findUnique({ where: { phone } });
         if (user) userId = user.id;
       }
       
@@ -232,22 +228,20 @@ async function restoreForm2(records) {
       }
       
       const formData = {
-        user_id: userId,
-        order_no: `RESTORED_F2_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        userId: userId,
+        orderNo: `RESTORED_F2_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         name: f["姓名"] || "",
         phone: f["联系电话"] || "",
-        submitted_by: f["姓名"] || "",
-        form_data: JSON.stringify(formDataObj),
-        submitted_at: parseDate(f["提交时间"]),
-        updated_at: new Date(),
-        version_number: 1,
-        feishu_record_id: record.record_id,
-        feishu_sync_status: "success",
+        submittedBy: f["姓名"] || "",
+        formData: JSON.stringify(formDataObj),
+        versionNumber: 1,
+        feishuRecordId: record.record_id,
+        feishuSyncStatus: "success",
       };
       
       // 检查是否已存在相同的记录（通过用户ID和姓名）
-      const existing = await prisma.form2_submissions.findFirst({
-        where: { user_id: userId, name: formData.name }
+      const existing = await prisma.form2Submission.findFirst({
+        where: { userId: userId, name: formData.name }
       });
       if (existing) {
         console.log(`  跳过已存在: 用户 ${userId} 的健康档案`);
@@ -255,7 +249,7 @@ async function restoreForm2(records) {
         continue;
       }
       
-      await prisma.form2_submissions.create({ data: formData });
+      await prisma.form2Submission.create({ data: formData });
       console.log(`  ✓ 恢复健康档案: ${formData.name}`);
       success++;
     } catch (e) {
@@ -276,8 +270,9 @@ async function main() {
   // 备份当前数据库
   console.log("备份当前数据库...");
   const fs = require("fs");
-  const backupPath = `prisma/prod.db.before-restore-${Date.now()}`;
-  fs.copyFileSync("prisma/prod.db", backupPath);
+  const dbPath = fs.existsSync("prisma/prod.db") ? "prisma/prod.db" : "prod.db";
+  const backupPath = `${dbPath}.before-restore-${Date.now()}`;
+  fs.copyFileSync(dbPath, backupPath);
   console.log(`✓ 已备份到: ${backupPath}\n`);
   
   // 读取飞书数据
@@ -307,9 +302,9 @@ async function main() {
   
   // 验证数据库
   console.log("\n=== 验证数据库 ===");
-  const dbUsers = await prisma.users.count();
-  const dbForm1 = await prisma.form1_submissions.count();
-  const dbForm2 = await prisma.form2_submissions.count();
+  const dbUsers = await prisma.user.count();
+  const dbForm1 = await prisma.form1Submission.count();
+  const dbForm2 = await prisma.form2Submission.count();
   console.log(`数据库当前: users=${dbUsers}, form1=${dbForm1}, form2=${dbForm2}`);
   
   await prisma.$disconnect();

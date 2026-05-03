@@ -39,12 +39,11 @@ export const env = {
   NUTRITION_SURVEY_APP_TOKEN: process.env.NUTRITION_SURVEY_APP_TOKEN || '',
   NUTRITION_SURVEY_TABLE_ID: process.env.NUTRITION_SURVEY_TABLE_ID || '',
 
-  // 火山引擎 TOS 对象存储
-  TOS_ACCESS_KEY_ID: process.env.TOS_ACCESS_KEY_ID || '',
-  TOS_ACCESS_KEY_SECRET: process.env.TOS_ACCESS_KEY_SECRET || '',
-  TOS_REGION: process.env.TOS_REGION || 'cn-guangzhou',
-  TOS_ENDPOINT: process.env.TOS_ENDPOINT || 'tos-cn-guangzhou.volces.com',
-  TOS_BUCKET: process.env.TOS_BUCKET || 'boatman-health',
+  // 腾讯云 COS 对象存储
+  COS_SECRET_ID: process.env.COS_SECRET_ID || '',
+  COS_SECRET_KEY: process.env.COS_SECRET_KEY || '',
+  COS_BUCKET: process.env.COS_BUCKET || 'boatmanhealth-1304833846',
+  COS_REGION: process.env.COS_REGION || 'ap-guangzhou',
 
   // 是否为开发模式
   isDev: process.env.NODE_ENV === 'development',

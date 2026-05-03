@@ -1,18 +1,16 @@
-import TOS from '@volcengine/tos-sdk';
-import { tosConfig } from '../config/tos';
+import COS from 'cos-nodejs-sdk-v5';
+import { cosConfig } from '../config/cos';
 import { logger } from '../utils/logger';
 import path from 'path';
 
-// 初始化 TOS 客户端
-const tosClient = new TOS({
-  accessKeyId: tosConfig.accessKeyId,
-  accessKeySecret: tosConfig.accessKeySecret,
-  region: tosConfig.region,
-  endpoint: tosConfig.endpoint,
+// 初始化 COS 客户端
+const cosClient = new COS({
+  SecretId: cosConfig.secretId,
+  SecretKey: cosConfig.secretKey,
 });
 
 /**
- * 上传文件到火山引擎 TOS
+ * 上传文件到腾讯云 COS
  */
 export const uploadService = {
   /**
@@ -31,17 +29,18 @@ export const uploadService = {
     const fileType = getFileType(ext);
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).slice(2, 8);
-    const objectKey = `health-archives/${userId}/${timestamp}-${randomStr}${ext}`;
+    const objectKey = `BMHdata/health-archives/${userId}/${timestamp}-${randomStr}${ext}`;
 
     try {
-      await tosClient.putObject({
-        bucket: tosConfig.bucket,
-        key: objectKey,
-        body: file.buffer,
-        contentType: file.mimetype,
+      await cosClient.putObject({
+        Bucket: cosConfig.bucket,
+        Region: cosConfig.region,
+        Key: objectKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
       });
 
-      const url = `${tosConfig.publicBaseUrl}/${objectKey}`;
+      const url = `${cosConfig.publicBaseUrl}/${objectKey}`;
 
       logger.info('Upload', `文件上传成功: ${file.originalname} -> ${url}`);
 
