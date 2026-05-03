@@ -1,93 +1,84 @@
 #!/bin/bash
 set -e
 
-DEPLOY_DIR="/var/www/boatman-health-A4"
+DEPLOY_DIR="/www/boatman-health"
 
 echo ">>> 安装 Nginx（如未安装）..."
 if ! command -v nginx &> /dev/null; then
-    sudo apt-get update -qq && sudo apt-get install -y -qq nginx
+    yum install -y nginx
 fi
 
-echo ">>> 创建部署目录并解压..."
-sudo mkdir -p $DEPLOY_DIR
-sudo rm -rf ${DEPLOY_DIR}/*
-sudo tar -xf /tmp/frontend-dist.tar -C $DEPLOY_DIR
-rm -f /tmp/frontend-dist.tar
-
-echo ">>> 文件列表："
-ls -la $DEPLOY_DIR/
+echo ">>> 创建部署目录..."
+mkdir -p $DEPLOY_DIR/{client,admin,server}
 
 echo ">>> 写入 Nginx 配置..."
-sudo mkdir -p /etc/nginx/conf.d
-sudo tee /etc/nginx/conf.d/chuanfu-health.conf > /dev/null << 'NGINX_CONF'
+mkdir -p /etc/nginx/conf.d
+tee /etc/nginx/conf.d/boatman-health.conf > /dev/null << 'NGINX_CONF'
 server {
     listen 80;
-    server_name _;
+    server_name www.boatmanhealth.com boatmanhealth.com;
 
-    root /var/www/boatman-health-A4;
+    # 用户端前端
+    root /www/boatman-health/client;
     index index.html;
 
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
+    # Gzip 压缩
     gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
-
-    location /assets/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    location /admin/assets/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # API 反向代理 → 本机后端服务
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_connect_timeout 30s;
-        proxy_read_timeout 60s;
-    }
-
-    # Admin API 反向代理 → 本机后端服务
-    location ~ ^/admin/(auth|dashboard|form1|form2|users|sync|sleep-surveys|nutrition-surveys) {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_connect_timeout 30s;
-        proxy_read_timeout 60s;
-    }
-
-    # 管理后台 SPA
-    location /admin/ {
-        try_files $uri $uri/ /admin/index.html;
-    }
+    gzip_min_length 1000;
 
     # 用户端 SPA
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    # 管理后台 SPA
+    location /admin/ {
+        alias /www/boatman-health/admin/;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    # API 代理到后端
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 120s;
+    }
+
+    # 管理后台 API 代理
+    location /admin-api/ {
+        proxy_pass http://127.0.0.1:3000/admin/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 健康检查
+    location /health {
+        proxy_pass http://127.0.0.1:3000;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
 }
 NGINX_CONF
 
 echo ">>> 禁用默认配置（如存在）..."
-sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
-sudo rm -f /etc/nginx/conf.d/default.conf 2>/dev/null || true
+rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+rm -f /etc/nginx/conf.d/default.conf 2>/dev/null || true
 
 echo ">>> 测试并重启 Nginx..."
-sudo nginx -t && sudo systemctl restart nginx && sudo systemctl enable nginx
+nginx -t && systemctl enable nginx && systemctl start nginx
 
 echo ">>> 部署成功！"
-echo ">>> 用户端: http://118.145.239.169/"
-echo ">>> 管理后台: http://118.145.239.169/admin/"
+echo ">>> 用户端: https://www.boatmanhealth.com/"
+echo ">>> 管理后台: https://www.boatmanhealth.com/admin/"
+echo ">>> 注意：SSL 证书需要单独使用 certbot 申请"
