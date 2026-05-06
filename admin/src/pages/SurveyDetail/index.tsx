@@ -1,11 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Descriptions, Empty, Spin, Tag, Typography } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, FilePdfOutlined, FileImageOutlined, FileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { nutritionSurveyApi, sleepSurveyApi, SurveyDetail } from '../../api/survey.api';
 
 const { Text } = Typography;
+
+// 文件项接口
+interface FileItem {
+  name?: string;
+  url: string;
+  size?: number;
+  type?: string;
+}
 
 const statusMap: Record<string, { text: string; color: string }> = {
   success: { text: '已同步', color: 'green' },
@@ -172,6 +180,129 @@ const SurveyDetailPage: React.FC = () => {
 
   const fieldLabels = isSleepSurvey ? SLEEP_FIELD_LABELS : NUTRITION_FIELD_LABELS;
 
+  // 文件类型字段名列表
+  const fileFieldKeys = ['uploadedDietFiles', 'typicalDietWorkday', 'typicalDietWeekend'];
+
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  // 获取文件图标
+  const getFileIcon = (type?: string) => {
+    switch (type) {
+      case 'pdf':
+        return <FilePdfOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />;
+      case 'image':
+        return <FileImageOutlined style={{ fontSize: 20, color: '#1890ff' }} />;
+      default:
+        return <FileOutlined style={{ fontSize: 20, color: '#666' }} />;
+    }
+  };
+
+  // 从 URL 推断文件类型
+  const guessFileType = (url: string): string => {
+    const ext = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
+    if (ext === 'pdf') return 'pdf';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+    return 'other';
+  };
+
+  // 预览文件（新标签页打开）
+  const handleViewFile = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // 解析文件列表（兼容 string[] URL 和 FileItem[] 对象两种格式）
+  const parseFileList = (value: unknown): FileItem[] => {
+    if (!Array.isArray(value)) return [];
+    return value.map((item): FileItem => {
+      if (typeof item === 'string') {
+        return { url: item, type: guessFileType(item) };
+      }
+      return {
+        name: item.name,
+        url: item.url,
+        size: item.size,
+        type: item.type || guessFileType(item.url || ''),
+      };
+    }).filter(f => f.url);
+  };
+
+  // 渲染文件列表
+  const renderFileList = (value: unknown) => {
+    const files = parseFileList(value);
+    if (files.length === 0) return '-';
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {files.map((file, index) => {
+          const fileName = file.name || file.url.split('/').pop()?.split('?')[0] || `文件${index + 1}`;
+          return (
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '8px 12px',
+                background: '#fafafa',
+                borderRadius: 6,
+                border: '1px solid #f0f0f0',
+              }}
+            >
+              <div style={{ marginRight: 10 }}>
+                {getFileIcon(file.type)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {fileName}
+                </Text>
+                {file.size && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>{formatFileSize(file.size)}</Text>
+                )}
+              </div>
+              <Button
+                type="link"
+                size="small"
+                icon={<DownloadOutlined />}
+                onClick={() => handleViewFile(file.url)}
+              >
+                下载
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 尝试解析可能是 JSON 字符串的值
+  const tryParseJson = (value: unknown): unknown => {
+    if (typeof value === 'string' && value.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* 不是有效 JSON，按原值处理 */ }
+    }
+    return value;
+  };
+
+  // 渲染字段值
+  const renderFieldValue = (key: string, value: unknown) => {
+    if (fileFieldKeys.includes(key)) {
+      const parsed = tryParseJson(value);
+      if (Array.isArray(parsed) || (typeof parsed === 'string' && parsed.startsWith('http'))) {
+        return renderFileList(parsed);
+      }
+    }
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return JSON.stringify(value);
+  };
+
   useEffect(() => {
     const fetchDetail = async () => {
       if (!id) return;
@@ -248,9 +379,7 @@ const SurveyDetailPage: React.FC = () => {
           <Descriptions bordered size="small" column={1}>
             {formEntries.map(([key, value]) => (
               <Descriptions.Item key={key} label={fieldLabels[key] ?? key}>
-                {typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-                  ? String(value)
-                  : JSON.stringify(value)}
+                {renderFieldValue(key, value)}
               </Descriptions.Item>
             ))}
           </Descriptions>

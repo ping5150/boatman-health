@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, Descriptions, Tag, Button, Spin, Typography, Divider, Input, Select, Checkbox, Radio, InputNumber, Slider, Form, Row, Col, Space, message } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, DownloadOutlined, EyeOutlined, FilePdfOutlined, FileImageOutlined, FileOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SaveOutlined, DownloadOutlined, FilePdfOutlined, FileImageOutlined, FileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { form1Api } from '../../api/form1.api';
 import { form2Api, HealthFormData } from '../../api/form2.api';
@@ -169,21 +169,9 @@ const FormDetailPage: React.FC = () => {
     }
   };
 
-  // 查看文件
-  const handleViewFile = (file: { name: string; url: string; type: string }) => {
-    window.open(file.url, '_blank');
-  };
-
-  // 下载文件
-  const handleDownloadFile = (file: { name: string; url: string }) => {
-    const link = document.createElement('a');
-    link.href = file.url;
-    link.download = file.name;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    message.success(`正在下载: ${file.name}`);
+  // 预览文件（新标签页打开）
+  const handleViewFile = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   // 预约详情页面
@@ -678,57 +666,49 @@ const FormDetailPage: React.FC = () => {
             </Row>
           </Card>
 
-          {/* Section 4: 上传附件 */}
-          <Card title={<><Tag color="blue">04</Tag> 上传附件</>}>
-            {archiveDetail.formData?.uploadedFiles && archiveDetail.formData.uploadedFiles.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {archiveDetail.formData.uploadedFiles.map((file, index) => (
-                  <div 
-                    key={index} 
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      padding: '12px 16px', 
-                      background: '#fafafa', 
-                      borderRadius: 8,
-                      border: '1px solid #f0f0f0',
-                    }}
-                  >
-                    <div style={{ marginRight: 12 }}>
-                      {getFileIcon(file.type)}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {file.name}
-                      </Text>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {formatFileSize(file.size)}
-                      </Text>
-                    </div>
-                    <Space>
-                      <Button 
-                        type="link" 
-                        icon={<EyeOutlined />} 
-                        onClick={() => handleViewFile(file)}
-                      >
-                        查看
-                      </Button>
-                      <Button 
-                        type="link" 
-                        icon={<DownloadOutlined />} 
-                        onClick={() => handleDownloadFile(file)}
-                      >
-                        下载
-                      </Button>
-                    </Space>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Text type="secondary">无上传附件</Text>
-            )}
-          </Card>
         </Form>
+
+        {/* Section 4: 上传附件（放在 Form 外，下载按钮不受编辑状态影响） */}
+        <Card title={<><Tag color="blue">04</Tag> 上传附件</>} style={{ marginTop: 16 }}>
+          {archiveDetail.formData?.uploadedFiles && archiveDetail.formData.uploadedFiles.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {archiveDetail.formData.uploadedFiles.map((file, index) => (
+                <div 
+                  key={index} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    padding: '12px 16px', 
+                    background: '#fafafa', 
+                    borderRadius: 8,
+                    border: '1px solid #f0f0f0',
+                  }}
+                >
+                  <div style={{ marginRight: 12 }}>
+                    {getFileIcon(file.type)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {file.name}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {formatFileSize(file.size)}
+                    </Text>
+                  </div>
+                    <Button 
+                      type="link" 
+                      icon={<DownloadOutlined />} 
+                      onClick={() => handleViewFile(file.url)}
+                    >
+                      下载
+                    </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">无上传附件</Text>
+          )}
+        </Card>
       </>
     );
   };

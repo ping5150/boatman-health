@@ -512,7 +512,7 @@ const NutritionSurvey = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-surface">
+    <div className="flex flex-col min-h-[100dvh] bg-surface">
       {/* 顶部导航 & 进度条 */}
       <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shrink-0">
         <div className="grid grid-cols-3 items-center w-full px-4 py-3">
@@ -559,7 +559,7 @@ const NutritionSurvey = () => {
       </header>
 
       {/* 主体内容区域 */}
-      <main className="relative pb-28 overflow-x-hidden">
+      <main className="relative pb-4 overflow-x-hidden">
         <div className="transition-all duration-300 opacity-100">
         
         {/* ================= 步骤 1: 健康信息 ================= */}
