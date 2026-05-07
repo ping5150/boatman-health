@@ -17,12 +17,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://www.boatmanhealth.com',
         changeOrigin: true,
         secure: false,
       },
       '/admin': {
-        target: 'http://localhost:3000',
+        target: 'https://www.boatmanhealth.com',
         changeOrigin: true,
         secure: false,
       },

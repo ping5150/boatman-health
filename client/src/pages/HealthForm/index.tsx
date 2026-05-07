@@ -339,12 +339,6 @@ const HealthForm = () => {
     if (!files) return;
 
     Array.from(files).forEach((file) => {
-      // 文件大小校验
-      if (file.size > 50 * 1024 * 1024) {
-        showToast(`文件 ${file.name} 超过 50MB 限制`);
-        return;
-      }
-
       const fileId = Date.now().toString() + Math.random().toString(36).slice(2, 11);
       const fileType: UploadedFile['type'] = file.name.endsWith('.pdf') ? 'pdf' :
         /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name) ? 'image' :
@@ -375,11 +369,11 @@ const HealthForm = () => {
             url: result.url,
           } : f))
         );
-      }).catch(() => {
+      }).catch((err) => {
         setUploadedFiles((prev) =>
           prev.map((f) => (f.id === fileId ? { ...f, progress: 0, status: 'error' as const } : f))
         );
-        showToast(`文件 ${file.name} 上传失败`);
+        showToast(err instanceof Error ? err.message : `文件 ${file.name} 上传失败`);
       });
     });
 

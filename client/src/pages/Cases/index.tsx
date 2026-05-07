@@ -110,11 +110,6 @@ const Cases = () => {
             <div className="md:col-span-5 relative min-h-[400px] order-1 md:order-2">
               <img className="absolute inset-0 w-full h-full object-cover grayscale opacity-60" alt="Elegant multi-generational family gathering" src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=600&h=600&fit=crop" />
               <div className="absolute inset-0 bg-gradient-to-l from-primary via-primary/40 to-transparent"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-secondary/20 glass-effect p-8 rounded-full border border-white/20">
-                  <span className="material-symbols-outlined text-white text-5xl" style={{ fontVariationSettings: 'FILL 1' }}>security</span>
-                </div>
-              </div>
             </div>
           </div>
         </article>

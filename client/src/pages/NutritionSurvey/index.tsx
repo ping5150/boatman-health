@@ -282,11 +282,11 @@ const NutritionSurvey = () => {
             url: result.url,
           } : f))
         );
-      }).catch(() => {
+      }).catch((err) => {
         setUploadedDietFiles((prev) =>
           prev.map((f) => (f.id === fileId ? { ...f, progress: 0, status: 'error' as const } : f))
         );
-        showToast(`文件 ${file.name} 上传失败`);
+        showToast(err instanceof Error ? err.message : `文件 ${file.name} 上传失败`);
       });
     });
 
