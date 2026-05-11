@@ -200,6 +200,26 @@ const Home = () => {
         </section>
       </main>
 
+      {/* Footer */}
+      <footer className="bg-primary text-on-primary/70 py-12 pb-28 px-4 sm:px-6">
+        <div className="container mx-auto max-w-3xl text-center space-y-4 text-xs sm:text-sm leading-relaxed">
+          <p className="text-on-primary/90 font-medium">
+            公司业务简介：Medicine3.0长寿管理与全球重疾慢病全病程定制管理服务
+          </p>
+          <div className="space-y-1">
+            <p>办公地址：深圳市前海深港合作区南山街道桂湾三路91号恒裕前海金融中心T1栋2810</p>
+            <p>联系电话：13602551233</p>
+          </div>
+          <p className="text-on-primary/50 text-xs">
+            工信部备案编号：粤ICP备2026048705号-1
+          </p>
+          <div className="flex justify-center gap-4 text-on-primary/60 text-xs">
+            <Link to="/legal-notice" className="hover:text-on-primary/80 underline underline-offset-2">法律声明</Link>
+            <Link to="/privacy-policy" className="hover:text-on-primary/80 underline underline-offset-2">隐私声明</Link>
+          </div>
+        </div>
+      </footer>
+
       <BottomNav />
     </div>
   );

@@ -25,6 +25,8 @@ import ArchiveSuccess from '@/pages/ArchiveSuccess';
 import SleepSurvey from '@/pages/SleepSurvey';
 import NutritionSurvey from '@/pages/NutritionSurvey';
 import SurveySuccess from '@/pages/SurveySuccess';
+import LegalNotice from '@/pages/LegalNotice';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
 
 const App = () => {
   return (
@@ -121,6 +123,10 @@ const App = () => {
           />
           <Route path="/survey-success" element={<SurveySuccess />} />
         </Route>
+
+        {/* 独立页面 - 无布局 */}
+        <Route path="/legal-notice" element={<LegalNotice />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
         {/* 预览路由 - 无需登录 */}
         <Route path="/preview/sleep-survey" element={<SleepSurvey />} />
