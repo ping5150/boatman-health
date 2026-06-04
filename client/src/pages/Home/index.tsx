@@ -213,7 +213,8 @@ const Home = () => {
           <p className="text-on-primary/50 text-xs">
             工信部备案编号：粤ICP备2026048705号-1
           </p>
-          <p className="text-on-primary/50 text-xs">
+          <p className="text-on-primary/50 text-xs flex items-center justify-center gap-1">
+            <img src="/gongan.webp" alt="公安备案" className="w-4 h-4" />
             <a href="https://beian.mps.gov.cn/#/query/webSearch?code=44030002013138" rel="noreferrer" target="_blank">粤公网安备44030002013138号</a>
           </p>
           <div className="flex justify-center gap-4 text-on-primary/60 text-xs">
