@@ -213,6 +213,9 @@ const Home = () => {
           <p className="text-on-primary/50 text-xs">
             工信部备案编号：粤ICP备2026048705号-1
           </p>
+          <p className="text-on-primary/50 text-xs">
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=44030002013138" rel="noreferrer" target="_blank">粤公网安备44030002013138号</a>
+          </p>
           <div className="flex justify-center gap-4 text-on-primary/60 text-xs">
             <Link to="/legal-notice" className="hover:text-on-primary/80 underline underline-offset-2">法律声明</Link>
             <Link to="/privacy-policy" className="hover:text-on-primary/80 underline underline-offset-2">隐私声明</Link>
