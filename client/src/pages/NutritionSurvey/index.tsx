@@ -559,7 +559,7 @@ const NutritionSurvey = () => {
       </header>
 
       {/* 主体内容区域 */}
-      <main className="relative pb-28 overflow-x-hidden">
+      <main className="relative pt-20 pb-40 overflow-x-hidden">
         <div className="transition-all duration-300 opacity-100">
         
         {/* ================= 步骤 1: 健康信息 ================= */}
@@ -757,7 +757,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={() => navigate(-1)}
@@ -1176,7 +1176,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -1366,7 +1366,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -1443,7 +1443,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -1576,7 +1576,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -1718,7 +1718,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -1811,7 +1811,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2008,7 +2008,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2106,7 +2106,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2218,7 +2218,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2333,7 +2333,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2448,7 +2448,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -2603,7 +2603,7 @@ const NutritionSurvey = () => {
               </div>
 
               {/* 步骤底部按钮 - 最后一步显示提交按钮 */}
-              <div className="flex gap-3 mt-6 pb-10">
+              <div className="form-action-bar">
                 <button
                   type="button"
                   onClick={handlePrevStep}

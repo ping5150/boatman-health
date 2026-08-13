@@ -112,7 +112,7 @@ const Consultation = () => {
     <>
       <TopBar showBack showAccount />
 
-      <main className="flex-grow pt-16 sm:pt-20 px-4 sm:px-6">
+      <main className="flex-grow pt-16 sm:pt-20 px-4 sm:px-6 pb-48">
         <div className="max-w-4xl mx-auto">
           <section className="mb-8 sm:mb-12">
             {/* <span className="text-secondary font-headline font-bold tracking-widest uppercase text-xs mb-4 block">个人管家服务</span> */}
@@ -153,16 +153,18 @@ const Consultation = () => {
                 <textarea rows={5} className="w-full bg-surface-container-lowest border-none rounded-2xl p-5 focus:ring-2 focus:ring-secondary/60 text-on-surface text-base font-body input-shadow resize-none" placeholder="请简要描述您的健康状况或当前需求,以便我们匹配专家..." value={formData.brief} onChange={(e) => handleChange('brief', e.target.value)} />
               </div>
             </section>
-            <div className="pt-8">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-primary text-on-primary rounded-full font-bold text-lg px-8 py-4 hover:bg-primary-container transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 touch-manipulation min-h-[56px] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? '提交中...' : '提交咨询申请'}
-                {!isSubmitting && <span className="material-symbols-outlined">arrow_forward</span>}
-              </button>
-              {/* <p className="text-center text-xs text-on-surface-variant mt-4 uppercase tracking-widest">OFFICIAL BOATMAN STEWARDSHIP CHANNEL</p> */}
+            {/* 悬浮固定于视口底部（位于底部导航之上），横向沿用 px-4 sm:px-6 留白并与表单同宽居中 */}
+            <div className="fixed left-0 right-0 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-40 bg-surface px-4 sm:px-6 pt-3 pb-3 shadow-[0_-8px_24px_rgba(0,30,64,0.06)]">
+              <div className="max-w-4xl mx-auto">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-primary text-on-primary rounded-full font-bold text-lg px-8 py-4 hover:bg-primary-container transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 touch-manipulation min-h-[56px] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? '提交中...' : '提交咨询申请'}
+                  {!isSubmitting && <span className="material-symbols-outlined">arrow_forward</span>}
+                </button>
+              </div>
             </div>
           </form>
 
