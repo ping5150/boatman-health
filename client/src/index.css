@@ -258,6 +258,32 @@ button, a {
   .pb-safe {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Pinned form action bar - keeps the bottom buttons (下一步/返回/提交等) fixed
+     to the viewport bottom, centered to the form's max-w-md, with px-4 gutters
+     preserved and breathing room above the screen edge. */
+  .form-action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    gap: 0.75rem; /* == gap-3 */
+    padding-top: 0.75rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    /* min 1rem gutter (px-4); grows to center a 28rem (max-w-md) row on wider screens */
+    padding-left: max(1rem, calc(50% - 14rem));
+    padding-right: max(1rem, calc(50% - 14rem));
+    background-color: var(--color-surface);
+    box-shadow: 0 -8px 24px rgba(0, 30, 64, 0.06);
+  }
+
+  /* Variant for pages that already render a fixed BottomNav: sit above it. */
+  .form-action-bar--with-nav {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0.75rem;
+  }
 }
 
 /* Editorial shadow */

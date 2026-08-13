@@ -248,7 +248,7 @@ const SleepSurvey = () => {
       </header>
 
       {/* 主体内容区域 */}
-      <main className="relative pb-4">
+      <main className="relative pt-20 pb-40">
         <div className="transition-all duration-300 opacity-100">
           
           {/* ================= 步骤 1: 基础睡眠模式 ================= */}
@@ -359,7 +359,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
@@ -465,7 +465,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={handlePrevStep}
@@ -587,7 +587,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={handlePrevStep}
@@ -709,7 +709,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={handlePrevStep}
@@ -832,7 +832,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={handlePrevStep}
@@ -972,7 +972,7 @@ const SleepSurvey = () => {
                 </div>
 
                 {/* 步骤底部按钮 */}
-                <div className="flex gap-3 mt-6 pb-10">
+                <div className="form-action-bar">
                   <button
                     type="button"
                     onClick={handlePrevStep}
